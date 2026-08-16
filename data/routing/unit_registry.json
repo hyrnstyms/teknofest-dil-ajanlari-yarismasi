@@ -1,0 +1,101 @@
+{
+  "registry_type": "demo",
+  "units": [
+    {
+      "unit_id": "information_unit",
+      "name": "Bilgi Edinme Birimi",
+      "responsibilities": [
+        "bilgi edinme başvurularının değerlendirilmesi",
+        "bilgi ve belge sağlama"
+      ],
+      "keywords": [
+        "bilgi edinme",
+        "bilgi talebi",
+        "bilgi ve belge talebi",
+        "bilgi edinmek istiyorum"
+      ],
+      "supported_intents": [
+        "bilgi_talebi",
+        "belge_talebi"
+      ]
+    },
+    {
+      "unit_id": "general_document",
+      "name": "Genel Evrak",
+      "responsibilities": [
+        "genel evrak kaydı",
+        "gelen giden evrak takibi"
+      ],
+      "keywords": [
+        "evrak kaydı",
+        "posta",
+        "gelen evrak"
+      ],
+      "supported_intents": [
+        "iletim",
+        "bildirim"
+      ]
+    },
+    {
+      "unit_id": "student_affairs",
+      "name": "Öğrenci İşleri",
+      "responsibilities": [
+        "öğrenci kayıt",
+        "transkript",
+        "diploma işlemleri"
+      ],
+      "keywords": [
+        "öğrenci belgesi",
+        "transkript",
+        "diploma",
+        "mezuniyet",
+        "kayıt"
+      ],
+      "supported_intents": [
+        "belge_talebi",
+        "basvuru"
+      ]
+    },
+    {
+      "unit_id": "hr_unit",
+      "name": "İnsan Kaynakları",
+      "responsibilities": [
+        "personel işleri",
+        "izin",
+        "maaş",
+        "atama"
+      ],
+      "keywords": [
+        "personel",
+        "maaş",
+        "izin talebi",
+        "atama",
+        "görevlendirme"
+      ],
+      "supported_intents": [
+        "izin_talebi",
+        "basvuru"
+      ]
+    },
+    {
+      "unit_id": "legal_unit",
+      "name": "Hukuk Birimi",
+      "responsibilities": [
+        "dava takibi",
+        "hukuki mütalaa",
+        "şikayet ve itiraz incelemesi"
+      ],
+      "keywords": [
+        "dava",
+        "şikayet",
+        "itiraz",
+        "mütalaa",
+        "savunma"
+      ],
+      "supported_intents": [
+        "sikayet",
+        "itiraz"
+      ]
+    }
+  ]
+}

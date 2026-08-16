@@ -1,0 +1,66 @@
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+temp/
+temp_uploads/
+
+# Model/cache
+.cache/
+models/
+model_weights/
+huggingface/
+hf_cache/
+ollama/
+.ollama/
+*.safetensors
+*.gguf
+*.bin
+pytorch_model*
+
+# Qdrant local persistence
+qdrant_storage/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated conversion cache
+data/processed/converted_docx/
+
+# Sensitive/private data
+data/private/
+data/confidential/

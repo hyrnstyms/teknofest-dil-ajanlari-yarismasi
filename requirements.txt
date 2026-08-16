@@ -1,0 +1,40 @@
+# Backend
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+requests
+
+# Document processing
+PyMuPDF
+python-docx
+
+# OCR
+paddlepaddle==3.3.1
+paddleocr==3.7.0
+paddlex>=3.7.0,<3.8.0
+modelscope==1.39.1
+
+# AI / Agents
+langgraph
+langchain-core
+
+# Embeddings / RAG
+sentence-transformers
+qdrant-client
+
+# RAG / retrieval utilities
+scikit-learn
+rapidfuzz
+
+# Data formats
+numpy
+pandas
+pyarrow
+openpyxl
+xlrd
+
+# Testing
+pytest
+httpx
