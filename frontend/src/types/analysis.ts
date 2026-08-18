@@ -6,7 +6,7 @@ export interface DocumentInfo {
 }
 
 export interface ExtractionResult {
-  fields: Record<string, string | null>;
+  fields: Record<string, any>; // Usually { value: string, evidence?: string } but can vary
   unknown_fields: string[];
   missing_fields: string[];
 }
@@ -17,6 +17,8 @@ export interface MissingFieldResult {
   missing_fields: string[];
   uncertain_fields: string[];
   warnings: string[];
+  field_results?: Record<string, { status: string; value?: any; reason?: string }>;
+  needs_human_review?: boolean;
 }
 
 export interface LegalEvidence {
@@ -26,12 +28,16 @@ export interface LegalEvidence {
     item_number?: string;
     source_type?: string;
   };
-  text: string;
+  text?: string;
+  evidence?: string; // from v2
   retrieval_score?: number;
 }
 
 export interface LegalAnalysis {
-  evidences: LegalEvidence[];
+  evidences?: LegalEvidence[];
+  evidence?: string[]; // from v2
+  sources?: LegalEvidence[]; // from v2
+  warnings?: string[];
 }
 
 export interface RoutingResult {
@@ -41,6 +47,12 @@ export interface RoutingResult {
   score_type?: string;
   registry_source?: string;
   warnings?: string[];
+  ranked_units?: Array<{ name: string; score: number }>;
+  score_breakdown?: Array<{ signal: string; value: number }>;
+  alternative_units?: string[];
+  ambiguity_reason?: string;
+  routing_confidence_type?: string;
+  needs_human_review?: boolean;
 }
 
 export interface DraftResult {
@@ -55,6 +67,13 @@ export interface DraftResult {
     subject: string;
     body: string;
   };
+  draft_generation_mode?: string;
+  requires_human_approval?: boolean;
+  official_render?: {
+    success: boolean;
+    attempted: boolean;
+    missing_fields?: string[];
+  };
 }
 
 export interface QualityCheck {
@@ -65,7 +84,9 @@ export interface QualityCheck {
 
 export interface QualityResult {
   status: "pass" | "warning" | "fail";
-  checks: QualityCheck[];
+  checks?: QualityCheck[];
+  requires_human_review?: boolean;
+  issues?: string[];
 }
 
 export interface HumanReview {
@@ -84,13 +105,22 @@ export interface AuditEvent {
   message?: string;
 }
 
+export interface SummaryResult {
+  short_summary?: string;
+  structured_summary?: Record<string, any>;
+  summary_mode?: string;
+  source_map?: Record<string, string>;
+  warnings?: string[];
+  needs_human_review?: boolean;
+}
+
 export interface AnalysisResponse {
   analysis_id: string;
   document: DocumentInfo;
   extraction: ExtractionResult;
   missing_fields: MissingFieldResult;
   legal_analysis: LegalAnalysis;
-  summary: any;
+  summary: SummaryResult;
   routing: RoutingResult;
   draft: DraftResult;
   quality: QualityResult;

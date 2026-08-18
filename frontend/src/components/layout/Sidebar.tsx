@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, LayoutDashboard, FileSearch, Settings, BookOpen, Activity, Server } from 'lucide-react';
+import { FileText, LayoutDashboard, FileSearch, Settings, BookOpen, Activity, Server, Database } from 'lucide-react';
 
 interface SidebarProps {
   currentPath: string;
@@ -8,11 +8,12 @@ interface SidebarProps {
 
 export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <h1>KAMUAI</h1>
+    <aside className="sidebar flex flex-col h-full">
+      <div className="sidebar-header flex flex-col gap-1">
+        <h1 className="text-white font-semibold">KAMUAI</h1>
+        <span className="text-xs text-sidebar-text">Kamu Evrak Karar Destek Sistemi</span>
       </div>
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav flex-1">
         <a 
           href="#" 
           className={`nav-item ${currentPath === 'new' || currentPath === 'analysis' ? 'active' : ''}`}
@@ -22,7 +23,6 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
           <span>Yeni Evrak</span>
         </a>
         
-        {/* Dummy items */}
         <a 
           href="#" 
           className={`nav-item ${currentPath === 'documents' ? 'active' : ''}`}
@@ -64,6 +64,20 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
           <span>Ayarlar</span>
         </div>
       </nav>
+      
+      <div className="p-4 border-t border-sidebar-hover">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-xs text-sidebar-text">
+            <span className="w-2 h-2 rounded-full bg-success"></span>
+            <span>API: Connected</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-sidebar-text">
+            <Database size={12} />
+            <span className="bg-sidebar-hover px-2 py-1 rounded-md">EBYS: Demo</span>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }
+

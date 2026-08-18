@@ -19,6 +19,7 @@ def test_missing_fields_happy_path(agent):
     assert len(res["missing_fields"]) == 0
     assert len(res["uncertain_fields"]) == 0
     assert res["needs_human_review"] is False
+    assert res["field_results"]["signature_present"]["status"] == "present"
 
 def test_missing_fields_address_missing(agent):
     # 2. bilgi edinme + adres eksik
@@ -30,6 +31,7 @@ def test_missing_fields_address_missing(agent):
     assert "address" in res["missing_fields"]
     assert len(res["uncertain_fields"]) == 0
     assert res["needs_human_review"] is False
+    assert res["field_results"]["address"]["status"] == "missing"
 
 def test_missing_fields_signature_unknown(agent):
     # 3. signature unknown
@@ -43,9 +45,23 @@ def test_missing_fields_signature_unknown(agent):
     assert "signature_present" not in res["missing_fields"]
     assert res["needs_human_review"] is True
     assert "signature_present durumu yalnızca metin üzerinden doğrulanamadı." in res["warnings"]
+    assert res["field_results"]["signature_present"]["status"] == "uncertain"
+
+def test_missing_fields_signature_explicit_false(agent):
+    # 4. signature explicitly false -> missing
+    extracted = {
+        "person_name": {"value": "Mehmet Kaya"},
+        "address": {"value": "Örnek Mah."},
+        "signature_present": {"value": False, "status": "missing"}
+    }
+    res = agent.check_missing_fields("dilekce", "bilgi_talebi", extracted)
+    assert "signature_present" in res["missing_fields"]
+    assert "signature_present" not in res["uncertain_fields"]
+    assert res["needs_human_review"] is False
+    assert res["field_results"]["signature_present"]["status"] == "missing"
 
 def test_missing_fields_empty_extraction(agent):
-    # 4. empty extraction
+    # 5. empty extraction
     extracted = {}
     res = agent.check_missing_fields("dilekce", "bilgi_talebi", extracted)
     assert "person_name" in res["missing_fields"]
@@ -54,27 +70,38 @@ def test_missing_fields_empty_extraction(agent):
     assert res["needs_human_review"] is True
 
 def test_missing_fields_legal_evidence_present(agent):
-    # 5. legal evidence mevcut
+    # 6. doğrulanmış legal evidence
     extracted = {"person_name": {"value": "Mehmet Kaya"}, "address": {"value": "Örnek Mah."}, "signature_present": {"value": True, "status": "present"}}
     legal_analysis = {
-        "evidence": ["Some verified text"],
+        "evidence": ["Başvuru sahibinin adı ve adresi zorunludur."],
         "sources": [{"law_number": "4982", "article": "6", "text": "Başvuru sahibinin adı ve adresi zorunludur."}]
     }
     res = agent.check_missing_fields("dilekce", "bilgi_talebi", extracted, legal_analysis)
     assert len(res["legal_basis"]) == 1
-    assert res["legal_basis"][0]["law_number"] == "4982"
+    assert res["legal_basis"][0]["evidence"] == "Başvuru sahibinin adı ve adresi zorunludur."
     assert res["legal_basis"][0]["validated"] is True
     assert not any("Zorunlu alanlara" in w for w in res["warnings"])
 
+def test_missing_fields_legal_evidence_sources_only(agent):
+    # 7. sources var evidence yok -> 4982/Madde6 UYDURULMUYOR
+    extracted = {"person_name": {"value": "Mehmet Kaya"}, "address": {"value": "Örnek Mah."}, "signature_present": {"value": True, "status": "present"}}
+    legal_analysis = {
+        "evidence": [],
+        "sources": [{"law_number": "4982", "article": "6", "text": "Başvuru sahibinin adı ve adresi zorunludur."}]
+    }
+    res = agent.check_missing_fields("dilekce", "bilgi_talebi", extracted, legal_analysis)
+    assert len(res["legal_basis"]) == 0
+    assert any("Zorunlu alanlara" in w for w in res["warnings"])
+
 def test_missing_fields_legal_evidence_missing(agent):
-    # 6. legal evidence yok
+    # 8. legal evidence yok
     extracted = {"person_name": {"value": "Mehmet Kaya"}, "address": {"value": "Örnek Mah."}, "signature_present": {"value": True, "status": "present"}}
     res = agent.check_missing_fields("dilekce", "bilgi_talebi", extracted)
     assert len(res["legal_basis"]) == 0
     assert any("Zorunlu alanlara" in w for w in res["warnings"])
 
 def test_missing_fields_unknown_intent(agent):
-    # 7. bilinmeyen intent
+    # 9. unknown rule combination
     extracted = {"person_name": {"value": "Mehmet Kaya"}}
     res = agent.check_missing_fields("diger", "bilinmeyen_islem", extracted)
     assert len(res["required_fields"]) == 0

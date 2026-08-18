@@ -1,0 +1,190 @@
+# =============================================================================
+# Kurum Profili: Örenli İlçe Kaymakamlığı
+# =============================================================================
+# Kaynak  : 5442 sayılı İl İdaresi Kanunu; Valilik ve Kaymakamlık Birimleri
+#           Teşkilat, Görev ve Çalışma Yönetmeliği
+# Tarih   : 2026-08-09
+# Pipeline: Faz 0 — Pipeline 4 (Kurum Config)
+#
+# NOT: Bu KURGUSAL bir kurumdur. Gerçek herhangi bir ilçe veya kaymakamlığı
+# temsil etmemektedir. TEKNOFEST 2026 Yapay Zeka Dil Ajanları Yarışması
+# (Senaryo 1) demo/test amacıyla tasarlanmıştır.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# 1. KURUM BİLGİLERİ
+# ---------------------------------------------------------------------------
+kurum:
+  ad: "Örenli İlçe Kaymakamlığı"
+  tur: "ilce_kaymakamligi"
+  ust_makam: "Kaymakam"
+  yasal_dayanak: "5442 sayılı İl İdaresi Kanunu"
+
+# ---------------------------------------------------------------------------
+# 2. BİRİMLER
+# ---------------------------------------------------------------------------
+birimler:
+  - id: yazi_isleri
+    ad: "Yazı İşleri Müdürlüğü"
+    aciklama: "Evrak kayıt, genel idare yazışmaları, mahalli idareler, hukuk işleri"
+    anahtar_kelimeler:
+      - "dilekçe"
+      - "genel başvuru"
+      - "hukuk"
+      - "mahalli idare"
+      - "evrak kayıt"
+
+  - id: nufus
+    ad: "İlçe Nüfus Müdürlüğü"
+    aciklama: "Nüfus kayıt, kimlik, medeni hâl işlemleri"
+    anahtar_kelimeler:
+      - "nüfus kaydı"
+      - "kimlik"
+      - "doğum"
+      - "evlilik"
+      - "vukuatlı nüfus kayıt örneği"
+
+  - id: sydv
+    ad: "Sosyal Yardımlaşma ve Dayanışma Vakfı (SYDV)"
+    aciklama: "Sosyal yardım başvuruları, muhtaçlık durumu değerlendirme"
+    anahtar_kelimeler:
+      - "sosyal yardım"
+      - "muhtaçlık"
+      - "burs"
+      - "engelli maaşı"
+      - "gıda yardımı"
+
+  - id: milli_egitim
+    ad: "İlçe Millî Eğitim Müdürlüğü"
+    aciklama: "Okul, öğrenci, öğretmen atama ve eğitim süreçleri"
+    anahtar_kelimeler:
+      - "okul kaydı"
+      - "öğretmen"
+      - "eğitim"
+      - "nakil"
+      - "öğrenci belgesi"
+
+  - id: saglik
+    ad: "İlçe Sağlık Müdürlüğü"
+    aciklama: "Sağlık hizmetleri, ruhsat, halk sağlığı"
+    anahtar_kelimeler:
+      - "sağlık raporu"
+      - "ruhsat"
+      - "aşı"
+      - "sağlık ocağı"
+
+  - id: mal_mudurlugu
+    ad: "Mal Müdürlüğü"
+    aciklama: "Vergi, harç, kamu malları, mali işlemler"
+    anahtar_kelimeler:
+      - "vergi"
+      - "harç"
+      - "mali"
+      - "kamu malı"
+      - "tahsilat"
+
+  - id: tapu
+    ad: "Tapu Müdürlüğü"
+    aciklama: "Taşınmaz, tapu, kadastro işlemleri"
+    anahtar_kelimeler:
+      - "tapu"
+      - "taşınmaz"
+      - "kadastro"
+      - "arsa"
+      - "mülkiyet"
+
+  - id: tarim
+    ad: "İlçe Tarım ve Orman Müdürlüğü"
+    aciklama: "Tarımsal destekler, çiftçi kayıt sistemi, orman izinleri"
+    anahtar_kelimeler:
+      - "çiftçi kayıt"
+      - "tarımsal destek"
+      - "orman izni"
+      - "arazi"
+
+  - id: emniyet
+    ad: "İlçe Emniyet Müdürlüğü"
+    aciklama: "Asayiş, kayıp/buluntu, trafik, güvenlik yazışmaları"
+    anahtar_kelimeler:
+      - "güvenlik"
+      - "kayıp belge"
+      - "trafik"
+      - "asayiş"
+      - "ihbar"
+
+# ---------------------------------------------------------------------------
+# 3. EVRAK TÜRLERİ
+# ---------------------------------------------------------------------------
+evrak_turleri:
+  - id: dilekce
+    ad: "Vatandaş Dilekçesi"
+    aciklama: "3071 sayılı Kanun kapsamında genel talep/şikayet dilekçesi"
+    yasal_dayanak: "3071 sayılı Dilekçe Hakkının Kullanılmasına Dair Kanun"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+      - "sydv"
+      - "nufus"
+
+  - id: bilgi_edinme
+    ad: "Bilgi Edinme Başvurusu"
+    aciklama: "4982 sayılı Kanun kapsamında bilgi/belge talebi"
+    yasal_dayanak: "4982 sayılı Bilgi Edinme Hakkı Kanunu"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+
+  - id: kurumlar_arasi_yazi
+    ad: "Kurumlar Arası Resmî Yazışma"
+    aciklama: "Başka bir kamu kurumundan gelen üst yazı/talep"
+    yasal_dayanak: "Resmî Yazışma Yönetmeliği"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+      - "tarim"
+      - "saglik"
+
+  - id: ihale_itirazi
+    ad: "İhale İtiraz/Şikayet Dilekçesi"
+    aciklama: "Kamu ihalesine ilişkin itiraz başvurusu"
+    yasal_dayanak: "Kamu İhale Mevzuatı"
+    tipik_hedef_birim:
+      - "mal_mudurlugu"
+      - "yazi_isleri"
+
+  - id: sosyal_yardim_basvuru
+    ad: "Sosyal Yardım Başvurusu"
+    aciklama: "Maddi destek / muhtaçlık başvurusu"
+    yasal_dayanak: "SYDV mevzuatı"
+    tipik_hedef_birim:
+      - "sydv"
+
+  - id: tapu_kadastro_basvuru
+    ad: "Tapu/Kadastro İşlem Başvurusu"
+    aciklama: "Taşınmaz işlemlerine ilişkin başvuru"
+    yasal_dayanak: "Tapu Kanunu"
+    tipik_hedef_birim:
+      - "tapu"
+
+# ---------------------------------------------------------------------------
+# 4. YAZI TÜRLERİ — Şablon Eşleştirmesi
+#    (Pipeline 2 Format Motoru çıktılarına bağlıdır)
+# ---------------------------------------------------------------------------
+yazi_turleri:
+  - id: ust_yazi
+    ad: "Üst Yazı"
+    kullanim_durumu: "Başka bir kuruma resmi talep/bilgi iletimi gerektiğinde"
+    sablon: "templates/ust_yazi.jinja2"
+
+  - id: cevap_yazisi
+    ad: "Cevap Yazısı"
+    kullanim_durumu: "Gelen bir dilekçe/talebe yanıt verilmesi gerektiğinde"
+    sablon: "templates/cevap_yazisi.jinja2"
+
+  - id: bilgilendirme_yazisi
+    ad: "Bilgilendirme Yazısı"
+    kullanim_durumu: "Süreç hakkında ilgili tarafa ara bilgi verilmesi gerektiğinde"
+    # Ayrı şablonu yok, ust_yazi kullanılır (TASARIM KARARI #6, bkz. templates/README.md)
+    sablon: "templates/ust_yazi.jinja2"
+
+  - id: tekit_yazisi
+    ad: "Tekit Yazısı"
+    kullanim_durumu: "Önceki yazıya yanıt gelmediğinde hatırlatma amaçlı"
+    sablon: "templates/tekit_yazisi.jinja2"

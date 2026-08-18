@@ -1,0 +1,171 @@
+{#
+  templates/cevap_yazisi.jinja2
+  ─────────────────────────────────────────────────────────────────────────────
+  Resmî Cevap Yazısı Şablonu
+  Kaynak: Madde 33 (cevap süreleri), Madde 35 (uygunsuz belgeye uyarı),
+          Madde 14-19 (temel biçim — üst yazıyla aynı çekirdek).
+
+  Üst yazıdan farklar:
+    - ilgi ZORUNLUDUR.
+      [TASARIM KARARI] Cevap yazısı için ilgi zorunluluğu yönetmelikte
+      kaynaklı değildir; tekit yazısı için Madde 34'te kaynaklıdır.
+      Cevap yazısı bağlamında zorunluluk ekip kararıdır — cevap verilen
+      yazıya atıf yapılmadan cevap yazısı düzenlenmesinin anlamsız olduğu
+      değerlendirilmiştir.
+    - yanit_turu: "belge_talebi" (5 iş günü) veya
+                  "bilgi_goruş_talebi" (15 iş günü)  — Madde 33
+    - uygunsuz_belge_uyarisi (opsiyonel) — Madde 35
+
+  PARAMETRELER (üst yazıyla aynı ortak çekirdek + aşağıdakiler):
+    tc_baslik      : dict  { idare_adi: str, birim_adi: str }
+    sayi           : str   [E|Z|O]-DETSİS_no-plan_kodu-kayıt_no (Madde 11)
+    tarih          : str   GG.AA.YYYY veya harfli (Madde 12)
+    konu           : str   Noktalama yok, orta hizayı geçmez (Madde 13)
+    muhatap        : dict  { tur: "kurum"|"gercek_kisi"|"dagitim", isim: str }
+    muhatap_turu   : str   "kurum_alt" | "kurum_ust" | "kurum_ayni" |
+                           "kurum_karisik" | "gercek_kisi"
+    ilgi           : list  ZORUNLU — [TASARIM KARARI] — cevap verilen yazının
+                           tarih/sayısı. { tarih, sayi, aciklama }
+    yanit_turu     : str   "belge_talebi" (5 iş günü, Madde 33) |
+                           "bilgi_goruş_talebi" (15 iş günü, Madde 33)
+    uygunsuz_belge_uyarisi : str (opsiyonel) — Madde 35 uyarı metni
+    metin_paragraflari : list[str]
+    imza           : dict  { ad_soyad, unvan, yetki_turu, vekil_makam (opt),
+                             ek_imzalar (opt) }
+    ekler          : list  (opsiyonel)
+    dagitim        : dict  (opsiyonel)
+    iletisim       : dict  { adres, irtibat, telefon (opt) }
+    sayfa_no       : str   (opsiyonel)
+#}
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   SAYFA DÜZENI SABITLERI (Madde 6, 7, 8, 9, 10) — üst yazıyla aynı
+   - Kağıt: A4 (210x297 mm)
+   - Kenar boşluğu: üst/sol/sağ 1,5 cm (logo varsa üst 0,5 cm)
+   - Yazı tipi: Times New Roman 12pt veya Arial 11pt
+   - [TASARIM KARARI] Satır aralığı: 1.0
+   - [TASARIM KARARI] 9pt küçültme MVP'de uygulanmaz
+═══════════════════════════════════════════════════════════════════════════ #}
+
+{# ── 1. BAŞLIK BLOĞU (Madde 10) ───────────────────────────────────────── #}
+T.C.
+{{ tc_baslik.idare_adi | upper }}
+{{ tc_baslik.birim_adi }}
+
+
+{# ── 2. SAYI ve TARİH (Madde 11, 12) ──────────────────────────────────── #}
+Sayı: {{ sayi }}{%- set bosluk = 80 - ("Sayı: " ~ sayi)|length %}{{ " " * [bosluk, 1]|max }}Tarih: {{ tarih }}
+
+{# ── 3. KONU (Madde 13) ────────────────────────────────────────────────── #}
+Konu: {{ konu }}
+
+
+{# ── 4. MUHATAP (Madde 14) ─────────────────────────────────────────────── #}
+{%- if muhatap.tur == "kurum" %}
+                              {{ muhatap.isim | upper }}
+{%- elif muhatap.tur == "gercek_kisi" %}
+                              Sayın {{ muhatap.isim }}
+{%- elif muhatap.tur == "dagitim" %}
+                              DAĞITIM YERLERİNE
+{%- endif %}
+
+
+{# ── 5. İLGİ — ZORUNLU (Madde 15 + [TASARIM KARARI]) ─────────────────── #}
+{# [TASARIM KARARI] Cevap yazısında ilgi zorunludur; cevap verilen yazının  #}
+{# tarih ve sayısı mutlaka belirtilmelidir. Yönetmelikte cevap yazısı için  #}
+{# ilgi zorunluluğu açıkça belirtilmemiştir; bu ekip kararıdır.            #}
+{%- for ilgi_item in ilgi %}
+İlgi: {{ ilgi_item.tarih }}tarihli ve {{ ilgi_item.sayi }}sayılı {{ ilgi_item.aciklama }}.
+{%- endfor %}
+
+{# ── 5a. UYGUNSUZ BELGE UYARISI (Madde 35) — OPSİYONEL ───────────────── #}
+{%- if uygunsuz_belge_uyarisi is defined and uygunsuz_belge_uyarisi %}
+[UYARI — Madde 35]: {{ uygunsuz_belge_uyarisi }}
+{%- endif %}
+
+{# ── 5b. YASAL CEVAP SÜRESİ BİLGİSİ (Madde 33) ───────────────────────── #}
+{# belge_talebi: 5 iş günü; bilgi_goruş_talebi: 15 iş günü              #}
+{# Bu bilgi iç metadata alanıdır; çıktı metnine yansıtılmaz.              #}
+{# Validator bu alanı süre uyumu kontrolü için kullanır.                   #}
+{# yanit_turu="{{ yanit_turu }}" #}
+
+{# ── 6. METİN / GÖVDE (Madde 16) ──────────────────────────────────────── #}
+{# İlgi varsa 1 satır sonra başlar (ilgi bu şablonda her zaman vardır).   #}
+{%- for paragraf in metin_paragraflari %}
+	{{ paragraf }}
+{%- endfor %}
+
+{# ── 7. KAPANIŞ İFADESİ (Madde 16/12) ─────────────────────────────────── #}
+{# [TASARIM KARARI] Muhatap kurum, hiyerarşi belirsizse -> arz ederim.    #}
+{%- if muhatap_turu == "gercek_kisi" %}
+Saygılarımla.
+{%- elif muhatap_turu == "kurum_alt" %}
+rica ederim.
+{%- elif muhatap_turu == "kurum_karisik" %}
+arz ve rica ederim.
+{%- else %}
+arz ederim.
+{%- endif %}
+
+
+{# ── 8. İMZA BLOĞU (Madde 17) ─────────────────────────────────────────── #}
+{%- if imza.ek_imzalar is defined and imza.ek_imzalar | length > 0 %}
+{{ imza.ad_soyad }}
+{{ imza.unvan }}
+{%- for ek in imza.ek_imzalar %}
+                                    {{ ek.ad_soyad }}
+                                    {{ ek.unvan }}
+{%- endfor %}
+{%- elif imza.yetki_turu == "yetki_devri" %}
+                                    {{ imza.ad_soyad }}
+                              {{ imza.vekil_makam }} a.
+                                    {{ imza.unvan }}
+{%- elif imza.yetki_turu == "vekaletname" %}
+                                    {{ imza.ad_soyad }}
+                              {{ imza.vekil_makam }} V.
+{%- else %}
+                                    {{ imza.ad_soyad }}
+                                    {{ imza.unvan }}
+{%- endif %}
+
+
+{# ── 9. EK LİSTESİ (Madde 18) ─────────────────────────────────────────── #}
+{# [TASARIM KARARI] Boşluk = 2 satır                                      #}
+{%- if ekler is defined and ekler %}
+{%- if ekler | length == 1 %}
+Ek: {{ ekler[0].ad }} ({{ ekler[0].bilgi }})
+{%- else %}
+Ek: {{ ekler | length }} adet
+{%- for ek in ekler %}
+{{ loop.index }}. {{ ek.ad }} ({{ ek.bilgi }})
+{%- endfor %}
+{%- endif %}
+{%- else %}
+Ek konulmadı.
+{%- endif %}
+
+
+{# ── 10. DAĞITIM LİSTESİ (Madde 19) ───────────────────────────────────── #}
+{# [TASARIM KARARI] Boşluk = 2 satır                                      #}
+{%- if dagitim is defined and dagitim %}
+Dağıtım:
+Gereği:{%- if dagitim.bilgi is defined and dagitim.bilgi %}                         Bilgi:{%- endif %}
+
+{%- for yer in dagitim.geregi %}
+{{ yer }}
+{%- endfor %}
+{%- if dagitim.bilgi is defined and dagitim.bilgi %}
+{%- for yer in dagitim.bilgi %}
+                                         {{ yer }}
+{%- endfor %}
+{%- endif %}
+{%- endif %}
+
+
+{# ── 11. İLETİŞİM BİLGİSİ (Madde 10) ─────────────────────────────────── #}
+________________________________________________________________________________
+{{ iletisim.adres }}{%- set irtibat_bosluk = 80 - iletisim.adres|length %}{{ " " * [irtibat_bosluk, 1]|max }}{{ iletisim.irtibat }}{% if iletisim.telefon is defined %} | {{ iletisim.telefon }}{% endif %}
+
+{%- if sayfa_no is defined and sayfa_no %}
+                                   {{ sayfa_no }}
+{%- endif %}

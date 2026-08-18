@@ -3,6 +3,8 @@ import { FileUpload } from '../components/upload/FileUpload';
 import { TextUpload } from '../components/upload/TextUpload';
 import { analyzeText, uploadDocument } from '../services/documents';
 import { ApiError } from '../types/api';
+import { FileText, Type } from 'lucide-react';
+import { Card } from '../components/ui/Card';
 
 interface NewDocumentPageProps {
   onAnalysisComplete: (analysisId: string) => void;
@@ -40,44 +42,51 @@ export function NewDocumentPage({ onAnalysisComplete }: NewDocumentPageProps) {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>Yeni Evrak İşlemi</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Sisteme yeni bir evrak yükleyin veya metnini yapıştırarak analiz edin.</p>
-      </div>
-
-      <div className="tabs">
-        <button 
-          className={`tab ${activeTab === 'upload' ? 'active' : ''}`}
-          onClick={() => setActiveTab('upload')}
-        >
-          Dosya Yükle
-        </button>
-        <button 
-          className={`tab ${activeTab === 'text' ? 'active' : ''}`}
-          onClick={() => setActiveTab('text')}
-        >
-          Metin ile Analiz
-        </button>
-      </div>
-
+    <div className="page-container flex flex-col gap-6 h-full pb-8">
+      
       {error && (
-        <div className="alert alert-danger">
+        <div className="p-4 bg-danger-light text-danger rounded-md border border-danger">
           <strong>Hata:</strong> {error.message}
         </div>
       )}
 
       {isLoading && (
-        <div className="alert alert-warning" style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe', color: '#1e40af' }}>
-          <strong>Bilgi:</strong> Evrak sınıflandırma, bilgi çıkarma, mevzuat analizi ve taslak oluşturma adımları yürütülüyor. Lütfen bekleyin...
+        <div className="p-4 bg-info-light text-info rounded-md border border-info flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-info flex-shrink-0"></div>
+          <span><strong>Bilgi:</strong> Evrak sınıflandırma, bilgi çıkarma, mevzuat analizi ve taslak oluşturma adımları yürütülüyor. Lütfen bekleyin...</span>
         </div>
       )}
 
-      {activeTab === 'upload' ? (
-        <FileUpload onUpload={handleUpload} isLoading={isLoading} />
-      ) : (
-        <TextUpload onAnalyze={handleAnalyzeText} isLoading={isLoading} />
-      )}
+      <div className="flex justify-center mb-4">
+        <div className="segmented-control">
+          <button 
+            className={`segmented-btn flex items-center justify-center gap-2 ${activeTab === 'upload' ? 'active' : ''}`}
+            onClick={() => setActiveTab('upload')}
+          >
+            <FileText size={18} />
+            Dosya Yükle
+          </button>
+          <button 
+            className={`segmented-btn flex items-center justify-center gap-2 ${activeTab === 'text' ? 'active' : ''}`}
+            onClick={() => setActiveTab('text')}
+          >
+            <Type size={18} />
+            Metin ile Analiz
+          </button>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="w-full" style={{ maxWidth: '600px' }}>
+          {activeTab === 'upload' ? (
+            <FileUpload onUpload={handleUpload} isLoading={isLoading} />
+          ) : (
+            <TextUpload onAnalyze={handleAnalyzeText} isLoading={isLoading} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
+

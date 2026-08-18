@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, File } from 'lucide-react';
+import { Upload, File, X } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 interface FileUploadProps {
   onUpload: (file: File) => void;
@@ -23,50 +24,61 @@ export function FileUpload({ onUpload, isLoading }: FileUploadProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card">
-      <div className="card-header">
-        <h3 className="card-title">Dosya Yükle</h3>
-      </div>
+    <form onSubmit={handleSubmit} className="card flex flex-col gap-6">
       
-      <div className="form-group" style={{ 
-        border: '2px dashed var(--border-color)', 
-        padding: '3rem 2rem', 
-        textAlign: 'center',
-        borderRadius: '8px',
-        backgroundColor: '#f8fafc'
-      }}>
+      <div className="dropzone">
         <input 
           type="file" 
           id="file-upload" 
           accept=".pdf,.docx,.doc,.txt" 
           onChange={handleFileChange}
-          style={{ display: 'none' }}
+          className="dropzone-input"
         />
-        <label htmlFor="file-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <Upload size={48} color="var(--text-muted)" />
-          <span style={{ fontWeight: 500 }}>Bilgisayarınızdan dosya seçin veya sürükleyin</span>
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Desteklenen formatlar: PDF, DOCX, TXT</span>
-        </label>
+        <div className="dropzone-icon">
+          <Upload size={32} />
+        </div>
+        <div className="text-center">
+          <span className="font-semibold text-text-heading block mb-1">Dosyanızı buraya sürükleyin</span>
+          <span className="text-sm text-muted block mb-2">veya tıklayarak seçin</span>
+          <span className="text-xs text-muted block mt-2">PDF, DOCX ve TXT • Maksimum 20MB</span>
+        </div>
       </div>
 
       {selectedFile && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', backgroundColor: '#eff6ff', borderRadius: '6px', marginBottom: '1.5rem' }}>
-          <File size={24} color="var(--accent)" />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 500 }}>{selectedFile.name}</div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{(selectedFile.size / 1024).toFixed(1)} KB • {selectedFile.type || 'Bilinmeyen tür'}</div>
+        <div className="flex justify-between items-center p-4 bg-bg-color border border-border-color rounded-md">
+          <div className="flex items-center gap-3 min-w-0">
+            <File size={24} className="text-accent flex-shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-medium text-text-main truncate text-sm">{selectedFile.name}</span>
+              <span className="text-xs text-muted">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+            </div>
           </div>
+          <button 
+            type="button" 
+            onClick={() => setSelectedFile(null)}
+            className="p-1.5 text-muted hover:text-danger rounded-md hover:bg-danger-light transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
       )}
 
-      <button 
+      <Button 
         type="submit" 
-        className="btn btn-primary" 
-        style={{ width: '100%' }}
+        variant="primary" 
+        size="lg"
+        className="w-full justify-center"
         disabled={!selectedFile || isLoading}
       >
-        {isLoading ? 'Belge analiz ediliyor...' : 'Analizi Başlat'}
-      </button>
+        {isLoading ? (
+          <>
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            Analiz Ediliyor...
+          </>
+        ) : 'Analizi Başlat'}
+      </Button>
     </form>
   );
 }
+
+

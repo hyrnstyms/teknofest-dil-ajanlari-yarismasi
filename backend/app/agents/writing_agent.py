@@ -6,6 +6,18 @@ from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
 from backend.app.rag.retriever import Retriever
 
+# Official writing format renderer — opsiyonel entegrasyon
+# Eksik context varsa fallback olarak mevcut _render_draft kullanılır.
+try:
+    from backend.app.official_writing.template_renderer import (
+        render_ust_yazi,
+        render_cevap_yazisi,
+    )
+    from backend.app.official_writing.context_adapter import build_official_writing_context
+    _OFFICIAL_RENDERER_AVAILABLE = True
+except Exception:  # pragma: no cover
+    _OFFICIAL_RENDERER_AVAILABLE = False
+
 
 ALLOWED_DRAFT_TYPES = {
     "ust_yazi",
@@ -50,6 +62,7 @@ class WritingAgent:
         recipient: str | None = None,
         sender_unit: str | None = None,
         top_k: int = 5,
+        state: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
 
         missing_fields = (
@@ -434,6 +447,11 @@ class WritingAgent:
                     draft
                 )
             ),
+
+            # Official Writing format renderer denemesi.
+            # Başarılı olursa ek alan olarak eklenir; mevcut rendered_text
+            # fallback olarak korunur ve API contract bozulmaz.
+            **self._try_official_render(draft, draft_type, state),
 
             "process_explanation": (
                 process_explanation
@@ -1499,7 +1517,101 @@ subject ve body alanlarını eksiksiz üret.
         }
 
     # =====================================================
-    # RENDER
+    # OFFICIAL WRITING FORMAT RENDER (Adapter)
+    # =====================================================
+
+    @staticmethod
+    def _try_official_render(
+        draft: dict[str, Any],
+        draft_type: str,
+        state: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """
+        Writing Agent'ın structured draft çıktısını, Official Writing
+        format motoru (template_renderer) üzerinden render etmeye çalışır.
+        
+        Returns:
+            dict: API response içine doğrudan merge edilecek telemetry objesi.
+                  Eğer render başarılıysa 'official_rendered_text' içerir.
+        """
+        result = {
+            "official_render": {
+                "attempted": False,
+                "success": False,
+                "template": None,
+                "missing_fields": [],
+                "warnings": [],
+                "source_map": {},
+                "fallback_policies": {}
+            }
+        }
+
+        if not _OFFICIAL_RENDERER_AVAILABLE:
+            result["official_render_warning"] = "Official renderer modülü yüklenemedi."
+            return result
+
+        if draft_type in ("eksik_bilgi_talebi", "diger"):
+            # Bu türler için template motoru kullanılmaz.
+            return result
+
+        result["official_render"]["attempted"] = True
+        state = state or {}
+
+        # Context Adapter'ı çağır
+        try:
+            adapter_res = build_official_writing_context(draft, state, draft_type)
+        except Exception as exc:
+            result["official_render_warning"] = f"Context adapter hatası: {exc}"
+            return result
+
+        result["official_render"]["missing_fields"] = adapter_res.get("missing_required_fields", [])
+        result["official_render"]["warnings"] = adapter_res.get("warnings", [])
+        result["official_render"]["source_map"] = adapter_res.get("source_map", {})
+        result["official_render"]["fallback_policies"] = adapter_res.get("fallback_policies", {})
+
+        context = adapter_res.get("context", {})
+        missing = adapter_res.get("missing_required_fields", [])
+
+        # Eğer kritik template alanları eksikse render deneme
+        # (Şablonlar StrictUndefined kullandığı için exception atar)
+        critical_fields = [
+            "tc_baslik", "konu", "muhatap", "metin_paragraflari",
+            "sayi", "tarih", "imza.ad_soyad", "imza.unvan"
+        ]
+        
+        missing_criticals = [f for f in critical_fields if f in missing]
+        
+        if missing_criticals:
+            result["official_render_warning"] = (
+                f"Kritik context alanları eksik ({', '.join(missing_criticals)}), "
+                "template render atlandı. (EBYS/personel onayı bekleniyor)"
+            )
+            return result
+
+        if draft_type == "cevap_yazisi" and "ilgi" in missing:
+            result["official_render_warning"] = "Cevap yazısı için 'ilgi' eksik, template render atlandı."
+            return result
+
+        try:
+            rendered = None
+            if draft_type in ("ust_yazi", "bilgilendirme_metni"):
+                rendered = render_ust_yazi(context)
+                result["official_render"]["template"] = "ust_yazi.jinja2"
+            elif draft_type == "cevap_yazisi":
+                rendered = render_cevap_yazisi(context)
+                result["official_render"]["template"] = "cevap_yazisi.jinja2"
+
+            if rendered:
+                result["official_rendered_text"] = rendered
+                result["official_render"]["success"] = True
+
+        except Exception as exc:
+            result["official_render_warning"] = f"Official template render hatası: {exc}"
+
+        return result
+
+    # =====================================================
+    # RENDER (Mevcut)
     # =====================================================
 
     @staticmethod

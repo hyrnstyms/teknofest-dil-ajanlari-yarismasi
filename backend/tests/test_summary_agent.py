@@ -27,7 +27,9 @@ def test_summary_normal_dilekce(agent):
     assert res["structured_summary"]["applicant"] == "Ahmet Yılmaz"
     assert res["structured_summary"]["subject"] == "Bilgi talebi"
     assert "Ahmet Yılmaz" in res["short_summary"]
-    assert "belgelerin onaylı örneğini talep ediyorum" in res["short_summary"]
+    assert "talep edilmektedir" in res["short_summary"].lower()
+    assert res["summary_mode"] == "deterministic"
+    assert res["source_map"]["applicant"] == "extraction.person_name"
     # Deterministic succeeded, LLM should not be called
     agent.llm.chat.assert_not_called()
 
@@ -36,6 +38,7 @@ def test_summary_empty_input(agent):
     res = agent.summarize("", {}, {})
     assert res["short_summary"] is None
     assert any("yeterli bilgi bulunamadı" in w for w in res["warnings"])
+    assert res["summary_mode"] == "unavailable"
     
 def test_summary_llm_offline_fallback():
     # 4. LLM offline fallback
@@ -43,9 +46,30 @@ def test_summary_llm_offline_fallback():
     res = agent.summarize("Sadece ham metin var, çıkarılmış alan yok.", {}, {})
     assert res["short_summary"] is None
     assert any("yeterli bilgi bulunamadı" in w for w in res["warnings"])
+    assert res["summary_mode"] == "unavailable"
 
 def test_summary_llm_semantic_fallback(agent):
     # If deterministic fails but text is present, LLM should be called
     res = agent.summarize("Benim adım Mehmet. Bu bir bilgi edinme talebidir.", {}, {})
     assert res["short_summary"] == "LLM tarafından üretilen kısa özet."
+    assert res["summary_mode"] == "llm_grounded"
+    assert res["needs_human_review"] is True
     agent.llm.chat.assert_called_once()
+
+def test_summary_invalid_llm_json(agent):
+    # Test for invalid JSON from LLM
+    agent.llm.chat.return_value = 'Sadece düz metin, JSON yok'
+    res = agent.summarize("Ham metin", {}, {})
+    assert res["short_summary"] is None
+    assert any("JSON formatı geçersiz" in w for w in res["warnings"])
+
+def test_summary_missing_applicant(agent):
+    # Test deterministic fallback if applicant is missing
+    extracted = {
+        "subject": {"value": "Bilgi talebi"},
+        "request": {"value": "belgelerin onaylı örneği"}
+    }
+    res = agent.summarize("Ham metin", {}, extracted)
+    # deterministic fails without applicant, uses LLM
+    assert res["short_summary"] == "LLM tarafından üretilen kısa özet."
+    assert res["summary_mode"] == "llm_grounded"

@@ -1,0 +1,158 @@
+{#
+  templates/tekit_yazisi.jinja2
+  ─────────────────────────────────────────────────────────────────────────────
+  Resmî Tekit Yazısı Şablonu
+  Kaynak: Madde 34, Kılavuz Örnek 24
+
+  Üst yazıdan SABIT farklar (değiştirilemez kural kodu):
+    - konu: DAİMA "Tekit Yazısı" — dışarıdan geçilemez (Madde 34)
+    - ilgi: ZORUNLU — önceki yazının tarih/sayısı (Madde 34)
+    - Metin kalıbı: "...{{ gun }} gün içinde cevap verilmesi...
+      tekiden rica ederim." şeklinde kilitlidir (Madde 34).
+    - Kapanış: Ayrı bir kapanış bloğu YOKTUR — "tekiden rica ederim."
+      ifadesi metin kalıbının (§6) içine gömülüdür (Kılavuz Örnek 24).
+
+  UYARI — gun PARAMETRESİ:
+    gun parametresi zorunludur, varsayılan yoktur — Kılavuz Örnek 24'teki
+    "5 gün" tek bir örnek senaryodur, evrensel kural değildir
+    (Madde 34 sayısal bir süre belirtmez).
+
+  PARAMETRELER:
+    tc_baslik  : dict  { idare_adi: str, birim_adi: str }
+    sayi       : str   [E|Z|O]-DETSİS_no-plan_kodu-kayıt_no (Madde 11)
+    tarih      : str   GG.AA.YYYY veya harfli (Madde 12)
+    ilgi       : list  ZORUNLU — önceki yazının tarih/sayısı
+                       { tarih: str, sayi: str, aciklama: str }
+    muhatap    : dict  { tur: "kurum"|"gercek_kisi"|"dagitim", isim: str }
+    muhatap_turu : str "kurum_alt" | "kurum_ust" | "kurum_ayni" |
+                       "kurum_karisik" | "gercek_kisi"
+    gun        : int   ZORUNLU — kaç günde cevap isteniyor (Madde 34 /
+                       Kılavuz Örnek 24; varsayılan yoktur — yukarıdaki
+                       UYARI'ya bakınız)
+    metin_ek   : str   (opsiyonel) — kalıp metnin başına eklenebilecek
+                       kısa bağlam cümlesi
+    imza       : dict  { ad_soyad, unvan, yetki_turu, vekil_makam (opt),
+                         ek_imzalar (opt) }
+    ekler      : list  (opsiyonel)
+    dagitim    : dict  (opsiyonel)
+    iletisim   : dict  { adres, irtibat, telefon (opt) }
+    sayfa_no   : str   (opsiyonel)
+#}
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   SAYFA DÜZENI SABITLERI (Madde 6, 7, 8, 9, 10) — üst yazıyla aynı
+   - Kağıt: A4 (210x297 mm)
+   - Kenar boşluğu: üst/sol/sağ 1,5 cm (logo varsa üst 0,5 cm)
+   - Yazı tipi: Times New Roman 12pt veya Arial 11pt
+   - [TASARIM KARARI] Satır aralığı: 1.0
+   - [TASARIM KARARI] 9pt küçültme MVP'de uygulanmaz
+═══════════════════════════════════════════════════════════════════════════ #}
+
+{# ── 1. BAŞLIK BLOĞU (Madde 10) ───────────────────────────────────────── #}
+T.C.
+{{ tc_baslik.idare_adi | upper }}
+{{ tc_baslik.birim_adi }}
+
+
+{# ── 2. SAYI ve TARİH (Madde 11, 12) ──────────────────────────────────── #}
+Sayı: {{ sayi }}{%- set bosluk = 80 - ("Sayı: " ~ sayi)|length %}{{ " " * [bosluk, 1]|max }}Tarih: {{ tarih }}
+
+{# ── 3. KONU — SABİT "Tekit Yazısı" (Madde 34) ────────────────────────── #}
+{# Bu alan şablon tarafından sabitlenmiştir; dışarıdan değiştirilemez.   #}
+Konu: Tekit Yazısı
+
+
+{# ── 4. MUHATAP (Madde 14) ─────────────────────────────────────────────── #}
+{%- if muhatap.tur == "kurum" %}
+                              {{ muhatap.isim | upper }}
+{%- elif muhatap.tur == "gercek_kisi" %}
+                              Sayın {{ muhatap.isim }}
+{%- elif muhatap.tur == "dagitim" %}
+                              DAĞITIM YERLERİNE
+{%- endif %}
+
+
+{# ── 5. İLGİ — ZORUNLU (Madde 34) ─────────────────────────────────────── #}
+{# Tekit yazısında ilgi ZORUNLUDUR; önceki yazının tarih/sayısı           #}
+{# mutlaka belirtilmeli (Madde 34 açık hükmü).                            #}
+{%- for ilgi_item in ilgi %}
+İlgi: {{ ilgi_item.tarih }}tarihli ve {{ ilgi_item.sayi }}sayılı {{ ilgi_item.aciklama }}.
+{%- endfor %}
+
+{# ── 6. METİN — KALıP (Madde 34) ──────────────────────────────────────── #}
+{# Metin kalıbı Madde 34 gereği kilitlidir.                               #}
+{# gun parametresi zorunludur, varsayılan yoktur — Kılavuz Örnek 24'teki  #}
+{# "5 gün" tek bir örnek senaryodur, evrensel kural değildir              #}
+{# (Madde 34 sayısal bir süre belirtmez).                                  #}
+{%- if metin_ek is defined and metin_ek %}
+	{{ metin_ek }}
+{%- endif %}
+	İlgi'de kayıtlı yazımıza bugüne kadar cevap verilmemiştir. Söz konusu yazıya {{ gun }} gün içinde cevap verilmesi tekiden rica ederim.
+
+{# §7 KAPANIŞ BLOĞU KALDIRILDI — Kılavuz Örnek 24 incelendiğinde kapanış  #}
+{# ifadesi ('tekiden rica ederim.') ayrı bir blok DEĞİL, metnin son         #}
+{# cümlesidir. §6 metin kalıbı zaten bu ifadeyle bitmektedir; burada       #}
+{# tekrar etmek hatalı çıktıya yol açıyordu.                               #}
+
+
+{# ── 8. İMZA BLOĞU (Madde 17) ─────────────────────────────────────────── #}
+{%- if imza.ek_imzalar is defined and imza.ek_imzalar | length > 0 %}
+{{ imza.ad_soyad }}
+{{ imza.unvan }}
+{%- for ek in imza.ek_imzalar %}
+                                    {{ ek.ad_soyad }}
+                                    {{ ek.unvan }}
+{%- endfor %}
+{%- elif imza.yetki_turu == "yetki_devri" %}
+                                    {{ imza.ad_soyad }}
+                              {{ imza.vekil_makam }} a.
+                                    {{ imza.unvan }}
+{%- elif imza.yetki_turu == "vekaletname" %}
+                                    {{ imza.ad_soyad }}
+                              {{ imza.vekil_makam }} V.
+{%- else %}
+                                    {{ imza.ad_soyad }}
+                                    {{ imza.unvan }}
+{%- endif %}
+
+
+{# ── 9. EK LİSTESİ (Madde 18) ─────────────────────────────────────────── #}
+{# [TASARIM KARARI] Boşluk = 2 satır                                      #}
+{%- if ekler is defined and ekler %}
+{%- if ekler | length == 1 %}
+Ek: {{ ekler[0].ad }} ({{ ekler[0].bilgi }})
+{%- else %}
+Ek: {{ ekler | length }} adet
+{%- for ek in ekler %}
+{{ loop.index }}. {{ ek.ad }} ({{ ek.bilgi }})
+{%- endfor %}
+{%- endif %}
+{%- else %}
+Ek konulmadı.
+{%- endif %}
+
+
+{# ── 10. DAĞITIM LİSTESİ (Madde 19) ───────────────────────────────────── #}
+{# [TASARIM KARARI] Boşluk = 2 satır                                      #}
+{%- if dagitim is defined and dagitim %}
+Dağıtım:
+Gereği:{%- if dagitim.bilgi is defined and dagitim.bilgi %}                         Bilgi:{%- endif %}
+
+{%- for yer in dagitim.geregi %}
+{{ yer }}
+{%- endfor %}
+{%- if dagitim.bilgi is defined and dagitim.bilgi %}
+{%- for yer in dagitim.bilgi %}
+                                         {{ yer }}
+{%- endfor %}
+{%- endif %}
+{%- endif %}
+
+
+{# ── 11. İLETİŞİM BİLGİSİ (Madde 10) ─────────────────────────────────── #}
+________________________________________________________________________________
+{{ iletisim.adres }}{%- set irtibat_bosluk = 80 - iletisim.adres|length %}{{ " " * [irtibat_bosluk, 1]|max }}{{ iletisim.irtibat }}{% if iletisim.telefon is defined %} | {{ iletisim.telefon }}{% endif %}
+
+{%- if sayfa_no is defined and sayfa_no %}
+                                   {{ sayfa_no }}
+{%- endif %}

@@ -8,8 +8,9 @@ import { MissingFieldsTab } from '../components/analysis/MissingFieldsTab';
 import { LegalTab } from '../components/analysis/LegalTab';
 import { RoutingTab } from '../components/analysis/RoutingTab';
 import { QualityTab } from '../components/analysis/QualityTab';
-import { ReviewPanel } from '../components/review/ReviewPanel';
+import { DraftPanel } from '../components/analysis/DraftPanel';
 import { formatMs } from '../utils/formatters';
+import { Button } from '../components/ui/Button';
 
 interface AnalysisPageProps {
   analysisId: string;
@@ -39,53 +40,62 @@ export function AnalysisPage({ analysisId }: AnalysisPageProps) {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="spinner">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="2" x2="12" y2="6"></line>
-            <line x1="12" y1="18" x2="12" y2="22"></line>
-            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-            <line x1="2" y1="12" x2="6" y2="12"></line>
-            <line x1="18" y1="12" x2="22" y2="12"></line>
-            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-            <line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
-          </svg>
-        </div>
-        <div>Analiz verileri yükleniyor...</div>
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-muted">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+        <p>Analiz verileri yükleniyor...</p>
       </div>
     );
   }
 
   if (error || !analysis) {
     return (
-      <div className="alert alert-danger" style={{ maxWidth: '600px', margin: '2rem auto' }}>
+      <div className="p-6 bg-danger-light text-danger rounded-md border border-danger">
         <strong>Hata:</strong> {error?.message || "Analiz kaydı bulunamadı."}
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="h-full flex flex-col gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)' }}>Analiz Sonucu</h2>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>ID: {analysis.analysis_id}</div>
+          <h1 className="text-heading text-lg font-semibold">Evrak Detayı</h1>
+          <p className="text-xs text-muted font-mono">ID: {analysis.analysis_id}</p>
         </div>
       </div>
 
+      {/* Main Layout */}
       <div className="analysis-layout">
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="tabs" style={{ padding: '0 1rem', paddingTop: '1rem' }}>
-            <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Genel Bakış</button>
-            <button className={`tab ${activeTab === 'extraction' ? 'active' : ''}`} onClick={() => setActiveTab('extraction')}>Önemli Bilgiler</button>
-            <button className={`tab ${activeTab === 'missing' ? 'active' : ''}`} onClick={() => setActiveTab('missing')}>Eksik Bilgiler</button>
-            <button className={`tab ${activeTab === 'legal' ? 'active' : ''}`} onClick={() => setActiveTab('legal')}>Mevzuat</button>
-            <button className={`tab ${activeTab === 'routing' ? 'active' : ''}`} onClick={() => setActiveTab('routing')}>Yönlendirme</button>
-            <button className={`tab ${activeTab === 'quality' ? 'active' : ''}`} onClick={() => setActiveTab('quality')}>Kalite</button>
+        
+        {/* Left Side: Tabs & Content */}
+        <div className="analysis-main bg-card-bg border border-border-color rounded-md flex flex-col overflow-hidden">
+          {/* Tabs Header */}
+          <div className="flex border-b border-border-color bg-bg-color px-2">
+            {[
+              { id: 'overview', label: 'Genel Bakış' },
+              { id: 'extraction', label: 'Çıkarılan Bilgiler' },
+              { id: 'missing', label: 'Eksik & Belirsiz' },
+              { id: 'legal', label: 'Mevzuat' },
+              { id: 'routing', label: 'Yönlendirme' },
+              { id: 'quality', label: 'Kalite' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === tab.id 
+                    ? 'border-accent text-accent bg-white' 
+                    : 'border-transparent text-muted hover:text-text-main hover:bg-white/50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-          
-          <div style={{ padding: '1.5rem', flex: 1 }}>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'overview' && <OverviewTab analysis={analysis} />}
             {activeTab === 'extraction' && <ExtractionTab analysis={analysis} />}
             {activeTab === 'missing' && <MissingFieldsTab analysis={analysis} />}
@@ -94,32 +104,29 @@ export function AnalysisPage({ analysisId }: AnalysisPageProps) {
             {activeTab === 'quality' && <QualityTab analysis={analysis} />}
           </div>
 
-          <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button 
-                className="btn btn-outline" 
-                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                onClick={() => setShowTechnical(!showTechnical)}
-              >
-                Teknik Detaylar {showTechnical ? '▲' : '▼'}
-              </button>
-            </div>
+          {/* Footer - Technical details */}
+          <div className="p-4 border-t border-border-color bg-bg-color">
+            <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => setShowTechnical(!showTechnical)}>
+              Teknik Detaylar {showTechnical ? '▲' : '▼'}
+            </Button>
+            
             {showTechnical && analysis.node_timings && (
-              <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.75rem' }}>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                 {Object.entries(analysis.node_timings).map(([key, val]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{key}:</span>
-                    <span style={{ fontWeight: 500 }}>{formatMs(val.duration_ms)}</span>
+                  <div key={key} className="flex justify-between p-1 bg-white rounded border border-border-color">
+                    <span className="text-muted">{key}:</span>
+                    <span className="font-medium">{formatMs(val.duration_ms)}</span>
                   </div>
                 ))}
               </div>
             )}
+            
             {showTechnical && analysis.audit_history && (
-              <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                <h5 style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>İşlem Geçmişi</h5>
-                <ul style={{ paddingLeft: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <div className="mt-4 border-t border-border-color pt-4 text-xs">
+                <h5 className="font-semibold mb-2">İşlem Geçmişi</h5>
+                <ul className="list-disc pl-4 text-muted space-y-1">
                   {analysis.audit_history.map((a, i) => (
-                    <li key={i}>{a.message} <span style={{ opacity: 0.5 }}>({new Date(a.timestamp).toLocaleString()})</span></li>
+                    <li key={i}>{a.message} <span className="opacity-50">({new Date(a.timestamp).toLocaleString()})</span></li>
                   ))}
                 </ul>
               </div>
@@ -127,10 +134,13 @@ export function AnalysisPage({ analysisId }: AnalysisPageProps) {
           </div>
         </div>
 
-        <div>
-          <ReviewPanel analysis={analysis} onUpdate={fetchAnalysis} />
+        {/* Right Side: Sticky Draft Panel */}
+        <div className="analysis-sidebar-sticky">
+          <DraftPanel analysis={analysis} onUpdate={fetchAnalysis} />
         </div>
+        
       </div>
     </div>
   );
 }
+

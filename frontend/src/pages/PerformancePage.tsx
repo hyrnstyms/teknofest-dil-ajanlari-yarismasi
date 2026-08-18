@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { getROISummary } from '../services/metrics';
 import { ROISummaryResponse } from '../types/metrics';
 import { ApiError } from '../types/api';
-import { Clock, FileCheck2, UserCheck, Settings, CheckCircle2, XCircle } from 'lucide-react';
-import { formatMs } from '../utils/formatters';
+import { Clock, FileCheck2, UserCheck, Settings, CheckCircle2, XCircle, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
 
 export function PerformancePage() {
   const [roi, setRoi] = useState<ROISummaryResponse | null>(null);
@@ -35,115 +36,132 @@ export function PerformancePage() {
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>Operasyonel Performans</h2>
-        <p style={{ color: 'var(--text-muted)' }}>KAMUAI kullanımından elde edilen gerçek işlem ve inceleme sürelerini görüntüleyin.</p>
+    <div className="max-w-5xl mx-auto flex flex-col h-full gap-6 pb-8">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-text-heading mb-1">Operasyonel Performans</h2>
+          <p className="text-muted text-sm">KAMUAI kullanımından elde edilen gerçek işlem ve inceleme sürelerini görüntüleyin.</p>
+        </div>
+        <Button variant="secondary" onClick={fetchROI} disabled={loading}>
+          <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Yenile
+        </Button>
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: '1.5rem' }}>
-          <strong>Performans verileri alınamadı.</strong> {error.message}
-          <button className="btn btn-outline" style={{ marginTop: '0.5rem', padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={fetchROI}>Tekrar Dene</button>
+        <div className="p-4 bg-danger-light text-danger border border-danger rounded-md">
+          <strong>Performans verileri alınamadı:</strong> {error.message}
         </div>
       )}
 
       {loading && !roi && (
-        <div className="loading-container" style={{ padding: '2rem' }}>
-          <div className="spinner" style={{ marginBottom: '0.5rem' }}><Clock size={24} /></div>
-          <div>Performans verileri yükleniyor...</div>
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-muted gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+          <span className="font-medium">Performans verileri yükleniyor...</span>
         </div>
       )}
 
       {roi && roi.processed_documents === 0 && (
-        <div className="alert alert-warning" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <strong style={{ fontSize: '1.1rem' }}>Henüz yeterli işlem verisi bulunmuyor.</strong>
-          <div>Belgeler analiz edildikçe gerçek süre ve kullanım metrikleri burada görüntülenecektir.</div>
+        <div className="p-6 bg-warning-light text-warning border border-warning rounded-md flex items-start gap-4">
+          <AlertCircle size={24} className="flex-shrink-0" />
+          <div>
+            <h4 className="text-lg font-bold mb-1">Henüz yeterli işlem verisi bulunmuyor.</h4>
+            <p>Belgeler analiz edildikçe gerçek süre ve kullanım metrikleri burada görüntülenecektir.</p>
+          </div>
         </div>
       )}
 
       {roi && roi.processed_documents > 0 && (
-        <div>
-          <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-            <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', marginBottom: 0 }}>
-              <div style={{ backgroundColor: 'var(--bg-color)', padding: '1rem', borderRadius: '50%', color: 'var(--accent)' }}>
+        <div className="flex flex-col gap-6">
+          {/* Top KPIs */}
+          <div className="grid-2">
+            <div className="bg-card-bg border border-border-color rounded-md p-6 flex items-center gap-6 shadow-sm">
+              <div className="w-16 h-16 rounded-full bg-accent-light text-accent flex items-center justify-center">
                 <FileCheck2 size={32} />
               </div>
               <div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>İşlenen Evrak</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--primary)' }}>{roi.processed_documents}</div>
+                <h4 className="text-sm font-medium text-muted uppercase tracking-wider mb-1">İşlenen Evrak</h4>
+                <div className="text-3xl font-bold text-text-heading">{roi.processed_documents}</div>
               </div>
             </div>
 
-            <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', marginBottom: 0 }}>
-              <div style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '50%', color: 'var(--success)' }}>
+            <div className="bg-card-bg border border-border-color rounded-md p-6 flex items-center gap-6 shadow-sm">
+              <div className="w-16 h-16 rounded-full bg-success-light text-success flex items-center justify-center">
                 <Clock size={32} />
               </div>
               <div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>Ortalama AI İşlem Süresi</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--success)' }}>
-                  {formatSeconds(roi.average_processing_seconds)}
-                </div>
+                <h4 className="text-sm font-medium text-muted uppercase tracking-wider mb-1">Ort. AI İşlem Süresi</h4>
+                <div className="text-3xl font-bold text-success">{formatSeconds(roi.average_processing_seconds)}</div>
               </div>
             </div>
           </div>
 
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header" style={{ marginBottom: '1.5rem' }}>
-              <h3 className="card-title"><UserCheck size={20} /> İnsan İncelemesi İstatistikleri</h3>
-            </div>
-            <div className="data-list">
-              <div className="data-row">
-                <div className="data-label">İnsan İncelemesi Gereken Oran</div>
-                <div className="data-value">
-                  <span className="badge badge-blue">
+          <div className="grid-2 gap-6">
+            {/* Human Review Stats */}
+            <Card title="İnsan İncelemesi İstatistikleri" icon={<UserCheck size={18} />}>
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center py-2 border-b border-border-light">
+                  <span className="font-medium text-muted text-sm">İnsan İncelemesi Gereken Oran</span>
+                  <span className="font-mono bg-accent-light text-accent px-2 py-1 rounded font-bold text-sm">
                     {(roi.human_review_required_rate * 100).toFixed(1)}%
                   </span>
                 </div>
-              </div>
-              <div className="data-row">
-                <div className="data-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <CheckCircle2 size={16} color="var(--success)" /> Onaylanan
+                
+                <div className="flex justify-between items-center py-2 border-b border-border-light">
+                  <div className="flex items-center gap-2 text-success font-medium text-sm">
+                    <CheckCircle2 size={16} /> Onaylanan
+                  </div>
+                  <span className="font-mono text-text-main font-bold">{roi.approved_count}</span>
                 </div>
-                <div className="data-value">{roi.approved_count}</div>
-              </div>
-              <div className="data-row">
-                <div className="data-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Settings size={16} color="var(--warning)" /> Düzenlenen
-                </div>
-                <div className="data-value">{roi.edited_count}</div>
-              </div>
-              <div className="data-row" style={{ borderBottom: 'none' }}>
-                <div className="data-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <XCircle size={16} color="var(--danger)" /> Reddedilen
-                </div>
-                <div className="data-value">{roi.rejected_count}</div>
-              </div>
-            </div>
-          </div>
 
-          <div className="card" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.9, marginBottom: '0.25rem' }}>
-                  Tahmini Kazanılan Süre
+                <div className="flex justify-between items-center py-2 border-b border-border-light">
+                  <div className="flex items-center gap-2 text-info font-medium text-sm">
+                    <Settings size={16} /> Düzenlenen
+                  </div>
+                  <span className="font-mono text-text-main font-bold">{roi.edited_count}</span>
                 </div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.7, maxWidth: '80%' }} title="Bu değer yapılandırılmış manuel işlem süresi ile ölçülen AI destekli işlem süresi karşılaştırılarak hesaplanmaktadır.">
-                  Manuel süreçlere kıyasla (Tahmini)
+
+                <div className="flex justify-between items-center py-2">
+                  <div className="flex items-center gap-2 text-danger font-medium text-sm">
+                    <XCircle size={16} /> Reddedilen
+                  </div>
+                  <span className="font-mono text-text-main font-bold">{roi.rejected_count}</span>
                 </div>
               </div>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: '#60a5fa' }}>
-                {formatSeconds(roi.estimated_saved_seconds)}
+            </Card>
+
+            {/* ROI Hero Card */}
+            <div className="bg-primary text-white rounded-md p-6 flex flex-col justify-between shadow-md relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 opacity-10">
+                <TrendingUp size={200} />
+              </div>
+              
+              <div className="relative z-10 mb-8">
+                <h3 className="text-xl font-bold mb-1">Tahmini Kazanılan Süre</h3>
+                <p className="text-sm opacity-80 max-w-[80%]" title="Bu değer yapılandırılmış manuel işlem süresi ile ölçülen AI destekli işlem süresi karşılaştırılarak hesaplanmaktadır.">
+                  Manuel süreçlere kıyasla elde edilen operasyonel zaman tasarrufu.
+                </p>
+              </div>
+
+              <div className="relative z-10">
+                <div className="text-5xl font-bold text-accent-light mb-4 drop-shadow-md">
+                  {formatSeconds(roi.estimated_saved_seconds)}
+                </div>
+                
+                {roi.estimated_saved_percentage && (
+                  <div className="border-t border-white/20 pt-4 flex items-center justify-between text-sm">
+                    <span className="opacity-90">Zaman Tasarrufu Oranı</span>
+                    <span className="font-bold text-accent-light bg-white/10 px-3 py-1 rounded-full">
+                      %{roi.estimated_saved_percentage.toFixed(1)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-            {roi.estimated_saved_percentage && (
-              <div style={{ marginTop: '1rem', fontSize: '0.875rem', opacity: 0.9, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-                Zaman tasarrufu oranı: <strong style={{ color: '#60a5fa' }}>%{roi.estimated_saved_percentage.toFixed(1)}</strong>
-              </div>
-            )}
           </div>
         </div>
       )}
     </div>
   );
 }
+

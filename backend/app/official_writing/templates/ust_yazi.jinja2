@@ -1,0 +1,203 @@
+{#
+  templates/ust_yazi.jinja2
+  ─────────────────────────────────────────────────────────────────────────────
+  Resmî Üst Yazı Şablonu
+  Kaynak: Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik
+          (RG 10.06.2020/31151, No. 2646) + Cumhurbaşkanlığı Kılavuzu (2022)
+
+  NOT — BİLGİLENDİRME YAZISI:
+    Bilgilendirme yazısının ayrı bir biçimsel şablonu yoktur; bu şablonu
+    kullanır.  İmza yetkisi farkı (Bakan Yardımcısı da imzalayabilir) bir
+    yetki kuralıdır, format kuralı değildir — validator'da ele alınmaz.
+    TODO: İmza yetkisi kontrolü ayrı bir yetki modülünde (MVP kapsamı dışı)
+    implemente edilmelidir.
+
+  PARAMETRELER:
+    tc_baslik      : dict  { idare_adi: str, birim_adi: str }
+                       idare_adi  -> BÜYÜK HARF yazılmış kurum adı (Madde 10)
+                       birim_adi  -> Başharfler büyük birim adı (Madde 10)
+    sayi           : str   [E|Z|O]-DETSİS_no-plan_kodu-kayıt_no (Madde 11)
+    tarih          : str   GG.AA.YYYY veya harfli (ör. "10 Ekim 2019") (Madde 12)
+    konu           : str   Noktalama işareti YOK, orta hizayı geçmez (Madde 13)
+    muhatap        : dict  { tur: "kurum"|"gercek_kisi"|"dagitim",
+                             isim: str }  (Madde 14)
+                       tur=="kurum"       -> isim BÜYÜK HARF + yönelme eki
+                       tur=="gercek_kisi" -> "Sayın Ad SOYAD"
+                       tur=="dagitim"     -> "DAĞITIM YERLERİNE"
+    muhatap_turu   : str   hiyerarşi bilgisi: "kurum_alt" | "kurum_ust" |
+                           "kurum_ayni" | "kurum_karisik" | "gercek_kisi"
+                           Hiyerarşi belirsiz/bilinmiyorsa -> kurum_ust gibi
+                           davran (varsayılan "arz ederim" — [TASARIM KARARI]).
+    ilgi           : list  (opsiyonel) Dicts: { tarih: str, sayi: str, aciklama: str }
+                           "...tarihli ve ...sayılı..." kalıbı, sonunda nokta
+                           (Madde 15)
+    metin_paragraflari : list[str]  Her eleman bir paragraf (Madde 16)
+    imza           : dict  { ad_soyad: str, unvan: str,
+                             yetki_turu: "normal"|"yetki_devri"|"vekaletname",
+                             vekil_makam: str (opsiyonel),
+                             ek_imzalar: list[dict] (opsiyonel) }
+                           (Madde 17)
+    ekler          : list  (opsiyonel) Dicts: { ad: str, bilgi: str }
+                           (Madde 18)
+    dagitim        : dict  (opsiyonel) { geregi: list[str], bilgi: list[str] }
+                           (Madde 19)
+    iletisim       : dict  { adres: str, irtibat: str, telefon: str (opt) }
+    sayfa_no       : str   (opsiyonel) "1/2" formatı (Madde 10)
+#}
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   SAYFA DÜZENI SABITLERI (Madde 6, 7, 8, 9, 10)
+   Kenar boşlukları ve font doğrudan şablona gömülmüştür; ayrı config
+   dosyası açılmamıştır (tasarım kararı gereği).
+   - Kağıt: A4 (210x297 mm)
+   - Kenar boşluğu: üst/sol/sağ 1,5 cm  (logo varsa üst 0,5 cm)
+   - Yazı tipi: Times New Roman 12pt veya Arial 11pt
+   - [TASARIM KARARI] Satır aralığı: 1.0 — yönetmelik/kılavuzda sayısal
+     değer belirtilmemiştir; tutarlılık için 1.0 (tek satır) seçildi.
+   - [TASARIM KARARI] 9pt'a küçültme kuralı MVP'de uygulanmayacaktır —
+     yönetmelikte somut eşik tanımlı değildir, nadir bir kenar durumdur.
+   Üretilen metin düz metin formatındadır; görsel parametreler kelime
+   işlemci / PDF katmanında uygulanır.
+═══════════════════════════════════════════════════════════════════════════ #}
+
+{# ── 1. BAŞLIK BLOĞU (Madde 10) ───────────────────────────────────────── #}
+T.C.
+{{ tc_baslik.idare_adi | upper }}
+{{ tc_baslik.birim_adi }}
+
+
+{# ── 2. SAYI ve TARİH (Madde 11, 12) ──────────────────────────────────── #}
+{# Sayı: başlığın son satırından 2 satır sonra, sol marj.                  #}
+{# Tarih: sayı ile aynı satır, en sağda.                                   #}
+Sayı: {{ sayi }}{%- set bosluk = 80 - ("Sayı: " ~ sayi)|length %}{{ " " * [bosluk, 1]|max }}Tarih: {{ tarih }}
+
+{# ── 3. KONU (Madde 13) ────────────────────────────────────────────────── #}
+{# Sayı'nın bir alt satırı, dikey orta hizayı geçmez, noktalama işareti   #}
+{# yok, baş harfler büyük.                                                  #}
+Konu: {{ konu }}
+
+
+{# ── 4. MUHATAP (Madde 14) ─────────────────────────────────────────────── #}
+{# Konudan 2 satır sonra, sayfa ortalanarak.                               #}
+{%- if muhatap.tur == "kurum" %}
+                              {{ muhatap.isim | upper }}
+{%- elif muhatap.tur == "gercek_kisi" %}
+                              Sayın {{ muhatap.isim }}
+{%- elif muhatap.tur == "dagitim" %}
+                              DAĞITIM YERLERİNE
+{%- endif %}
+
+
+{# ── 5. İLGİ (Madde 15) ────────────────────────────────────────────────── #}
+{# Muhataptan 2 satır sonra, sol marj. "...tarihli ve ...sayılı..."        #}
+{# kalıbı, sonunda nokta.                                                   #}
+{%- if ilgi is defined and ilgi %}
+{%- for ilgi_item in ilgi %}
+İlgi: {{ ilgi_item.tarih }}tarihli ve {{ ilgi_item.sayi }}sayılı {{ ilgi_item.aciklama }}.
+{%- endfor %}
+
+{%- endif %}
+{# ── 6. METİN / GÖVDE (Madde 16) ──────────────────────────────────────── #}
+{# İlgi varsa 1 satır, yoksa muhataptan 2 satır sonra başlar.              #}
+{# Paragraf 1,25 cm içeriden (düz metinde TAB ile temsil edilir).          #}
+{# İki yana hizalı, paragraflar arası boşluk YOK.                         #}
+{%- for paragraf in metin_paragraflari %}
+	{{ paragraf }}
+{%- endfor %}
+
+{# ── 7. KAPANIŞ İFADESİ (Madde 16/12) ─────────────────────────────────── #}
+{# Kapanış ifadesi muhatap türü + hiyerarşi bilgisine göre seçilir:       #}
+{#   kurum_alt     -> "rica ederim."                                        #}
+{#   kurum_ust     -> "arz ederim."                                         #}
+{#   kurum_ayni    -> "arz ederim."                                         #}
+{#   kurum_karisik -> "arz ve rica ederim."                                 #}
+{#   gercek_kisi   -> "Saygılarımla." (arz/rica KULLANILMAZ — Madde 31/7) #}
+{# [TASARIM KARARI] Muhatap kurum ve hiyerarşi bilgisi belirsizse          #}
+{#   varsayılan kurum_ust davranışı -> "arz ederim."                        #}
+{%- if muhatap_turu == "gercek_kisi" %}
+Saygılarımla.
+{%- elif muhatap_turu == "kurum_alt" %}
+rica ederim.
+{%- elif muhatap_turu == "kurum_karisik" %}
+arz ve rica ederim.
+{%- else %}{# kurum_ust, kurum_ayni ve bilinmeyen/belirsiz -> arz ederim #}
+arz ederim.
+{%- endif %}
+
+
+{# ── 8. İMZA BLOĞU (Madde 17) ─────────────────────────────────────────── #}
+{# Metin bitiminden 2-4 satır sonra, sağda ortalı.                        #}
+{# Ad (ilk harf büyük) SOYAD (büyük) / altında Unvan.                    #}
+{%- if imza.ek_imzalar is defined and imza.ek_imzalar | length > 0 %}
+{# Çoklu imza: 2 kişi -> üst unvan sağda; 2+ kişi -> en üst solda sağa  #}
+{{ imza.ad_soyad }}
+{{ imza.unvan }}
+{%- for ek in imza.ek_imzalar %}
+                                    {{ ek.ad_soyad }}
+                                    {{ ek.unvan }}
+{%- endfor %}
+{%- elif imza.yetki_turu == "yetki_devri" %}
+{# Yetki devri: İmzalayan Ad Soyad / "[Makam] a." / imzalayanın unvanı  #}
+                                    {{ imza.ad_soyad }}
+                              {{ imza.vekil_makam }} a.
+                                    {{ imza.unvan }}
+{%- elif imza.yetki_turu == "vekaletname" %}
+{# Vekâlet: İmzalayan Ad Soyad / "[Makam] V."                           #}
+                                    {{ imza.ad_soyad }}
+                              {{ imza.vekil_makam }} V.
+{%- else %}
+{# Normal imza                                                           #}
+                                    {{ imza.ad_soyad }}
+                                    {{ imza.unvan }}
+{%- endif %}
+
+
+{# ── 9. EK LİSTESİ (Madde 18) ─────────────────────────────────────────── #}
+{# İmza bölümünden sonra, sol marj.                                        #}
+{# [TASARIM KARARI] "Uygun satır boşluğu" = 2 satır — yönetmelik sayısal #}
+{# değer belirtmemektedir; tekrar eden "iki satır" kalıbına tutarlı olarak#}
+{# seçildi.                                                                 #}
+{%- if ekler is defined and ekler %}
+{%- if ekler | length == 1 %}
+Ek: {{ ekler[0].ad }} ({{ ekler[0].bilgi }})
+{%- else %}
+Ek: {{ ekler | length }} adet
+{%- for ek in ekler %}
+{{ loop.index }}. {{ ek.ad }} ({{ ek.bilgi }})
+{%- endfor %}
+{%- endif %}
+{%- else %}
+Ek konulmadı.
+{%- endif %}
+
+
+{# ── 10. DAĞITIM LİSTESİ (Madde 19) ───────────────────────────────────── #}
+{# Ek varsa sonrasında, yoksa imza sonrası, sol marj.                     #}
+{# [TASARIM KARARI] Boşluk = 2 satır — yönetmelik sayısal değer           #}
+{# belirtmemektedir; Madde 18 uygulamasıyla tutarlı olarak 2 satır seçildi#}
+{# "Gereği:" altta; "Bilgi:" aynı satırda, ortaya doğru.                 #}
+{%- if dagitim is defined and dagitim %}
+Dağıtım:
+Gereği:{%- if dagitim.bilgi is defined and dagitim.bilgi %}                         Bilgi:{%- endif %}
+
+{%- for yer in dagitim.geregi %}
+{{ yer }}
+{%- endfor %}
+{%- if dagitim.bilgi is defined and dagitim.bilgi %}
+{%- for yer in dagitim.bilgi %}
+                                         {{ yer }}
+{%- endfor %}
+{%- endif %}
+{%- endif %}
+
+
+{# ── 11. İLETİŞİM BİLGİSİ (Madde 10) ─────────────────────────────────── #}
+{# Sayfa altı, çizgiyle ayrılmış. Sol: gönderen adresi, Sağ: irtibat.    #}
+{# Çok sayfalı belgede HER sayfada tekrar eder.                           #}
+________________________________________________________________________________
+{{ iletisim.adres }}{%- set irtibat_bosluk = 80 - iletisim.adres|length %}{{ " " * [irtibat_bosluk, 1]|max }}{{ iletisim.irtibat }}{% if iletisim.telefon is defined %} | {{ iletisim.telefon }}{% endif %}
+
+{# Sayfa numarası: iletişim bilgisi altında, ortada, "1/2" formatı       #}
+{%- if sayfa_no is defined and sayfa_no %}
+                                   {{ sayfa_no }}
+{%- endif %}

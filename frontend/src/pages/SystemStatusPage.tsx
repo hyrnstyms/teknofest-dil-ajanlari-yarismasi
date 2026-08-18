@@ -5,6 +5,9 @@ import { SystemStatusResponse } from '../types/metrics';
 import { ApiError } from '../types/api';
 import { getLabel, STATUS_LABELS } from '../utils/labels';
 import { Activity, Server, Brain, Database, FileText, Search, RefreshCw, Layers } from 'lucide-react';
+import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 
 export function SystemStatusPage() {
   const [status, setStatus] = useState<SystemStatusResponse | null>(null);
@@ -46,197 +49,134 @@ export function SystemStatusPage() {
     if (val === 'ready') label = 'Hazır';
 
     return (
-      <span className={`badge ${isOk ? 'badge-green' : isPartial ? 'badge-yellow' : 'badge-red'}`}>
+      <Badge status={isOk ? 'success' : isPartial ? 'warning' : 'fail'}>
         {label}
-      </span>
+      </Badge>
     );
   };
 
+  const DataRow = ({ label, value, children }: { label: string, value?: React.ReactNode, children?: React.ReactNode }) => (
+    <div className="flex justify-between items-center py-3 border-b border-border-light last:border-0 last:pb-0">
+      <span className="text-sm font-medium text-muted">{label}</span>
+      {value !== undefined && <span className="text-sm font-medium text-text-main">{value}</span>}
+      {children}
+    </div>
+  );
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="max-w-5xl mx-auto flex flex-col h-full gap-6 pb-8">
+      <div className="flex justify-between items-end">
         <div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>Sistem Durumu</h2>
-          <p style={{ color: 'var(--text-muted)' }}>KAMUAI bileşenlerinin çalışma ve indeks durumunu görüntüleyin.</p>
+          <h2 className="text-2xl font-bold text-text-heading mb-1">Sistem Durumu</h2>
+          <p className="text-muted text-sm">KAMUAI bileşenlerinin çalışma ve indeks durumunu görüntüleyin.</p>
         </div>
-        <button 
-          className="btn btn-outline" 
-          onClick={fetchStatus} 
-          disabled={loading}
-        >
-          <RefreshCw size={16} className={loading ? "spinner" : ""} />
+        <Button variant="secondary" onClick={fetchStatus} disabled={loading}>
+          <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
           Durumu Yenile
-        </button>
+        </Button>
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: '1.5rem' }}>
-          <strong>Sistem durumu alınamadı.</strong> {error.message}
-          <button className="btn btn-outline" style={{ marginTop: '0.5rem', padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={fetchStatus}>Tekrar Dene</button>
+        <div className="p-4 bg-danger-light text-danger border border-danger rounded-md">
+          <strong>Sistem durumu alınamadı:</strong> {error.message}
         </div>
       )}
 
       {loading && !status && (
-        <div className="loading-container" style={{ padding: '2rem' }}>
-          <div className="spinner" style={{ marginBottom: '0.5rem' }}><RefreshCw size={24} /></div>
-          <div>Sistem durumu yükleniyor...</div>
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-muted gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+          <span className="font-medium">Sistem durumu yükleniyor...</span>
         </div>
       )}
 
       {status && (
-        <div className="grid-2">
+        <div className="grid-2 sm:grid-2 gap-6">
           {/* API */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><Server size={20} /> API</h3>
+          <Card title="API Sunucusu" icon={<Server size={18} />}>
+            <div className="flex flex-col">
+              <DataRow label="Durum">
+                {renderStatusBadge(status.api)}
+              </DataRow>
             </div>
-            <div className="data-list">
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">{renderStatusBadge(status.api)}</div>
-              </div>
-            </div>
-          </div>
+          </Card>
 
           {/* Dil Modeli */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><Brain size={20} /> Dil Modeli</h3>
+          <Card title="Dil Modeli (LLM)" icon={<Brain size={18} />}>
+            <div className="flex flex-col">
+              {status.ollama && <DataRow label="Sağlayıcı" value={<span className="capitalize">Ollama</span>} />}
+              {status.llm_model && <DataRow label="Model" value={<span className="font-mono text-xs bg-bg-color px-2 py-1 rounded">{status.llm_model}</span>} />}
+              <DataRow label="Durum">
+                {renderStatusBadge(status.ollama ? "online" : "offline")}
+              </DataRow>
             </div>
-            <div className="data-list">
-              {status.ollama && (
-                <div className="data-row">
-                  <div className="data-label">Sağlayıcı</div>
-                  <div className="data-value" style={{ textTransform: 'capitalize' }}>Ollama</div>
-                </div>
-              )}
-              {status.llm_model && (
-                <div className="data-row">
-                  <div className="data-label">Model</div>
-                  <div className="data-value">{status.llm_model}</div>
-                </div>
-              )}
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">{renderStatusBadge(status.ollama ? "online" : "offline")}</div>
-              </div>
-            </div>
-          </div>
+          </Card>
 
           {/* Embedding */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><Activity size={20} /> Embedding Modeli</h3>
+          <Card title="Embedding Modeli" icon={<Activity size={18} />}>
+            <div className="flex flex-col">
+              {status.embedding_model && <DataRow label="Model" value={<span className="font-mono text-xs bg-bg-color px-2 py-1 rounded">{status.embedding_model}</span>} />}
+              {status.embedding_dimension && <DataRow label="Boyut" value={status.embedding_dimension} />}
+              <DataRow label="Durum">
+                {renderStatusBadge('online')}
+              </DataRow>
             </div>
-            <div className="data-list">
-              {status.embedding_model && (
-                <div className="data-row">
-                  <div className="data-label">Model</div>
-                  <div className="data-value">{status.embedding_model}</div>
-                </div>
-              )}
-              {status.embedding_dimension && (
-                <div className="data-row">
-                  <div className="data-label">Boyut</div>
-                  <div className="data-value">{status.embedding_dimension}</div>
-                </div>
-              )}
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">{renderStatusBadge('online')}</div>
-              </div>
-            </div>
-          </div>
+          </Card>
 
           {/* Qdrant */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><Database size={20} /> Vektör Veritabanı</h3>
+          <Card title="Vektör Veritabanı" icon={<Database size={18} />}>
+            <div className="flex flex-col">
+              <DataRow label="Kayıt Sayısı (Points)" value={status.qdrant?.total_points || 0} />
+              <DataRow label="Collection Sayısı" value={status.qdrant ? "2" : "0"} />
+              <DataRow label="Durum">
+                {renderStatusBadge(status.qdrant ? 'online' : 'offline')}
+              </DataRow>
             </div>
-            <div className="data-list">
-              <div className="data-row">
-                <div className="data-label">Toplam İndekslenmiş Kayıt</div>
-                <div className="data-value">{status.qdrant?.total_points || 0}</div>
-              </div>
-              <div className="data-row">
-                <div className="data-label">Collection Sayısı</div>
-                <div className="data-value">{status.qdrant ? "2" : "0"}</div>
-              </div>
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">{renderStatusBadge(status.qdrant ? 'online' : 'offline')}</div>
-              </div>
-            </div>
-          </div>
+          </Card>
 
           {/* Mevzuat İndeksi */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><Search size={20} /> Mevzuat İndeksi</h3>
-            </div>
-            <div className="data-list">
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">{renderStatusBadge(status.qdrant?.index_status || "offline")}</div>
-              </div>
-              <div className="data-row" style={{ borderBottom: 'none' }}>
-                <div className="data-label">İndekslenen (Kayıt)</div>
-                <div className="data-value">{status.qdrant?.legal_points || 0} / 7559</div>
-              </div>
+          <Card title="Mevzuat İndeksi" icon={<Search size={18} />}>
+            <div className="flex flex-col">
+              <DataRow label="Durum">
+                {renderStatusBadge(status.qdrant?.index_status || "offline")}
+              </DataRow>
+              <DataRow label="İndekslenen Kayıt" value={`${status.qdrant?.legal_points || 0} / 7559`} />
+              
               {status.qdrant?.index_status === 'partial' && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '0.5rem' }}>
-                  Mevzuat indeksi kısmi.
+                <div className="text-xs text-warning bg-warning-light p-2 rounded-md mt-3 border border-warning">
+                  Mevzuat indeksi kısmi. Tüm veriler aranabilir olmayabilir.
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Belge İndeksi */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><FileText size={20} /> Belge İndeksi</h3>
+          <Card title="Belge İndeksi" icon={<FileText size={18} />}>
+            <div className="flex flex-col">
+              <DataRow label="Durum">
+                {renderStatusBadge('online')}
+              </DataRow>
+              <DataRow label="İndekslenen Kayıt" value={`${status.qdrant?.document_points || 0} / 106`} />
             </div>
-            <div className="data-list">
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">{renderStatusBadge('online')}</div>
-              </div>
-              <div className="data-row" style={{ borderBottom: 'none' }}>
-                <div className="data-label">İndekslenen (Kayıt)</div>
-                <div className="data-value">{status.qdrant?.document_points || 0} / 106</div>
-              </div>
-            </div>
-          </div>
+          </Card>
 
           {/* EBYS Entegrasyonu */}
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="card-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-              <h3 className="card-title"><Layers size={20} /> EBYS Entegrasyonu</h3>
-            </div>
-            <div className="data-list">
-              <div className="data-row">
-                <div className="data-label">Durum</div>
-                <div className="data-value">
-                  <span className={`badge ${ebysStatus?.connected ? 'badge-green' : 'badge-yellow'}`}>
-                    {ebysStatus?.connected ? 'Bağlı' : 'Gerçek bağlantı yapılandırılmadı'}
-                  </span>
-                </div>
-              </div>
-              <div className="data-row">
-                <div className="data-label">Adaptör</div>
-                <div className="data-value">
-                  {ebysStatus?.adapter_type === 'mock' ? 'Demo Adapter' : ebysStatus?.adapter_type || '-'}
-                </div>
-              </div>
-              <div className="data-row" style={{ borderBottom: 'none' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                  KAMUAI, mevcut EBYS sistemlerinin yerine geçmek yerine karar destek katmanı olarak entegre olacak şekilde tasarlanmıştır.
-                </div>
+          <Card title="EBYS Entegrasyonu" icon={<Layers size={18} />}>
+            <div className="flex flex-col">
+              <DataRow label="Durum">
+                <Badge status={ebysStatus?.connected ? 'success' : 'warning'}>
+                  {ebysStatus?.connected ? 'Bağlı' : 'Simülasyon Modu'}
+                </Badge>
+              </DataRow>
+              <DataRow label="Adaptör" value={ebysStatus?.adapter_type === 'mock' ? 'Demo Adapter' : ebysStatus?.adapter_type || '-'} />
+              
+              <div className="text-xs text-muted leading-relaxed mt-3 pt-3 border-t border-border-light bg-sidebar-bg/5 p-3 rounded-md">
+                KAMUAI, mevcut EBYS sistemlerinin yerine geçmek yerine karar destek katmanı olarak entegre olacak şekilde tasarlanmıştır.
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>
   );
 }
+

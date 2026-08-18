@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '../ui/Button';
 
 interface TextUploadProps {
   onAnalyze: (text: string) => void;
@@ -16,30 +17,35 @@ export function TextUpload({ onAnalyze, isLoading }: TextUploadProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card">
-      <div className="card-header">
-        <h3 className="card-title">Metin ile Analiz</h3>
-      </div>
+    <form onSubmit={handleSubmit} className="card flex flex-col gap-6 h-full min-h-[400px]">
       
-      <div className="form-group">
-        <label className="form-label">Belge Metni</label>
+      <div className="flex flex-col gap-2 flex-1">
+        <label className="text-sm font-medium text-text-heading">Belge Metni</label>
         <textarea 
-          className="form-control"
-          placeholder="Analiz etmek istediğiniz evrak metnini buraya girin."
+          className="form-control text-sm font-serif leading-relaxed resize-none flex-1"
+          style={{ minHeight: '280px' }}
+          placeholder="Analiz etmek istediğiniz evrak metnini buraya yapıştırın..."
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={12}
         />
       </div>
 
-      <button 
+      <Button 
         type="submit" 
-        className="btn btn-primary" 
-        style={{ width: '100%' }}
+        variant="primary"
+        size="lg"
+        className="w-full justify-center"
         disabled={!text.trim() || isLoading}
       >
-        {isLoading ? 'Belge analiz ediliyor...' : 'Analizi Başlat'}
-      </button>
+        {isLoading ? (
+          <>
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            Analiz Ediliyor...
+          </>
+        ) : 'Analizi Başlat'}
+      </Button>
     </form>
   );
 }
+
+

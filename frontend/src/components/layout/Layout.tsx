@@ -13,7 +13,7 @@ export function Layout({ currentPath, onNavigate, children }: LayoutProps) {
     <div className="app-container">
       <Sidebar currentPath={currentPath} onNavigate={onNavigate} />
       <div className="main-content">
-        <Topbar />
+        <Topbar currentPath={currentPath} />
         <main className="page-content">
           {children}
         </main>
@@ -21,3 +21,4 @@ export function Layout({ currentPath, onNavigate, children }: LayoutProps) {
     </div>
   );
 }
+

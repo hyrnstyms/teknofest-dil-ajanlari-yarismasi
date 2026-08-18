@@ -6,6 +6,30 @@ KAMUAI, kamu evrakları için geliştirilmiş yapay zekâ tabanlı bir karar des
 Ana Akış:
 Belge → Ingestion/OCR → Document Agent → Extraction Agent → Legal Agent → Missing Field Agent → Summary Agent → Routing Agent → Writing Agent → Quality Agent → Personel İncelemesi
 
+## Resmî Yazışma Format Motoru
+
+KAMUAI, Writing Agent çıktısını deterministik ve LLM-bağımsız bir biçimsel doğrulama katmanından geçirir.
+
+```
+Writing Agent (LLM)
+  ↓ structured draft (subject, body)
+Official Writing Context Adapter (backend/app/official_writing/)
+  ↓ Jinja2 render (StrictUndefined)
+template_renderer → rendered_text (ust_yazi.jinja2 / cevap_yazisi.jinja2 / tekit_yazisi.jinja2)
+  ↓
+format_validator → deterministic kural kontrolleri (Madde 11–34)
+  ↓
+Quality Agent → official_writing_format check
+  ↓
+Human Review
+```
+
+- `backend/app/official_writing/format_validator.py` — Tamamen deterministik; LLM çağrısı içermez.
+- `backend/app/official_writing/template_renderer.py` — Jinja2 tabanlı biçimsel render; StrictUndefined ile güvenli.
+- Şablonlar: `ust_yazi.jinja2`, `cevap_yazisi.jinja2`, `tekit_yazisi.jinja2`
+
+> Bu katman ekip arkadaşımız tarafından geliştirilmiştir.
+
 ## Temel Teknolojiler
 - Python 3.11
 - FastAPI

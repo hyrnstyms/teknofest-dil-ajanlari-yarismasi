@@ -188,7 +188,8 @@ class KamuaiWorkflow:
                 missing_fields=mf,
                 verified_facts=facts,
                 recipient=recipient,
-                sender_unit=sender
+                sender_unit=sender,
+                state=s
             )
             return {"draft": res}
         return self._measure_time(_run, state, "writing_agent")

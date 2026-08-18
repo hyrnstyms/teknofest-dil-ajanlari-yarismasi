@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { getPendingReviews } from '../services/analysis';
 import { ReviewQueueItem } from '../types/analysis';
 import { ApiError } from '../types/api';
-import { FileSearch, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileSearch, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import { getLabel, DOC_TYPE_LABELS } from '../utils/labels';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 
 export function ReviewQueuePage({ onNavigateToAnalysis }: { onNavigateToAnalysis: (id: string) => void }) {
   const [items, setItems] = useState<ReviewQueueItem[]>([]);
@@ -28,77 +30,89 @@ export function ReviewQueuePage({ onNavigateToAnalysis }: { onNavigateToAnalysis
   }, []);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>İnceleme Kuyruğu</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Personel incelemesi ve onayı bekleyen evraklar listelenmektedir.</p>
+    <div className="max-w-6xl mx-auto flex flex-col h-full">
+      <div className="mb-6 flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-text-heading mb-1">İnceleme Kuyruğu</h2>
+          <p className="text-muted text-sm">Personel incelemesi ve onayı bekleyen evraklar listelenmektedir.</p>
+        </div>
+        <Button variant="secondary" onClick={fetchQueue} disabled={loading}>Yenile</Button>
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: '1.5rem' }}>
-          <strong>Kuyruk yüklenemedi.</strong> {error.message}
+        <div className="p-4 bg-danger-light text-danger border border-danger rounded-md mb-6">
+          <strong>Kuyruk yüklenemedi:</strong> {error.message}
         </div>
       )}
 
       {loading ? (
-        <div className="loading-container" style={{ padding: '3rem' }}>
-          <div className="spinner"></div>
-          <div>Yükleniyor...</div>
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-muted gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+          <span className="font-medium">Kuyruk Yükleniyor...</span>
         </div>
       ) : items.length === 0 ? (
-        <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-          <FileSearch size={48} color="var(--success)" style={{ margin: '0 auto 1rem' }} />
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>İnceleme bekleyen evrak bulunmuyor.</h3>
-          <p style={{ color: 'var(--text-muted)' }}>Tüm kuyruk temiz.</p>
+        <div className="flex-1 bg-card-bg border border-border-color rounded-md flex flex-col items-center justify-center p-12 text-center shadow-sm">
+          <div className="w-16 h-16 bg-success-light text-success rounded-full flex items-center justify-center mb-4">
+            <CheckCircle size={32} />
+          </div>
+          <h3 className="text-xl font-bold text-text-heading mb-2">İnceleme bekleyen evrak bulunmuyor.</h3>
+          <p className="text-muted">Tüm kuyruk temiz.</p>
         </div>
       ) : (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Evrak</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Tür</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>İşlem Amacı</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>İnceleme Nedeni</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Önerilen Birim</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Kalite</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Aksiyon</th>
+        <div className="bg-card-bg border border-border-color rounded-md shadow-sm overflow-hidden flex-1">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-sidebar-bg/5 border-b border-border-color text-muted uppercase text-xs tracking-wider">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Evrak Konusu</th>
+                  <th className="px-6 py-4 font-semibold">Tür / İşlem Amacı</th>
+                  <th className="px-6 py-4 font-semibold">İnceleme Nedeni</th>
+                  <th className="px-6 py-4 font-semibold">Önerilen Birim</th>
+                  <th className="px-6 py-4 font-semibold">Kalite</th>
+                  <th className="px-6 py-4 font-semibold text-right">Aksiyon</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border-light">
                 {items.map(item => (
-                  <tr key={item.analysis_id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '1rem' }}>
-                      <div style={{ fontWeight: 500, fontSize: '0.875rem' }}>
+                  <tr key={item.analysis_id} className="hover:bg-bg-color transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-text-main">
                         {item.subject || "Konu Bulunamadı"}
                       </div>
+                      <div className="text-xs text-muted mt-1 font-mono">{item.analysis_id.substring(0, 8)}...</div>
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>{getLabel(item.document_type || "unknown", DOC_TYPE_LABELS)}</td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>{getLabel(item.process_intent || "unknown", DOC_TYPE_LABELS)}</td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem', maxWidth: '250px' }}>
-                      <ul style={{ margin: 0, paddingLeft: '1rem' }}>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge status="info">{getLabel(item.document_type || "unknown", DOC_TYPE_LABELS)}</Badge>
+                        <span className="text-xs text-muted">{getLabel(item.process_intent || "unknown", DOC_TYPE_LABELS)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 max-w-xs">
+                      <div className="flex flex-col gap-1">
                         {item.review_reasons.map((reason, idx) => (
-                          <li key={idx} style={{ color: 'var(--warning)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                          <span key={idx} className="text-xs bg-warning-light text-warning px-2 py-1 rounded inline-flex items-center gap-1">
+                            <AlertTriangle size={10} />
                             {reason}
-                          </li>
+                          </span>
                         ))}
-                      </ul>
+                      </div>
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>{item.recommended_unit || "-"}</td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
-                      {item.quality_status === 'pass' && <CheckCircle size={16} color="var(--success)" />}
-                      {item.quality_status === 'warning' && <AlertTriangle size={16} color="var(--warning)" />}
-                      {item.quality_status === 'fail' && <AlertTriangle size={16} color="var(--danger)" />}
+                    <td className="px-6 py-4 font-medium text-text-main">
+                      {item.recommended_unit || "-"}
                     </td>
-                    <td style={{ padding: '1rem' }}>
-                      <button 
-                        className="btn btn-primary" 
-                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    <td className="px-6 py-4">
+                      {item.quality_status === 'pass' && <Badge status="success">Başarılı</Badge>}
+                      {item.quality_status === 'warning' && <Badge status="warning">Uyarı</Badge>}
+                      {item.quality_status === 'fail' && <Badge status="fail">Başarısız</Badge>}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Button 
+                        variant="primary" 
+                        size="sm"
                         onClick={() => onNavigateToAnalysis(item.analysis_id)}
                       >
-                        İncele
-                      </button>
+                        <Search size={14} className="mr-1 inline" /> İncele
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -110,3 +124,4 @@ export function ReviewQueuePage({ onNavigateToAnalysis }: { onNavigateToAnalysis
     </div>
   );
 }
+
