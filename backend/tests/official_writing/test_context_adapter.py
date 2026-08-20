@@ -6,7 +6,13 @@ import pytest
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from backend.app.official_writing.context_adapter import build_official_writing_context
+from backend.app.official_writing.context_adapter import (
+    PLACEHOLDER_IMZA_AD_SOYAD,
+    PLACEHOLDER_IMZA_UNVAN,
+    PLACEHOLDER_SAYI,
+    PLACEHOLDER_TARIH,
+    build_official_writing_context,
+)
 from backend.app.institutions.profile_loader import InstitutionProfile
 
 
@@ -22,13 +28,16 @@ def writing_agent():
 def mock_state() -> dict[str, Any]:
     return {
         "extraction": {
-            "fields": {},
-            "subject": {"value": "Extraction Subject", "evidence": []},
-            "document_number": {"value": "INCOMING-123", "evidence": []},
-            "document_date": {"value": "15.08.2026", "evidence": []},
-            "person_name": {"value": "Ahmet Yılmaz", "evidence": []},
-            "institution": {"value": "Diğer Kurum", "evidence": []}
-        }
+            "fields": {
+                "subject": {"value": "Extraction Subject", "validated": True},
+                "document_number": {"value": "INCOMING-123", "validated": True},
+                "document_date": {"value": "15.08.2026", "validated": True},
+                "person_name": {"value": "Ahmet Yılmaz", "validated": True},
+                "institution": {"value": "Diğer Kurum", "validated": True},
+            },
+        },
+        "routing": {"recommended_unit": "Yazı İşleri Müdürlüğü"},
+        "kurum_profili_id": "kaymakamlik_v1",
     }
 
 def mock_draft() -> dict[str, Any]:
@@ -50,8 +59,8 @@ def test_context_adapter_sayi_tarih_missing():
     ctx = res["context"]
     missing = res["missing_required_fields"]
     
-    assert ctx["sayi"] == ""
-    assert ctx["tarih"] == ""
+    assert ctx["sayi"] == PLACEHOLDER_SAYI
+    assert ctx["tarih"] == PLACEHOLDER_TARIH
     assert "sayi" in missing
     assert "tarih" in missing
 
@@ -66,7 +75,7 @@ def test_context_adapter_cevap_yazisi_ilgi_mapping():
     assert "ilgi" in ctx
     assert ctx["ilgi"][0]["sayi"] == "INCOMING-123"
     assert ctx["ilgi"][0]["tarih"] == "15.08.2026"
-    assert "extraction.document_date + extraction.document_number" in res["source_map"]["ilgi"]
+    assert "extraction.fields.document_date.value" in res["source_map"]["ilgi"]
 
 def test_context_adapter_signer_missing():
     # Kural 4: Signer yok, isim/unvan uydurulmuyor
@@ -78,13 +87,15 @@ def test_context_adapter_signer_missing():
     
     assert "imza.ad_soyad" in missing
     assert "imza.unvan" in missing
+    assert res["context"]["imza"]["ad_soyad"] == PLACEHOLDER_IMZA_AD_SOYAD
+    assert res["context"]["imza"]["unvan"] == PLACEHOLDER_IMZA_UNVAN
 
 def test_context_adapter_routing_unit_resolved():
     # Kural 5: routing unit id gerçek display name'e çözülüyor
     # 'yazi_isleri' ID'si kurum profilinde var, "Yazı İşleri Müdürlüğü"ne çözülmeli
     state = mock_state()
     draft = mock_draft()
-    draft["sender_unit"] = "yazi_isleri"
+    state["routing"]["recommended_unit"] = "yazi_isleri"
     
     res = build_official_writing_context(draft, state, "ust_yazi")
     ctx = res["context"]
@@ -97,7 +108,7 @@ def test_context_adapter_unknown_routing_unit():
     # Kural 6: bilinmeyen routing unit kurum/birim uydurulmuyor
     state = mock_state()
     draft = mock_draft()
-    draft["sender_unit"] = "bilinmeyen_bir_id"
+    state["routing"]["recommended_unit"] = "bilinmeyen_bir_id"
     
     res = build_official_writing_context(draft, state, "ust_yazi")
     
@@ -132,25 +143,25 @@ def test_context_adapter_source_map():
     # Kural 9: source_map doğru provenance gösteriyor
     state = mock_state()
     draft = mock_draft()
-    draft["sender_unit"] = "yazi_isleri"
+    state["routing"]["recommended_unit"] = "yazi_isleri"
     
     res = build_official_writing_context(draft, state, "ust_yazi")
     
     sm = res["source_map"]
-    assert "extraction.subject" in sm["konu"]
-    assert "draft.body (split)" in sm["metin_paragraflari"]
-    assert "profile.birimler" in sm["tc_baslik.birim_adi"]
+    assert "extraction.fields.subject.value" in sm["konu"]
+    assert "draft.body" in sm["metin_paragraflari"]
+    assert "institution_profile.birimler" in sm["tc_baslik.birim_adi"]
 
-def test_try_official_render_skips_on_missing_signer_sayi_tarih(writing_agent):
-    # Adapter imza/sayi/tarih gibi alanları kasten siliyor.
-    # Bu nedenle _try_official_render'ın exception fırlatmadan "atlandı" uyarısı dönmesi beklenir.
+def test_try_official_render_uses_placeholders_for_missing_metadata(writing_agent):
+    # Eksik EBYS/imza metadata'sı açık placeholder ile render edilir.
     res = writing_agent._try_official_render(mock_draft(), "ust_yazi", mock_state())
     
     assert res["official_render"]["attempted"] is True
-    assert res["official_render"]["success"] is False
-    assert "Kritik context alanları eksik" in res["official_render_warning"]
-    assert "sayi" in res["official_render_warning"]
-    assert "imza.ad_soyad" in res["official_render_warning"]
+    assert res["official_render"]["success"] is True
+    assert "sayi" in res["official_render"]["missing_fields"]
+    assert "imza.ad_soyad" in res["official_render"]["missing_fields"]
+    assert PLACEHOLDER_SAYI in res["official_rendered_text"]
+    assert PLACEHOLDER_IMZA_AD_SOYAD in res["official_rendered_text"]
 
 def test_try_official_render_success_with_fake_fixture(writing_agent, monkeypatch):
     # Tamamen kurgusal (fake) bir context dönen mock adapter
@@ -163,6 +174,7 @@ def test_try_official_render_success_with_fake_fixture(writing_agent, monkeypatc
                 "konu": "Test Konusu",
                 "muhatap": {"tur": "kurum", "isim": "HEDEF KURUM"},
                 "muhatap_turu": "kurum_ust",
+                "kapalis_ifadesi": "arz ederim.",
                 "metin_paragraflari": ["Paragraf 1"],
                 "imza": {"ad_soyad": "Ahmet Yılmaz", "unvan": "Müdür", "yetki_turu": "normal"},
                 "iletisim": {"adres": "", "irtibat": ""},
@@ -183,3 +195,30 @@ def test_try_official_render_success_with_fake_fixture(writing_agent, monkeypatc
     assert res["official_render"]["success"] is True
     assert "TEST KURUMU" in res["official_rendered_text"]
     assert "Ahmet Yılmaz" in res["official_rendered_text"]
+
+
+def test_context_adapter_recipient_priority_uses_nested_recipient():
+    state = mock_state()
+    state["extraction"]["fields"]["recipient"] = {
+        "value": "İlçe Sağlık Müdürlüğüne",
+        "validated": True,
+    }
+    draft = mock_draft()
+    draft["recipient"] = None
+
+    res = build_official_writing_context(draft, state, "ust_yazi")
+
+    assert res["context"]["muhatap"]["isim"] == "İLÇE SAĞLIK MÜDÜRLÜĞÜNE"
+    assert res["source_map"]["muhatap"] == "extraction.fields.recipient.value"
+
+
+def test_context_adapter_person_recipient_gets_person_closing():
+    state = mock_state()
+    draft = mock_draft()
+    draft["recipient"] = "Ahmet Yılmaz"
+
+    res = build_official_writing_context(draft, state, "cevap_yazisi")
+
+    assert res["context"]["muhatap"]["tur"] == "gercek_kisi"
+    assert res["context"]["muhatap_turu"] == "gercek_kisi"
+    assert res["context"]["kapalis_ifadesi"] == "Saygılarımla."

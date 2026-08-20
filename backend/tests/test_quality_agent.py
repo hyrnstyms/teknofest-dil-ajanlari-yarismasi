@@ -1,5 +1,6 @@
 import pytest
 from backend.app.agents.quality_agent import QualityAgent
+from backend.app.official_writing.context_adapter import build_official_writing_context
 
 # Kaymakamlık YAML profilindeki gerçek birim adı (source-of-truth)
 _VALID_UNIT = "Yazı İşleri Müdürlüğü"
@@ -133,3 +134,65 @@ def test_quality_invalid_unit_fails(agent):
         human_review={"required": False}
     )
     assert res["checks"]["routing"]["status"] == "fail"
+
+
+def test_quality_rendered_preview_with_placeholders_is_warning(agent):
+    extraction = {
+        "fields": {
+            "subject": {
+                "value": "Bilgi Talebi",
+                "evidence": "Bilgi Talebi",
+                "validated": True,
+            },
+            "person_name": {
+                "value": "Mehmet Kaya",
+                "evidence": "Mehmet Kaya",
+                "validated": True,
+            },
+        }
+    }
+    routing = {"recommended_unit": _VALID_UNIT, "needs_human_review": False}
+    adapter_result = build_official_writing_context(
+        draft={
+            "subject": "Bilgi Talebi",
+            "body": "Başvurunuz incelenmiştir.",
+            "recipient": "Mehmet Kaya",
+            "sender_unit": _VALID_UNIT,
+        },
+        state={
+            "extraction": extraction,
+            "routing": routing,
+            "kurum_profili_id": "kaymakamlik_v1",
+        },
+        draft_type="ust_yazi",
+    )
+
+    res = agent.check_quality(
+        document={"document_type": "dilekce", "process_intent": "basvuru"},
+        extraction=extraction,
+        legal_analysis={"evidence": ["valid evidence"]},
+        missing_fields={
+            "present_fields": ["person_name"],
+            "missing_fields": [],
+            "uncertain_fields": [],
+            "needs_human_review": False,
+        },
+        summary={"short_summary": "test"},
+        routing=routing,
+        draft={
+            "draft_type": "ust_yazi",
+            "draft_generation_mode": "llm",
+            "requires_human_approval": True,
+            "official_render": {
+                "attempted": True,
+                "success": True,
+                "context": adapter_result["context"],
+                "missing_fields": adapter_result["missing_required_fields"],
+            },
+        },
+    )
+
+    assert res["status"] == "warning"
+    assert res["checks"]["official_format"]["status"] == "warning"
+    assert res["checks"]["official_writing_format"]["status"] == "warning"
+    assert res["requires_human_review"] is True

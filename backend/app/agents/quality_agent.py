@@ -46,7 +46,8 @@ class QualityAgent:
         missing_fields: Dict[str, Any],
         summary: Dict[str, Any],
         routing: Dict[str, Any],
-        draft: Dict[str, Any]
+        draft: Dict[str, Any],
+        human_review: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         
         result = {
@@ -165,7 +166,17 @@ class QualityAgent:
             off = draft.get("official_render", {})
             if off:
                 if off.get("success"):
-                    add_check("official_format", "pass", "Resmî format başarıyla oluşturuldu.")
+                    render_missing = off.get("missing_fields", [])
+                    if render_missing:
+                        add_check(
+                            "official_format",
+                            "warning",
+                            "Resmî taslak önizlemesi oluşturuldu; personel/EBYS "
+                            f"tarafından doldurulacak alanlar: {', '.join(render_missing)}.",
+                        )
+                        result["requires_human_review"] = True
+                    else:
+                        add_check("official_format", "pass", "Resmî format başarıyla oluşturuldu.")
                 elif off.get("attempted"):
                     add_check("official_format", "fail", "Resmî format üretimi sırasında hata oluştu.")
                 else:
@@ -234,7 +245,11 @@ class QualityAgent:
             return
 
         try:
-            sonuc = _ow_validate(taslak=taslak_dict, yazi_turu=yazi_turu)
+            sonuc = _ow_validate(
+                taslak=taslak_dict,
+                yazi_turu=yazi_turu,
+                missing_fields=off_render.get("missing_fields", []),
+            )
 
             error_msgs = [h.mesaj for h in sonuc.hatalar]
             warning_msgs = [h.mesaj for h in sonuc.uyarilar]
@@ -251,6 +266,7 @@ class QualityAgent:
                     "warning",
                     f"Resmî yazı biçim uyarıları: {'; '.join(warning_msgs[:3])}",
                 )
+                result["requires_human_review"] = True
             else:
                 add_check(
                     "official_writing_format",

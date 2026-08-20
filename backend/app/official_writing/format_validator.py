@@ -583,12 +583,18 @@ def kisaltma_aciklama_mevcut_mu(
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def validate_format(taslak: dict, yazi_turu: YaziTuru) -> DogrulamaSonucu:
+def validate_format(
+    taslak: dict,
+    yazi_turu: YaziTuru,
+    missing_fields: list[str] | None = None,
+) -> DogrulamaSonucu:
     """
     Verilen yazı taslağının biçim kurallarına uygunluğunu doğrular.
 
     taslak: Şablona geçirilecek parametreler sözlüğü (jinja2 context ile aynı)
     yazi_turu: "ust_yazi" | "cevap_yazisi" | "tekit_yazisi"
+    missing_fields: Adapter'ın placeholder olarak işaretlediği alanlar. Bu
+        alanlar biçim hatası yerine personel/EBYS tamamlama uyarısı üretir.
 
     Returns:
         DogrulamaSonucu — gecerli=True ise tüm kurallar karşılandı.
@@ -603,23 +609,43 @@ def validate_format(taslak: dict, yazi_turu: YaziTuru) -> DogrulamaSonucu:
         edilmelidir (MVP kapsamı dışı).
     """
     sonuc = DogrulamaSonucu()
+    declared_missing = set(missing_fields or [])
+
+    def is_declared_missing(*field_names: str) -> bool:
+        return any(field_name in declared_missing for field_name in field_names)
+
+    def add_missing_warning(field_name: str, label: str) -> None:
+        sonuc.uyari_ekle(
+            "TASLAK_ALANI_EKSIK",
+            f"{label} taslak önizlemesinde placeholder olarak gösterildi; "
+            "personel/EBYS tarafından doldurulmalıdır.",
+            "Taslak metadata",
+        )
 
     # ── 1. Sayı Formatı (Madde 11) ────────────────────────────────────────────
     sayi = taslak.get("sayi", "")
-    gecerli, mesaj = sayi_formati_dogru_mu(sayi)
-    if not gecerli:
-        sonuc.hata_ekle("SAYI_FORMAT", mesaj, "Madde 11")
+    if is_declared_missing("sayi"):
+        add_missing_warning("sayi", "Sayı alanı")
+    else:
+        gecerli, mesaj = sayi_formati_dogru_mu(sayi)
+        if not gecerli:
+            sonuc.hata_ekle("SAYI_FORMAT", mesaj, "Madde 11")
 
     # ── 2. Tarih Formatı (Madde 12) ───────────────────────────────────────────
     tarih = taslak.get("tarih", "")
-    gecerli, mesaj = tarih_formati_dogru_mu(tarih)
-    if not gecerli:
-        sonuc.hata_ekle("TARIH_FORMAT", mesaj, "Madde 12")
+    if is_declared_missing("tarih"):
+        add_missing_warning("tarih", "Tarih alanı")
+    else:
+        gecerli, mesaj = tarih_formati_dogru_mu(tarih)
+        if not gecerli:
+            sonuc.hata_ekle("TARIH_FORMAT", mesaj, "Madde 12")
 
     # ── 3. Konu Formatı (Madde 13) ────────────────────────────────────────────
     konu = taslak.get("konu", "")
 
-    if yazi_turu == "tekit_yazisi":
+    if is_declared_missing("konu"):
+        add_missing_warning("konu", "Konu alanı")
+    elif yazi_turu == "tekit_yazisi":
         gecerli, mesaj = tekit_konu_dogru_mu(konu)
         if not gecerli:
             sonuc.hata_ekle("TEKIT_KONU", mesaj, "Madde 34")
@@ -643,20 +669,25 @@ def validate_format(taslak: dict, yazi_turu: YaziTuru) -> DogrulamaSonucu:
     else:
         muhatap_metni = muhatap_isim
 
-    gecerli, mesaj = muhatap_formati_dogru_mu(muhatap_tur, muhatap_metni)
-    if not gecerli:
-        sonuc.hata_ekle("MUHATAP_FORMAT", mesaj, "Madde 14")
+    if is_declared_missing("muhatap"):
+        add_missing_warning("muhatap", "Muhatap alanı")
+    else:
+        gecerli, mesaj = muhatap_formati_dogru_mu(muhatap_tur, muhatap_metni)
+        if not gecerli:
+            sonuc.hata_ekle("MUHATAP_FORMAT", mesaj, "Madde 14")
 
     # ── 5. İlgi Formatı (Madde 15) ────────────────────────────────────────────
     ilgi = taslak.get("ilgi", [])
     ilgi_mevcut = bool(ilgi)
 
-    if ilgi_mevcut:
+    if is_declared_missing("ilgi"):
+        add_missing_warning("ilgi", "İlgi alanı")
+    elif ilgi_mevcut:
         ilgi_satirlari = []
         for item in ilgi:
             satir = (
-                f"İlgi: {item.get('tarih', '')}tarihli ve "
-                f"{item.get('sayi', '')}sayılı {item.get('aciklama', '')}."
+                f"İlgi: {item.get('tarih', '')} tarihli ve "
+                f"{item.get('sayi', '')} sayılı {item.get('aciklama', '')}."
             )
             ilgi_satirlari.append(satir)
         gecerli, mesaj = ilgi_formati_dogru_mu(ilgi_satirlari)
@@ -678,7 +709,7 @@ def validate_format(taslak: dict, yazi_turu: YaziTuru) -> DogrulamaSonucu:
             sonuc.hata_ekle("TEKIT_METIN_KALIBI", mesaj, "Madde 34")
 
     # ── 5b. Cevap yazısında ilgi zorunlu [TASARIM KARARI] ────────────────────
-    if yazi_turu == "cevap_yazisi":
+    if yazi_turu == "cevap_yazisi" and not is_declared_missing("ilgi"):
         gecerli, mesaj = cevap_ilgi_zorunlu_mu(ilgi_mevcut)
         if not gecerli:
             sonuc.hata_ekle(
@@ -698,14 +729,17 @@ def validate_format(taslak: dict, yazi_turu: YaziTuru) -> DogrulamaSonucu:
 
     # ── 8. İmza Bloğu (Madde 17) ──────────────────────────────────────────────
     imza = taslak.get("imza", {})
-    gecerli, mesaj = imza_blogu_dogru_mu(
-        imza_ad_soyad=imza.get("ad_soyad", ""),
-        imza_unvan=imza.get("unvan", ""),
-        yetki_turu=imza.get("yetki_turu", "normal"),
-        vekil_makam=imza.get("vekil_makam", ""),
-    )
-    if not gecerli:
-        sonuc.hata_ekle("IMZA_BLOKU", mesaj, "Madde 17")
+    if is_declared_missing("imza", "imza.ad_soyad", "imza.unvan"):
+        add_missing_warning("imza", "İmza bloğu")
+    else:
+        gecerli, mesaj = imza_blogu_dogru_mu(
+            imza_ad_soyad=imza.get("ad_soyad", ""),
+            imza_unvan=imza.get("unvan", ""),
+            yetki_turu=imza.get("yetki_turu", "normal"),
+            vekil_makam=imza.get("vekil_makam", ""),
+        )
+        if not gecerli:
+            sonuc.hata_ekle("IMZA_BLOKU", mesaj, "Madde 17")
 
     # ── 9. Ek Listesi (Madde 18) ──────────────────────────────────────────────
     ekler = taslak.get("ekler", None)
@@ -721,13 +755,20 @@ def validate_format(taslak: dict, yazi_turu: YaziTuru) -> DogrulamaSonucu:
 
     # ── TC Başlık (Madde 10) ──────────────────────────────────────────────────
     tc_baslik = taslak.get("tc_baslik", {})
-    gecerli, mesaj = tc_baslik_dogru_mu(
-        ilk_satir="T.C.",  # Şablon her zaman T.C. yazar; içerik parametreli
-        idare_adi=tc_baslik.get("idare_adi", ""),
-        birim_adi=tc_baslik.get("birim_adi", ""),
-    )
-    if not gecerli:
-        sonuc.hata_ekle("TC_BASLIK", mesaj, "Madde 10")
+    if is_declared_missing(
+        "tc_baslik",
+        "tc_baslik.idare_adi",
+        "tc_baslik.birim_adi",
+    ):
+        add_missing_warning("tc_baslik", "T.C. başlık alanı")
+    else:
+        gecerli, mesaj = tc_baslik_dogru_mu(
+            ilk_satir="T.C.",  # Şablon her zaman T.C. yazar; içerik parametreli
+            idare_adi=tc_baslik.get("idare_adi", ""),
+            birim_adi=tc_baslik.get("birim_adi", ""),
+        )
+        if not gecerli:
+            sonuc.hata_ekle("TC_BASLIK", mesaj, "Madde 10")
 
     # ── Sayfa No Formatı (Madde 10) ───────────────────────────────────────────
     sayfa_no = taslak.get("sayfa_no", "")

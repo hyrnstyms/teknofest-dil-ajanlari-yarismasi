@@ -1572,28 +1572,6 @@ subject ve body alanlarını eksiksiz üret.
         context = adapter_res.get("context", {})
         result["official_render"]["context"] = context
         
-        missing = adapter_res.get("missing_required_fields", [])
-
-        # Eğer kritik template alanları eksikse render deneme
-        # (Şablonlar StrictUndefined kullandığı için exception atar)
-        critical_fields = [
-            "tc_baslik", "konu", "muhatap", "metin_paragraflari",
-            "sayi", "tarih", "imza.ad_soyad", "imza.unvan"
-        ]
-        
-        missing_criticals = [f for f in critical_fields if f in missing]
-        
-        if missing_criticals:
-            result["official_render_warning"] = (
-                f"Kritik context alanları eksik ({', '.join(missing_criticals)}), "
-                "template render atlandı. (EBYS/personel onayı bekleniyor)"
-            )
-            return result
-
-        if draft_type == "cevap_yazisi" and "ilgi" in missing:
-            result["official_render_warning"] = "Cevap yazısı için 'ilgi' eksik, template render atlandı."
-            return result
-
         try:
             rendered = None
             if draft_type in ("ust_yazi", "bilgilendirme_metni"):

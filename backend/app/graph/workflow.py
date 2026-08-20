@@ -173,7 +173,11 @@ class KamuaiWorkflow:
             
             # Extract sender and recipient if available
             sender = s.routing.get("recommended_unit", None)
-            recipient = ext.get("person_name", {}).get("value")
+            recipient = (
+                ext.get("recipient", {}).get("value")
+                or ext.get("institution", {}).get("value")
+                or ext.get("person_name", {}).get("value")
+            )
             
             # Gather verified facts
             facts = []
@@ -190,7 +194,9 @@ class KamuaiWorkflow:
                 state={
                     "extraction": s.extraction,
                     "routing": s.routing,
-                    "kurum_profili_id": s.kurum_profili_id
+                    "kurum_profili_id": s.kurum_profili_id,
+                    "muhatap": s.muhatap,
+                    "muhatap_turu": s.muhatap_turu,
                 }
             )
             return {"draft": res}

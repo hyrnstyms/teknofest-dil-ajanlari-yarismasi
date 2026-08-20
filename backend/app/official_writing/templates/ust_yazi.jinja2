@@ -28,6 +28,7 @@
                            "kurum_ayni" | "kurum_karisik" | "gercek_kisi"
                            Hiyerarşi belirsiz/bilinmiyorsa -> kurum_ust gibi
                            davran (varsayılan "arz ederim" — [TASARIM KARARI]).
+    kapalis_ifadesi: str   muhatap_turu'ndan adapter tarafından türetilir
     ilgi           : list  (opsiyonel) Dicts: { tarih: str, sayi: str, aciklama: str }
                            "...tarihli ve ...sayılı..." kalıbı, sonunda nokta
                            (Madde 15)
@@ -93,7 +94,7 @@ Konu: {{ konu }}
 {# kalıbı, sonunda nokta.                                                   #}
 {%- if ilgi is defined and ilgi %}
 {%- for ilgi_item in ilgi %}
-İlgi: {{ ilgi_item.tarih }}tarihli ve {{ ilgi_item.sayi }}sayılı {{ ilgi_item.aciklama }}.
+İlgi: {{ ilgi_item.tarih }} tarihli ve {{ ilgi_item.sayi }} sayılı {{ ilgi_item.aciklama }}.
 {%- endfor %}
 
 {%- endif %}
@@ -114,15 +115,7 @@ Konu: {{ konu }}
 {#   gercek_kisi   -> "Saygılarımla." (arz/rica KULLANILMAZ — Madde 31/7) #}
 {# [TASARIM KARARI] Muhatap kurum ve hiyerarşi bilgisi belirsizse          #}
 {#   varsayılan kurum_ust davranışı -> "arz ederim."                        #}
-{%- if muhatap_turu == "gercek_kisi" %}
-Saygılarımla.
-{%- elif muhatap_turu == "kurum_alt" %}
-rica ederim.
-{%- elif muhatap_turu == "kurum_karisik" %}
-arz ve rica ederim.
-{%- else %}{# kurum_ust, kurum_ayni ve bilinmeyen/belirsiz -> arz ederim #}
-arz ederim.
-{%- endif %}
+{{ kapalis_ifadesi }}
 
 
 {# ── 8. İMZA BLOĞU (Madde 17) ─────────────────────────────────────────── #}

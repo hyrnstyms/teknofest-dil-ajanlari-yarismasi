@@ -56,7 +56,7 @@ SOURCES = [
         "source_id": "resmi_yazisma_yonetmeligi (checklist uzerinden)",
         "title": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
         "law_number": "resmi_yazisma_yonetmeligi",
-        "rag_domain": "legal",
+        "rag_domain": "official_writing",
         "type": "md"
     },
     {
@@ -64,7 +64,7 @@ SOURCES = [
         "source_id": "resmi_yazisma_kilavuzu",
         "title": "Resmî Yazışma Kılavuzu",
         "law_number": "resmi_yazisma_kilavuzu",
-        "rag_domain": "legal",
+        "rag_domain": "official_writing",
         "type": "pdf"
     },
 ]
@@ -223,7 +223,7 @@ def main():
                 "source": src["source_id"],
                 "title": src["title"],
                 "law_number": src["law_number"],
-                "rag_domain": "legal",
+                "rag_domain": src["rag_domain"],
                 "madde_no": a["madde_no"],
                 "text": a["text"],
                 "trusted_source": True,
@@ -231,7 +231,7 @@ def main():
                 "metadata": {
                     "rag_eligible": True,
                     "law_number": src["law_number"],
-                    "rag_domain": "legal",
+                    "rag_domain": src["rag_domain"],
                     "madde_no": a["madde_no"],
                     "source": src["source_id"],
                     "title": src["title"],
