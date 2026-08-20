@@ -1,33 +1,77 @@
-import { ApiError } from "../types/api";
+import { DocumentState } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  try {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, options);
-    
+export const api = {
+  async checkSystemReady(): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/ready`);
     if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        throw { code: "unknown_error", message: `Sunucu hatası: ${response.statusText}` };
-      }
-      
-      const detail = errorData.detail || errorData;
-      const apiError: ApiError = {
-        code: detail.code || "api_error",
-        message: detail.message || "Bilinmeyen bir hata oluştu."
-      };
-      throw apiError;
+      throw new Error(`HTTP Error: ${response.status}`);
     }
-    
     return response.json();
-  } catch (err: any) {
-    if (err.message === "Failed to fetch") {
-      throw { code: "network_error", message: "Sunucuya ulaşılamadı. Lütfen bağlantınızı kontrol edin." };
+  },
+
+  async analyzeText(text: string): Promise<DocumentState> {
+    const response = await fetch(`${API_BASE_URL}/api/documents/analyze-text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
     }
-    throw err;
-  }
-}
+
+    return response.json();
+  },
+
+  async uploadDocument(file: File): Promise<DocumentState> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  async approveAnalysis(analysisId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/approve`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  async rejectAnalysis(analysisId: string, reason: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/reject`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+};

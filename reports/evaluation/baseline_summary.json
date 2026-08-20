@@ -1,0 +1,373 @@
+{
+  "documents": {
+    "dataset_name": "documents",
+    "status": "pass",
+    "coverage": {
+      "total_records": 161,
+      "evaluable_records": 161,
+      "skipped_records": 0,
+      "coverage_rate": 1.0,
+      "unsupported_labels": [],
+      "skip_reasons": {}
+    },
+    "metrics": {
+      "document_type_accuracy": 0.0,
+      "routing_top1_accuracy": 0.0,
+      "routing_top3_accuracy": 0.0,
+      "missing_field_accuracy": 0.8509316770186336,
+      "extraction_precision": 0.0,
+      "extraction_recall": 0.0,
+      "extraction_f1": 0.0
+    },
+    "unsupported": {
+      "unsupported_doc_types": [],
+      "unsupported_routing_labels": []
+    },
+    "runtime_failures": 0,
+    "errors": [],
+    "failure_examples": [
+      {
+        "step": "document_type",
+        "id": "SENT-0001",
+        "gold": "dilekce",
+        "predicted": null
+      },
+      {
+        "step": "routing",
+        "id": "SENT-0001",
+        "gold": "yazi_isleri",
+        "predicted": "",
+        "top3": []
+      },
+      {
+        "step": "document_type",
+        "id": "SENT-0002",
+        "gold": "dilekce",
+        "predicted": null
+      },
+      {
+        "step": "routing",
+        "id": "SENT-0002",
+        "gold": "yazi_isleri",
+        "predicted": "",
+        "top3": []
+      },
+      {
+        "step": "document_type",
+        "id": "SENT-0003",
+        "gold": "dilekce",
+        "predicted": null
+      },
+      {
+        "step": "routing",
+        "id": "SENT-0003",
+        "gold": "emniyet",
+        "predicted": "",
+        "top3": []
+      },
+      {
+        "step": "document_type",
+        "id": "SENT-0004",
+        "gold": "dilekce",
+        "predicted": null
+      },
+      {
+        "step": "routing",
+        "id": "SENT-0004",
+        "gold": "nufus",
+        "predicted": "",
+        "top3": []
+      },
+      {
+        "step": "document_type",
+        "id": "SENT-0005",
+        "gold": "dilekce",
+        "predicted": null
+      },
+      {
+        "step": "routing",
+        "id": "SENT-0005",
+        "gold": "tarim",
+        "predicted": "",
+        "top3": []
+      }
+    ]
+  },
+  "legal_rag": {
+    "dataset_name": "legal_rag",
+    "status": "pass",
+    "coverage": {
+      "total_records": 335,
+      "evaluable_records": 279,
+      "skipped_records": 56,
+      "coverage_rate": 0.8328358208955224,
+      "unsupported_labels": [],
+      "skip_reasons": {
+        "corpus_missing": 56
+      }
+    },
+    "metrics": {
+      "hit@1": 0.0,
+      "hit@3": 0.0,
+      "hit@5": 0.0,
+      "mrr": 0.0
+    },
+    "unsupported": {
+      "unsupported_corpus": 56
+    },
+    "runtime_failures": 0,
+    "errors": [],
+    "failure_examples": [
+      {
+        "step": "retrieval",
+        "id": "qa_0",
+        "gold": "bilgiedinmekanunu|3",
+        "retrieved": [
+          "4982|",
+          "4982|",
+          "resmi_yazisma_kilavuzu|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_1",
+        "gold": "bilgiedinmekanunu|8",
+        "retrieved": [
+          "4982|",
+          "4982|",
+          "4982|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_2",
+        "gold": "bilgiedinmekanunu|11",
+        "retrieved": [
+          "4982|",
+          "4982|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_3",
+        "gold": "bilgiedinmekanunu|6",
+        "retrieved": [
+          "4982|",
+          "4982|",
+          "4982|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_4",
+        "gold": "bilgiedinmekanunu|19",
+        "retrieved": [
+          "4982|",
+          "4982|",
+          "4982|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_5",
+        "gold": "bilgiedinmekanunu|21",
+        "retrieved": [
+          "4982|",
+          "4982|",
+          "4982|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_6",
+        "gold": "bilgiedinmekanunu|30",
+        "retrieved": [
+          "4982|",
+          "4982|",
+          "4982|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_7",
+        "gold": "cezamuhakemesikanunu|94",
+        "retrieved": [
+          "5442|",
+          "4982|",
+          "5442|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_8",
+        "gold": "cezamuhakemesikanunu|103",
+        "retrieved": [
+          "5442|",
+          "4982|",
+          "5442|"
+        ]
+      },
+      {
+        "step": "retrieval",
+        "id": "qa_9",
+        "gold": "cezamuhakemesikanunu|101",
+        "retrieved": [
+          "5442|",
+          "5442|",
+          "5442|"
+        ]
+      }
+    ]
+  },
+  "writing": {
+    "dataset_name": "writing",
+    "status": "pass",
+    "coverage": {
+      "total_records": 5,
+      "evaluable_records": 0,
+      "skipped_records": 5,
+      "coverage_rate": 1.0,
+      "unsupported_labels": [],
+      "skip_reasons": {
+        "ImportError": 5
+      }
+    },
+    "metrics": {},
+    "unsupported": {},
+    "runtime_failures": 5,
+    "errors": [],
+    "failure_examples": [
+      {
+        "step": "draft_type",
+        "id": "SENT-0004",
+        "gold": "bilgilendirme_yazisi",
+        "predicted": "bilgilendirme_metni"
+      }
+    ]
+  },
+  "ocr": {
+    "dataset_name": "ocr",
+    "status": "pass",
+    "coverage": {
+      "total_records": 72,
+      "evaluable_records": 0,
+      "skipped_records": 72,
+      "coverage_rate": 0.0,
+      "unsupported_labels": [],
+      "skip_reasons": {
+        "NotImplementedError": 72
+      }
+    },
+    "metrics": {
+      "temiz": {
+        "total": 24,
+        "gt_matched": 24,
+        "attempted": 24,
+        "successful": 0,
+        "failed": 24,
+        "cer_evaluable": 0,
+        "cer_sum": 0.0,
+        "wer_sum": 0.0,
+        "success_rate": 0.0
+      },
+      "orta_kalite": {
+        "total": 24,
+        "gt_matched": 24,
+        "attempted": 24,
+        "successful": 0,
+        "failed": 24,
+        "cer_evaluable": 0,
+        "cer_sum": 0.0,
+        "wer_sum": 0.0,
+        "success_rate": 0.0
+      },
+      "zor": {
+        "total": 24,
+        "gt_matched": 24,
+        "attempted": 24,
+        "successful": 0,
+        "failed": 24,
+        "cer_evaluable": 0,
+        "cer_sum": 0.0,
+        "wer_sum": 0.0,
+        "success_rate": 0.0
+      },
+      "overall": {
+        "total": 72,
+        "gt_matched": 72,
+        "attempted": 72,
+        "successful": 0,
+        "failed": 72,
+        "cer_evaluable": 0,
+        "cer_sum": 0.0,
+        "wer_sum": 0.0,
+        "success_rate": 0.0
+      }
+    },
+    "unsupported": {},
+    "runtime_failures": 72,
+    "errors": [],
+    "failure_examples": [
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0003",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0004",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0008",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0021",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0025",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0034",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0044",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0047",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0049",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      },
+      {
+        "step": "ocr_runtime",
+        "id": "SENT-0055",
+        "category": "temiz",
+        "error": "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  (at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)\n"
+      }
+    ]
+  }
+}

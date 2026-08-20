@@ -6,16 +6,29 @@ from backend.app.evaluation.schemas import EvaluationReport, CoverageInfo
 from backend.app.evaluation.adapters import normalize_turkish_label
 import re
 
+NORMALIZED_DOCUMENT_IDS = {
+    "bilgiedinmekanunu": "4982",
+    "dilekce_hakki_kanunu": "3071",
+    "3071_dilekce_hakki_kanunu": "3071",
+    "resmi_yazisma_kurallari": "resmi_yazisma_kurallari", 
+    "resmi_yazisma_kilavuzu": "resmi_yazisma_kilavuzu",
+    "kvkk": "6698",
+    "cezamuhakemesikanunu": "5271"
+}
+
 def normalize_legal_source(source: str) -> str:
-    """Normalize legal source string (e.g. '3071 Dilekçe Hakkı Kanunu' -> '3071_dilekce_hakki_kanunu')"""
+    """Normalize legal source string to canonical ID/law number"""
     if not source:
         return ""
-    norm = normalize_turkish_label(source)
+    # strip .pdf BEFORE normalization
+    s = str(source).replace(".pdf", "")
+    norm = normalize_turkish_label(s)
     norm = re.sub(r'\s+', '_', norm)
-    # special replacements for exact match
     norm = norm.replace("hakk", "hakki")
     norm = norm.replace("hakkii", "hakki")
-    return norm
+    
+    # Try mapping
+    return NORMALIZED_DOCUMENT_IDS.get(norm, norm)
 
 def normalize_madde(madde: str) -> str:
     if not madde:
@@ -95,13 +108,14 @@ def evaluate_legal_rag() -> EvaluationReport:
         matched_corpus += 1
         
         try:
-            res = agent.analyze(item["question"])
-            sources = res.get("sources", [])
+            sources = agent.retriever.search_legal(query=item["question"], limit=5)
+            # res = agent.analyze(item["question"])
+            # sources = res.get("sources", [])
             retrieved_keys = []
             
             for s in sources:
-                src_val = normalize_legal_source(s.get("source", ""))
-                mad_val = normalize_madde(s.get("article", ""))
+                src_val = normalize_legal_source(s.get("law_number", s.get("source", "")))
+                mad_val = normalize_madde(s.get("madde_no", s.get("article", "")))
                 retrieved_keys.append(f"{src_val}|{mad_val}")
                 
             rank = -1

@@ -58,9 +58,9 @@ def map_gold_document(doc_dict: Dict[str, Any]) -> GoldDocument:
     return GoldDocument(**doc_dict)
     
 def map_predicted_document(doc_id: str, workflow_result: Dict[str, Any]) -> PredictedDocument:
-    doc_type = workflow_result.get("document_agent", {}).get("document_type")
+    doc_type = workflow_result.get("document", {}).get("document_type")
     
-    routing = workflow_result.get("routing_agent", {})
+    routing = workflow_result.get("routing", {})
     recommended_unit = routing.get("recommended_unit")
     if recommended_unit and isinstance(recommended_unit, dict):
         recommended_unit = recommended_unit.get("name", "")
@@ -69,10 +69,10 @@ def map_predicted_document(doc_id: str, workflow_result: Dict[str, Any]) -> Pred
 
     ranked_units = [u.get("name") for u in routing.get("ranked_units", [])]
     
-    missing_fields = workflow_result.get("missing_field_agent", {})
+    missing_fields = workflow_result.get("missing_fields", {})
     eksik_alan_var_mi = missing_fields.get("needs_human_review", None)
     
-    extraction = workflow_result.get("extraction_agent", {})
+    extraction = workflow_result.get("extraction", {})
     extracted_fields = extraction.get("fields", {})
     
     return PredictedDocument(
