@@ -95,7 +95,7 @@ def evaluate_legal_rag() -> EvaluationReport:
         matched_corpus += 1
         
         try:
-            res = agent.process(item["question"])
+            res = agent.analyze(item["question"])
             sources = res.get("sources", [])
             retrieved_keys = []
             

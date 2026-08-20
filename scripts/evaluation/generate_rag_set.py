@@ -6,7 +6,7 @@ import pdfplumber
 # NOT: Bu script YALNIZCA evaluation amaçlıdır.
 # RAG corpus'a hiçbir kayıt eklemez. Qdrant'a indexleme YAPILMAZ.
 BASE_DIR = Path(__file__).parent.parent.parent  # scripts/evaluation -> scripts -> proje kökü
-RAG_PATH = BASE_DIR / "data" / "evaluation" / "rag_test_seti.jsonl"
+RAG_PATH = BASE_DIR / "data" / "evaluation" / "legal" / "rag_test_seti.jsonl"
 PDF_DIR = BASE_DIR / "data" / "regulations"
 
 RAG_DATA = [

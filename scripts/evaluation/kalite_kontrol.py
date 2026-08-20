@@ -1,5 +1,5 @@
 """
-data/synthetic/evraklar.jsonl — kalite kontrol scripti
+data/evaluation/synthetic/evraklar.jsonl — kalite kontrol scripti
 
 Kontroller:
 1. Her evrak_turu_dogru, kurum_profili YAML'daki 6 id'den biri mi?
@@ -15,7 +15,7 @@ from pathlib import Path
 from collections import Counter
 
 _PROJECT_ROOT = Path(__file__).parent.parent.parent  # scripts/evaluation -> scripts -> proje kökü
-JSONL_PATH = _PROJECT_ROOT / "data" / "synthetic" / "evraklar.jsonl"
+JSONL_PATH = _PROJECT_ROOT / "data" / "evaluation" / "synthetic" / "evraklar.jsonl"
 
 GECERLI_EVRAK_TURLERI = {
     "dilekce",

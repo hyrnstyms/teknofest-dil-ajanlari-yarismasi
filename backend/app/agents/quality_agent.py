@@ -46,8 +46,7 @@ class QualityAgent:
         missing_fields: Dict[str, Any],
         summary: Dict[str, Any],
         routing: Dict[str, Any],
-        draft: Dict[str, Any],
-        human_review: Dict[str, Any]
+        draft: Dict[str, Any]
     ) -> Dict[str, Any]:
         
         result = {
@@ -55,7 +54,7 @@ class QualityAgent:
             "checks": {},
             "issues": [],
             "warnings": [],
-            "requires_human_review": human_review.get("required", False)
+            "requires_human_review": False
         }
 
         def add_check(key, status, msg):
@@ -172,6 +171,9 @@ class QualityAgent:
                 else:
                     add_check("official_format", "warning", "Resmî format nihai metadata eksik olduğu için tamamlanamadı.")
                     result["requires_human_review"] = True
+                    
+            # Deterministik form biçim kurallarının kontrolü
+            self._check_official_writing_format(draft, add_check, result)
         else:
             add_check("draft", "warning", "Taslak metin mevcut değil.")
 
@@ -218,8 +220,18 @@ class QualityAgent:
             # eksik_bilgi_talebi, diger → biçimsel format kontrolü uygulanmaz
             return
 
-        # draft içindeki nested draft dict'i ya da direkt taslak dict
-        taslak_dict = draft.get("draft") or draft
+        # Validation, LLM'in ham draft'ı üzerinden değil, official_render'ın
+        # oluşturduğu context üzerinden yapılır. Çünkü şablona geçen veriler bunlardır.
+        off_render = draft.get("official_render", {})
+        taslak_dict = off_render.get("context")
+        
+        if not taslak_dict:
+            add_check(
+                "official_writing_format",
+                "warning",
+                "Format kontrolü için resmî yazı bağlamı (context) bulunamadı."
+            )
+            return
 
         try:
             sonuc = _ow_validate(taslak=taslak_dict, yazi_turu=yazi_turu)

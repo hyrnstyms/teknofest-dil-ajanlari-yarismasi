@@ -87,7 +87,7 @@ def evaluate_ocr() -> EvaluationReport:
             report.metrics["overall"]["attempted"] += 1
             
             try:
-                ocr_result = ocr_service.extract_text(str(img_path))
+                ocr_result = ocr_service.extract_text_from_image(str(img_path))
                 report.metrics[category]["successful"] += 1
                 report.metrics["overall"]["successful"] += 1
                 

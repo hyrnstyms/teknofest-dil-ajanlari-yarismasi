@@ -15,12 +15,16 @@ from backend.app.institutions.profile_loader import load_institution_profile, In
 # Opsiyonel: Profile'ı cache'lemek için (MVP)
 _cached_profile: InstitutionProfile | None = None
 
-def _get_profile() -> InstitutionProfile | None:
+def _get_profile(kurum_profili_id: str = "kaymakamlik") -> InstitutionProfile | None:
     global _cached_profile
-    if not _cached_profile:
+    
+    # Simple mapping: strip version suffixes like _v1
+    base_name = kurum_profili_id.split("_v")[0] if kurum_profili_id else "kaymakamlik"
+    
+    # If not cached or cached profile is for a different institution, load it
+    if not _cached_profile or getattr(_cached_profile, "kurum_adi", "").lower() != base_name.lower():
         try:
-            # Şimdilik sabit 'kaymakamlik' kullanıyoruz (sistem geneli ayar)
-            _cached_profile = load_institution_profile("kaymakamlik")
+            _cached_profile = load_institution_profile(base_name)
         except Exception:
             pass
     return _cached_profile
@@ -49,7 +53,8 @@ def build_official_writing_context(
     source_map = {}
     fallback_policies = {}
 
-    profile = _get_profile()
+    kurum_profili_id = state.get("kurum_profili_id", "kaymakamlik")
+    profile = _get_profile(kurum_profili_id)
     extraction = state.get("extraction", {})
     verified_facts = draft.get("verified_facts_used", {})
 

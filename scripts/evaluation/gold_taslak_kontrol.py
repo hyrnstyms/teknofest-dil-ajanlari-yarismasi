@@ -5,10 +5,12 @@ import os
 
 sys.stdout.reconfigure(encoding='utf-8')
 
+from pathlib import Path
+
 # Add project root to path for KAMUAI backend imports
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if _PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, _PROJECT_ROOT)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from backend.app.official_writing.format_validator import validate_format
 
@@ -124,8 +126,8 @@ def parse_taslak_metni(metin: str) -> dict:
     return taslak
 
 def main():
-    asl_dosya = str(_PROJECT_ROOT / 'data' / 'evaluation' / 'gold_taslaklar.jsonl')
-    sablon_dosya = str(_PROJECT_ROOT / 'data' / 'evaluation' / 'gold_taslaklar_sablon.jsonl')
+    asl_dosya = str(_PROJECT_ROOT / 'data' / 'evaluation' / 'writing' / 'gold_taslaklar.jsonl')
+    sablon_dosya = str(_PROJECT_ROOT / 'data' / 'evaluation' / 'writing' / 'gold_taslaklar_sablon.jsonl')
     
     hedef_dosya = asl_dosya if os.path.exists(asl_dosya) else sablon_dosya
     

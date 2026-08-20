@@ -8,8 +8,8 @@ import numpy as np
 
 # Paths
 BASE_DIR = Path(__file__).parent.parent.parent  # scripts/evaluation -> scripts -> proje kökü
-EVRAKLAR_PATH = BASE_DIR / "data" / "synthetic" / "evraklar.jsonl"
-OUT_DIR = BASE_DIR / "data" / "synthetic" / "ocr_gorseller"
+EVRAKLAR_PATH = BASE_DIR / "data" / "evaluation" / "synthetic" / "evraklar.jsonl"
+OUT_DIR = BASE_DIR / "data" / "evaluation" / "ocr"
 
 # Platform bağımsız font tespiti
 def _find_font() -> str | None:

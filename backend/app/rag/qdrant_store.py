@@ -1,8 +1,9 @@
 from qdrant_client import QdrantClient
 from qdrant_client import models
 
+import os
 
-QDRANT_URL = "http://localhost:6333"
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
 VECTOR_SIZE = 1024
 

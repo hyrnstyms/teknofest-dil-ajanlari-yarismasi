@@ -67,17 +67,20 @@ def evaluate_writing() -> EvaluationReport:
                             "predicted": pred_type
                         })
                         
-                validator_res = result.get("validator_result", {})
-                if validator_res.get("is_valid", False):
+                from backend.app.official_writing.format_validator import format_validator
+                rendered_text = result.get("official_render", {}).get("rendered_text", "")
+                validator_res = format_validator.validate_official_writing(rendered_text) if rendered_text else None
+                
+                if validator_res and validator_res.is_valid:
                     val_pass += 1.0
-                elif len(report.failure_examples) < 10:
+                elif validator_res and len(report.failure_examples) < 10:
                     report.failure_examples.append({
                         "step": "validator",
                         "id": source_id,
-                        "errors": validator_res.get("errors", [])
+                        "errors": validator_res.errors
                     })
                     
-                req = validator_res.get("sections_present", {})
+                req = validator_res.sections_present if validator_res else {}
                 if req:
                     req_sections_acc += sum(1 for v in req.values() if v) / len(req)
                     

@@ -64,6 +64,22 @@ class OCRService:
 
         return self._extract_with_paddleocr(path)
 
+    def extract_text_from_image(self, image_path: str) -> str:
+        """
+        Görsel dosyasından (PNG, JPG, vb.) doğrudan metin çıkarır.
+        """
+        path = Path(image_path)
+        
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Görsel dosyası bulunamadı: {image_path}"
+            )
+            
+        ocr = self._get_paddle_ocr()
+        result = ocr.predict(str(path))
+        
+        return self._parse_paddle_result(result)
+
     def _extract_with_paddleocr(self, pdf_path: Path) -> str:
         """
         Metin katmanı bulunmayan/taranmış PDF'lerde

@@ -65,6 +65,8 @@ class EmbeddingService:
             print("Qdrant schema validation passed.")
         except ImportError:
             print("QdrantStore not found, skipping schema validation.")
+        except Exception as e:
+            print(f"Qdrant connection failed during schema validation: {e}. Skipping validation.")
 
     def encode_documents(
         self,

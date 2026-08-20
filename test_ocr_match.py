@@ -1,4 +1,4 @@
-﻿import json
+import json
 from pathlib import Path
 import re
 from backend.app.ocr.ocr_service import OCRService
@@ -10,7 +10,6 @@ def normalize(text):
     return t
 
 ocr_service = OCRService()
-paddle = ocr_service._get_paddle_ocr()
 evraklar = {}
 with open('data/evaluation/synthetic/evraklar.jsonl', 'r', encoding='utf-8') as f:
     for line in f:
@@ -23,8 +22,7 @@ for img_path in images:
     doc_id = img_path.stem.split('_')[0]
     gold_text = evraklar.get(doc_id, '')
     
-    result = paddle.ocr(str(img_path))
-    ocr_text = ocr_service._parse_paddle_result(result)
+    ocr_text = ocr_service.extract_text_from_image(str(img_path))
     
     norm_gold = normalize(gold_text)
     norm_ocr = normalize(ocr_text)

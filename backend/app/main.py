@@ -7,6 +7,9 @@ import os
 import shutil
 from pathlib import Path
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 from backend.app.graph.workflow import KamuaiWorkflow
 from backend.app.telemetry.service import telemetry_service
@@ -38,6 +41,14 @@ def get_workflow():
     if workflow is None:
         workflow = KamuaiWorkflow()
     return workflow
+
+ocr_svc = None
+def get_ocr_service():
+    global ocr_svc
+    if ocr_svc is None:
+        from backend.app.ocr.ocr_service import OCRService
+        ocr_svc = OCRService()
+    return ocr_svc
 
 
 # Schemas
@@ -85,24 +96,36 @@ def readiness_check():
     # Try Qdrant and Embedding via RAG system
     try:
         from backend.app.rag.embedding_service import EmbeddingService
-        from backend.app.rag.qdrant_service import QdrantService
-        emb = EmbeddingService()
-        if emb.model:
-            services["embedding"]["status"] = "ok"
-        else:
-            services["embedding"]["status"] = "error"
+        from backend.app.rag.qdrant_store import QdrantStore
+        
+        try:
+            emb = EmbeddingService()
+            if emb.model:
+                services["embedding"]["status"] = "ok"
+            else:
+                services["embedding"]["status"] = "error"
+                ready = False
+        except Exception as e:
+            logger.error(f"Embedding service check failed: {e}", exc_info=True)
+            services["embedding"]["status"] = "unreachable"
             ready = False
             
-        qd = QdrantService(embedding_service=emb)
-        client = qd.get_client()
-        if client:
+        try:
+            store = QdrantStore()
+            # Try to fetch collections to verify connection
+            store.client.get_collections()
             services["qdrant"]["status"] = "ok"
-        else:
-            services["qdrant"]["status"] = "error"
+        except Exception as e:
+            logger.error(f"Qdrant connection failed: {e}", exc_info=True)
+            services["qdrant"]["status"] = "unavailable"
             ready = False
-    except Exception:
-        services["embedding"]["status"] = "unreachable"
-        services["qdrant"]["status"] = "unreachable"
+            
+    except Exception as e:
+        logger.error(f"RAG dependencies check failed: {e}", exc_info=True)
+        if services["embedding"]["status"] == "unknown":
+            services["embedding"]["status"] = "error"
+        if services["qdrant"]["status"] == "unknown":
+            services["qdrant"]["status"] = "error"
         ready = False
 
     return {
@@ -143,6 +166,7 @@ def analyze_text(req: AnalyzeRequest):
 
 @app.post("/api/documents/upload")
 async def upload_document(file: UploadFile = File(...)):
+    file_path = None
     try:
         temp_dir = Path("temp_uploads")
         temp_dir.mkdir(exist_ok=True)
@@ -151,30 +175,49 @@ async def upload_document(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
+        # 1. Try standard extraction first
         docs = load_file(file_path, "upload")
+        raw_text = docs[0].text if docs else ""
         
-        if not docs:
-            os.remove(file_path)
-            raise HTTPException(status_code=400, detail={"code": "unsupported_format", "message": "Bu dosya türü şu anda desteklenmiyor veya metin çıkarılamadı."})
+        # 2. Check if we need OCR
+        is_pdf = file_path.suffix.lower() == ".pdf"
+        is_image = file_path.suffix.lower() in [".png", ".jpg", ".jpeg", ".tiff", ".bmp"]
+        needs_ocr = False
+        
+        if is_image:
+            needs_ocr = True
+        elif is_pdf and len(raw_text.strip()) < 50:
+            needs_ocr = True
             
-        # For MVP we just take the text of the first doc
-        raw_text = docs[0].text
-        
-        # Fallback to OCR if text is empty and it's a pdf
-        if not raw_text.strip() and file_path.suffix.lower() == ".pdf":
+        if needs_ocr:
             try:
-                from backend.app.ingestion.paddle_ocr import process_pdf_with_ocr
-                raw_text = process_pdf_with_ocr(file_path)
+                ocr = get_ocr_service()
+                if is_pdf:
+                    ocr_text = ocr.extract_text_from_pdf(str(file_path))
+                else:
+                    ocr_text = ocr.extract_text_from_image(str(file_path))
+                    
+                if ocr_text and ocr_text.strip():
+                    raw_text = ocr_text
             except Exception as e:
-                # Silently fail OCR for now if missing paddle
-                pass
+                logger.error(f"OCR işlemi başarısız oldu: {str(e)}", exc_info=True)
+                # If we already have some text, continue. If not, raise.
+                if not raw_text.strip():
+                    if file_path.exists():
+                        os.remove(file_path)
+                    raise HTTPException(
+                        status_code=500, 
+                        detail={"code": "ocr_error", "message": "Belge OCR ile okunamadı. Lütfen dosyayı kontrol edip tekrar deneyin."}
+                    )
                 
         if not raw_text.strip():
-            os.remove(file_path)
+            if file_path.exists():
+                os.remove(file_path)
             raise HTTPException(status_code=400, detail={"code": "empty_document", "message": "Belgeden okunabilir metin çıkarılamadı."})
             
         # Clean up
-        os.remove(file_path)
+        if file_path.exists():
+            os.remove(file_path)
         
         # Run analysis
         req = AnalyzeRequest(text=raw_text, document_id=file.filename)
@@ -183,6 +226,8 @@ async def upload_document(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
+        if file_path and file_path.exists():
+            os.remove(file_path)
         raise HTTPException(status_code=500, detail={"code": "upload_error", "message": f"Dosya işlenirken hata oluştu: {str(e)}"})
 
 
@@ -292,22 +337,20 @@ def system_status():
     qdrant_docs = 0
     
     try:
-        from backend.app.rag.embedding_service import EmbeddingService
-        from backend.app.rag.qdrant_service import QdrantService
-        emb = EmbeddingService()
-        qd = QdrantService(embedding_service=emb)
+        from backend.app.rag.qdrant_store import QdrantStore
+        store = QdrantStore()
         
         # Try getting collections point count
-        if qd.get_client():
-            collections = qd.get_client().get_collections().collections
-            for c in collections:
-                info = qd.get_client().get_collection(c.name)
-                if c.name == "legal_knowledge":
-                    qdrant_legal = info.points_count
-                elif c.name == "document_knowledge":
-                    qdrant_docs = info.points_count
-                qdrant_total += info.points_count
-    except Exception:
+        collections = store.client.get_collections().collections
+        for c in collections:
+            info = store.client.get_collection(c.name)
+            if c.name == "legal_knowledge_v2" or c.name == "legal_knowledge":
+                qdrant_legal = info.points_count
+            elif c.name == "document_knowledge":
+                qdrant_docs = info.points_count
+            qdrant_total += info.points_count
+    except Exception as e:
+        logger.error(f"System status Qdrant check failed: {e}", exc_info=True)
         pass
         
     # Full index isn't done

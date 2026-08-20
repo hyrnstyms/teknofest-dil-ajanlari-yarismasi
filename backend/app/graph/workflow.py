@@ -172,7 +172,7 @@ class KamuaiWorkflow:
             ext = s.extraction.get("fields", {})
             
             # Extract sender and recipient if available
-            sender = "Örnek Kamu Kurumu"
+            sender = s.routing.get("recommended_unit", None)
             recipient = ext.get("person_name", {}).get("value")
             
             # Gather verified facts
@@ -187,8 +187,11 @@ class KamuaiWorkflow:
                 verified_facts=facts,
                 recipient=recipient,
                 sender_unit=sender,
-                # Pydantic's model_dump is required if writing_agent expects a dictionary for state
-                state=s.model_dump()
+                state={
+                    "extraction": s.extraction,
+                    "routing": s.routing,
+                    "kurum_profili_id": s.kurum_profili_id
+                }
             )
             return {"draft": res}
         return self._measure_time(_run, state, "writing_agent")
@@ -202,8 +205,7 @@ class KamuaiWorkflow:
                 missing_fields=s.missing_fields,
                 summary=s.summary,
                 routing=s.routing,
-                draft=s.draft,
-                human_review=s.human_review
+                draft=s.draft
             )
             return {"quality": res}
         return self._measure_time(_run, state, "quality_agent")

@@ -24,10 +24,10 @@ def normalize_document_type(doc_type: str) -> str:
 def get_routing_unit_map(institution: str = "kaymakamlik") -> Dict[str, str]:
     profile = load_institution_profile(institution)
     unit_map = {}
-    if not profile or "birimler" not in profile:
+    if not profile or not profile.raw.get("birimler"):
         return unit_map
         
-    for unit in profile["birimler"]:
+    for unit in profile.raw.get("birimler", []):
         unit_id = unit["id"]
         unit_map[unit_id] = unit_id
         unit_map[unit["ad"]] = unit_id

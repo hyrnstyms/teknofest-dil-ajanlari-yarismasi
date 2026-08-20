@@ -1570,6 +1570,8 @@ subject ve body alanlarını eksiksiz üret.
         result["official_render"]["fallback_policies"] = adapter_res.get("fallback_policies", {})
 
         context = adapter_res.get("context", {})
+        result["official_render"]["context"] = context
+        
         missing = adapter_res.get("missing_required_fields", [])
 
         # Eğer kritik template alanları eksikse render deneme
