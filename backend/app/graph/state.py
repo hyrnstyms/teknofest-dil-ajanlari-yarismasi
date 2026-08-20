@@ -12,6 +12,14 @@ class DocumentState(BaseModel):
     muhatap_turu: Literal["kurum_alt", "kurum_ust", "kurum_ayni", "kurum_karisik", "gercek_kisi"] | None = None
     karar_kaynagi: Literal["kural_tabanli", "llm_tabanli"] | None = None
 
+    # Track 1 - Akıllı Önceliklendirme için
+    oncelik_puani: Literal["normal", "oncelikli", "kritik"] | None = None
+    oncelik_gerekcesi: str | None = None
+
+    # Track 3 - Başvuru Zinciri için
+    ilgili_evrak_id: str | None = None
+    zincir_id: str | None = None
+
     # Component States
     document: Dict[str, Any] = Field(default_factory=dict)
     extraction: Dict[str, Any] = Field(default_factory=dict)
