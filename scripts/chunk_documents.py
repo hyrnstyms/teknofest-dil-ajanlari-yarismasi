@@ -33,7 +33,7 @@ DOCUMENTS_FILE = Path(
 )
 
 STATUTE_FILE = Path(
-    "data/raw/statute_chunks.csv"
+    "data/knowledge/statute_chunks.csv"
 )
 
 OUTPUT_FILE = Path(

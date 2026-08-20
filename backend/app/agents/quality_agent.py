@@ -8,21 +8,35 @@ try:
 except Exception:  # pragma: no cover
     _OW_VALIDATOR_AVAILABLE = False
 
+from backend.app.institutions.profile_loader import (
+    load_institution_profile,
+    InstitutionProfile,
+)
+
+# Yarışma demosunda aktif kurum — RoutingAgent ile aynı
+_DEFAULT_INSTITUTION = "kaymakamlik"
+
 
 class QualityAgent:
-    def __init__(self, registry_path: str = None):
-        import os
-        import json
-        if not registry_path:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-            registry_path = os.path.join(base_dir, "data", "routing", "unit_registry.json")
-            
-        self.valid_units = set()
-        if os.path.exists(registry_path):
-            with open(registry_path, "r", encoding="utf-8") as f:
-                registry = json.load(f)
-                for u in registry.get("units", []):
-                    self.valid_units.add(u["name"])
+    """
+    Kalite kontrol ajanı.
+
+    Geçerli birim seti: data/institutions/kaymakamlik/kurum_profili_kaymakamlik.yaml
+    unit_registry.json KULLANILMIYOR.
+
+    RoutingAgent ile aynı source-of-truth'u paylaşır.
+    """
+
+    def __init__(self, institution: str = _DEFAULT_INSTITUTION):
+        self.institution = institution
+        self.valid_units: set[str] = set()
+        try:
+            profile: InstitutionProfile = load_institution_profile(institution)
+            for birim in profile.birimler:
+                if isinstance(birim, dict) and birim.get("ad"):
+                    self.valid_units.add(birim["ad"])
+        except (FileNotFoundError, ValueError):
+            pass  # fail-safe: valid_units boş kalır, routing check warning verir
 
     def check_quality(
         self,

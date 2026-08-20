@@ -69,50 +69,48 @@ class KamuaiWorkflow:
         
         duration_ms = int((end - start) * 1000)
         
-        if "node_timings" not in state:
-            state["node_timings"] = {}
-            
-        state["node_timings"][node_name] = {
+        # Copy existing node_timings to avoid modifying the current state object directly
+        # and to allow LangGraph to replace the field
+        node_timings = dict(state.node_timings)
+        node_timings[node_name] = {
             "duration_ms": duration_ms,
             "status": status
         }
+        result["node_timings"] = node_timings
         
-        # update state
-        for k, v in result.items():
-            if k == "warnings":
-                if "warnings" not in state:
-                    state["warnings"] = []
-                state["warnings"].extend(v)
-            else:
-                state[k] = v
+        # update state warnings
+        if "warnings" in result:
+            current_warnings = list(state.warnings)
+            current_warnings.extend(result["warnings"])
+            result["warnings"] = current_warnings
                 
-        return state
+        return result
 
     def node_document(self, state: DocumentState):
-        def _run(s):
-            text = s.get("raw_text", "")
+        def _run(s: DocumentState):
+            text = s.raw_text
             res = self.doc_agent.analyze(text)
             return {"document": res}
         return self._measure_time(_run, state, "document_agent")
 
     def node_extraction(self, state: DocumentState):
-        def _run(s):
-            text = s.get("raw_text", "")
-            doc_ctx = s.get("document", {})
+        def _run(s: DocumentState):
+            text = s.raw_text
+            doc_ctx = s.document
             res = self.extract_agent.extract(text, document_context=doc_ctx)
             return {"extraction": res}
         return self._measure_time(_run, state, "extraction_agent")
 
     def node_legal(self, state: DocumentState):
-        def _run(s):
-            doc_ctx = s.get("document", {})
+        def _run(s: DocumentState):
+            doc_ctx = s.document
             intent = doc_ctx.get("process_intent", "")
             subject = doc_ctx.get("subject_excerpt", "")
             req = doc_ctx.get("request_excerpt", "")
             
             query = f"{intent} {subject} {req}".strip()
             if not query:
-                query = s.get("raw_text", "")[:500]
+                query = s.raw_text[:500]
                 
             try:
                 # Assuming top_k parameter can be passed
@@ -127,12 +125,12 @@ class KamuaiWorkflow:
         return self._measure_time(_run, state, "legal_agent")
 
     def node_missing_field(self, state: DocumentState):
-        def _run(s):
-            doc_ctx = s.get("document", {})
+        def _run(s: DocumentState):
+            doc_ctx = s.document
             dtype = doc_ctx.get("document_type", "")
             intent = doc_ctx.get("process_intent", "")
-            ext = s.get("extraction", {}).get("fields", {})
-            leg = s.get("legal_analysis", {})
+            ext = s.extraction.get("fields", {})
+            leg = s.legal_analysis
             
             res = self.missing_field_agent.check_missing_fields(
                 document_type=dtype,
@@ -144,34 +142,34 @@ class KamuaiWorkflow:
         return self._measure_time(_run, state, "missing_field_agent")
 
     def node_summary(self, state: DocumentState):
-        def _run(s):
-            text = s.get("raw_text", "")
-            doc_ctx = s.get("document", {})
-            ext = s.get("extraction", {}).get("fields", {})
+        def _run(s: DocumentState):
+            text = s.raw_text
+            doc_ctx = s.document
+            ext = s.extraction.get("fields", {})
             res = self.summary_agent.summarize(text, doc_ctx, ext)
             return {"summary": res}
         return self._measure_time(_run, state, "summary_agent")
 
     def node_routing(self, state: DocumentState):
-        def _run(s):
-            doc_ctx = s.get("document", {})
+        def _run(s: DocumentState):
+            doc_ctx = s.document
             dtype = doc_ctx.get("document_type", "")
             intent = doc_ctx.get("process_intent", "")
             sub = doc_ctx.get("subject_excerpt", "")
             req = doc_ctx.get("request_excerpt", "")
-            ext = s.get("extraction", {}).get("fields", {})
+            ext = s.extraction.get("fields", {})
             
             res = self.routing_agent.route(dtype, intent, sub, req, ext)
             return {"routing": res}
         return self._measure_time(_run, state, "routing_agent")
 
     def node_writing(self, state: DocumentState):
-        def _run(s):
-            summ = s.get("summary", {}).get("short_summary", "")
-            doc_ctx = s.get("document", {})
+        def _run(s: DocumentState):
+            summ = s.summary.get("short_summary", "")
+            doc_ctx = s.document
             req_act = doc_ctx.get("process_intent", "")
-            mf = s.get("missing_fields", {}).get("missing_fields", [])
-            ext = s.get("extraction", {}).get("fields", {})
+            mf = s.missing_fields.get("missing_fields", [])
+            ext = s.extraction.get("fields", {})
             
             # Extract sender and recipient if available
             sender = "Örnek Kamu Kurumu"
@@ -189,39 +187,40 @@ class KamuaiWorkflow:
                 verified_facts=facts,
                 recipient=recipient,
                 sender_unit=sender,
-                state=s
+                # Pydantic's model_dump is required if writing_agent expects a dictionary for state
+                state=s.model_dump()
             )
             return {"draft": res}
         return self._measure_time(_run, state, "writing_agent")
 
     def node_quality(self, state: DocumentState):
-        def _run(s):
+        def _run(s: DocumentState):
             res = self.quality_agent.check_quality(
-                document=s.get("document", {}),
-                extraction=s.get("extraction", {}),
-                legal_analysis=s.get("legal_analysis", {}),
-                missing_fields=s.get("missing_fields", {}),
-                summary=s.get("summary", {}),
-                routing=s.get("routing", {}),
-                draft=s.get("draft", {}),
-                human_review=s.get("human_review", {})
+                document=s.document,
+                extraction=s.extraction,
+                legal_analysis=s.legal_analysis,
+                missing_fields=s.missing_fields,
+                summary=s.summary,
+                routing=s.routing,
+                draft=s.draft,
+                human_review=s.human_review
             )
             return {"quality": res}
         return self._measure_time(_run, state, "quality_agent")
 
     def node_human_review(self, state: DocumentState):
-        def _run(s):
+        def _run(s: DocumentState):
             # Evaluate requires_human_review from components
             req = False
-            if s.get("quality", {}).get("requires_human_review"):
+            if s.quality.get("requires_human_review"):
                 req = True
-            if s.get("missing_fields", {}).get("needs_human_review"):
+            if s.missing_fields.get("needs_human_review"):
                 req = True
-            if s.get("routing", {}).get("needs_human_review"):
+            if s.routing.get("needs_human_review"):
                 req = True
             
             # Default fallback: if there's a draft, we usually want approval
-            if s.get("draft", {}).get("draft_text"):
+            if s.draft.get("draft_text"):
                 req = True
                 
             return {
@@ -235,9 +234,7 @@ class KamuaiWorkflow:
     def run(self, raw_text: str, document_id: str = "test-doc-1"):
         initial_state = DocumentState(
             document_id=document_id,
-            raw_text=raw_text,
-            warnings=[],
-            node_timings={}
+            raw_text=raw_text
         )
         final_state = self.graph.invoke(initial_state)
         return final_state

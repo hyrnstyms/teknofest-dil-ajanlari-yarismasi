@@ -19,9 +19,8 @@ SUPPORTED_EXTENSIONS = {
 
 # Bunlar normal document corpus'una girmeyecek.
 SPECIAL_DATASETS = {
-    "qa_benchmark_gold.csv": "evaluation",
-    "statute_chunks.csv": "pre_chunked_legal",
-    "train-00000-of-00001.parquet": "dataset",
+    "qa_benchmark_gold.csv": "evaluation",    # data/evaluation/legal/'e taşındı
+    "statute_chunks.csv": "pre_chunked_legal", # data/knowledge/'e taşındı
 }
 
 

@@ -4,9 +4,20 @@ backend/tests/official_writing/test_context_adapter.py
 
 import pytest
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 from backend.app.official_writing.context_adapter import build_official_writing_context
 from backend.app.institutions.profile_loader import InstitutionProfile
+
+
+@pytest.fixture
+def writing_agent():
+    """WritingAgent'ı Qdrant/Ollama bağlantısı olmadan başlat."""
+    mock_retriever = MagicMock()
+    mock_retriever.retrieve.return_value = []
+    with patch("backend.app.agents.writing_agent.Retriever", return_value=mock_retriever):
+        from backend.app.agents.writing_agent import WritingAgent
+        return WritingAgent(retriever=mock_retriever)
 
 def mock_state() -> dict[str, Any]:
     return {
@@ -93,30 +104,24 @@ def test_context_adapter_unknown_routing_unit():
     # Resolvers fallback to using the ID itself if explicit, but warn
     assert "Sender unit 'bilinmeyen_bir_id' kurum profilinde bulunamadı." in res["warnings"]
 
-def test_context_adapter_eksik_bilgi_talebi():
+def test_context_adapter_eksik_bilgi_talebi(writing_agent):
     # Kural 7: eksik_bilgi_talebi -> template motoru zorlanmıyor
     # _try_official_render method returns early
-    from backend.app.agents.writing_agent import WritingAgent
-    
-    wa = WritingAgent()
-    res = wa._try_official_render(mock_draft(), "eksik_bilgi_talebi", mock_state())
+    res = writing_agent._try_official_render(mock_draft(), "eksik_bilgi_talebi", mock_state())
     
     assert res["official_render"]["attempted"] is False
 
-def test_context_adapter_renderer_error_fallback(monkeypatch):
+def test_context_adapter_renderer_error_fallback(writing_agent, monkeypatch):
     # Kural 8: renderer hata -> mevcut rendered_text korunur
     state = mock_state()
     draft = mock_draft()
-    
-    from backend.app.agents.writing_agent import WritingAgent
-    wa = WritingAgent()
     
     def mock_build(*args, **kwargs):
         raise Exception("Test crash")
         
     monkeypatch.setattr("backend.app.agents.writing_agent.build_official_writing_context", mock_build)
     
-    res = wa._try_official_render(draft, "ust_yazi", state)
+    res = writing_agent._try_official_render(draft, "ust_yazi", state)
     
     # It should not crash, it should return warning
     assert "Context adapter hatası: Test crash" in res["official_render_warning"]
@@ -136,12 +141,10 @@ def test_context_adapter_source_map():
     assert "draft.body (split)" in sm["metin_paragraflari"]
     assert "profile.birimler" in sm["tc_baslik.birim_adi"]
 
-def test_try_official_render_skips_on_missing_signer_sayi_tarih():
-    from backend.app.agents.writing_agent import WritingAgent
-    wa = WritingAgent()
+def test_try_official_render_skips_on_missing_signer_sayi_tarih(writing_agent):
     # Adapter imza/sayi/tarih gibi alanları kasten siliyor.
     # Bu nedenle _try_official_render'ın exception fırlatmadan "atlandı" uyarısı dönmesi beklenir.
-    res = wa._try_official_render(mock_draft(), "ust_yazi", mock_state())
+    res = writing_agent._try_official_render(mock_draft(), "ust_yazi", mock_state())
     
     assert res["official_render"]["attempted"] is True
     assert res["official_render"]["success"] is False
@@ -149,10 +152,7 @@ def test_try_official_render_skips_on_missing_signer_sayi_tarih():
     assert "sayi" in res["official_render_warning"]
     assert "imza.ad_soyad" in res["official_render_warning"]
 
-def test_try_official_render_success_with_fake_fixture(monkeypatch):
-    from backend.app.agents.writing_agent import WritingAgent
-    wa = WritingAgent()
-    
+def test_try_official_render_success_with_fake_fixture(writing_agent, monkeypatch):
     # Tamamen kurgusal (fake) bir context dönen mock adapter
     def mock_build_context(*args, **kwargs):
         return {
@@ -177,7 +177,7 @@ def test_try_official_render_success_with_fake_fixture(monkeypatch):
         
     monkeypatch.setattr("backend.app.agents.writing_agent.build_official_writing_context", mock_build_context)
     
-    res = wa._try_official_render(mock_draft(), "ust_yazi", mock_state())
+    res = writing_agent._try_official_render(mock_draft(), "ust_yazi", mock_state())
     
     assert res.get("official_render_warning") is None or res.get("official_render_warning") == ""
     assert res["official_render"]["success"] is True

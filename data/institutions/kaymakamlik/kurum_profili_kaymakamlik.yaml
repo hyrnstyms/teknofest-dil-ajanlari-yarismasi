@@ -33,6 +33,17 @@ birimler:
       - "hukuk"
       - "mahalli idare"
       - "evrak kayıt"
+    supported_intents:
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "basvuru"
+      - "sikayet"
+      - "itiraz"
+      - "izin_talebi"
+      - "bildirim"
+      - "cevap"
+      - "iletim"
+      - "diger"
 
   - id: nufus
     ad: "İlçe Nüfus Müdürlüğü"
@@ -43,6 +54,11 @@ birimler:
       - "doğum"
       - "evlilik"
       - "vukuatlı nüfus kayıt örneği"
+    supported_intents:
+      - "belge_talebi"
+      - "basvuru"
+      - "bildirim"
+      - "itiraz"
 
   - id: sydv
     ad: "Sosyal Yardımlaşma ve Dayanışma Vakfı (SYDV)"
@@ -53,6 +69,10 @@ birimler:
       - "burs"
       - "engelli maaşı"
       - "gıda yardımı"
+    supported_intents:
+      - "basvuru"
+      - "bilgi_talebi"
+      - "itiraz"
 
   - id: milli_egitim
     ad: "İlçe Millî Eğitim Müdürlüğü"
@@ -63,6 +83,13 @@ birimler:
       - "eğitim"
       - "nakil"
       - "öğrenci belgesi"
+    supported_intents:
+      - "basvuru"
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "sikayet"
+      - "itiraz"
+      - "izin_talebi"
 
   - id: saglik
     ad: "İlçe Sağlık Müdürlüğü"
@@ -72,6 +99,13 @@ birimler:
       - "ruhsat"
       - "aşı"
       - "sağlık ocağı"
+    supported_intents:
+      - "basvuru"
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "sikayet"
+      - "izin_talebi"
+      - "bildirim"
 
   - id: mal_mudurlugu
     ad: "Mal Müdürlüğü"
@@ -82,6 +116,12 @@ birimler:
       - "mali"
       - "kamu malı"
       - "tahsilat"
+    supported_intents:
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "itiraz"
+      - "bildirim"
+      - "cevap"
 
   - id: tapu
     ad: "Tapu Müdürlüğü"
@@ -92,6 +132,11 @@ birimler:
       - "kadastro"
       - "arsa"
       - "mülkiyet"
+    supported_intents:
+      - "basvuru"
+      - "belge_talebi"
+      - "bilgi_talebi"
+      - "itiraz"
 
   - id: tarim
     ad: "İlçe Tarım ve Orman Müdürlüğü"
@@ -101,6 +146,11 @@ birimler:
       - "tarımsal destek"
       - "orman izni"
       - "arazi"
+    supported_intents:
+      - "basvuru"
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "izin_talebi"
 
   - id: emniyet
     ad: "İlçe Emniyet Müdürlüğü"
@@ -111,6 +161,11 @@ birimler:
       - "trafik"
       - "asayiş"
       - "ihbar"
+    supported_intents:
+      - "bildirim"
+      - "sikayet"
+      - "bilgi_talebi"
+      - "belge_talebi"
 
 # ---------------------------------------------------------------------------
 # 3. EVRAK TÜRLERİ

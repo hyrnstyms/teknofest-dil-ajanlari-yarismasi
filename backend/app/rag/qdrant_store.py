@@ -6,7 +6,7 @@ QDRANT_URL = "http://localhost:6333"
 
 VECTOR_SIZE = 1024
 
-LEGAL_COLLECTION = "legal_knowledge"
+LEGAL_COLLECTION = "legal_knowledge_v2"
 DOCUMENT_COLLECTION = "document_knowledge"
 
 

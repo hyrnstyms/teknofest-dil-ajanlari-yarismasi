@@ -1,30 +1,90 @@
-# KAMUAI Veri Yönetimi
+# KAMUAI – Data Dizini
 
-Bu klasör, projenin OCR, RAG (Retrieval-Augmented Generation) ve test (Evaluation) süreçleri için gereken verilerin tutulduğu ana dizindir.
+Bu dizin KAMUAI sisteminin veri bileşenlerini içerir.
 
-## Klasör Yapısı ve Amacı
+---
 
-- **`data/raw/`**: Sistem tarafından işlenecek normal, yapılandırılmamış belge kaynaklarının (ör. kurum içi rehberler, taranmış pdf'ler) bulunduğu dizindir.
-- **`data/regulations/`**: Resmi mevzuat belgeleri, kanunlar ve yönetmeliklerin tutulduğu yerdir.
-- **`data/processed/`**: `ingestion` (veri alma) servisinden geçen, temizlenen ve chunklara (vektörel metin parçalarına) ayrılan çıktıların saklandığı klasördür. Repository'ye koymak zorunlu değildir; pipeline ile kaynak veriden yeniden üretilebilir.
-- **`data/evaluation/`**: Benchmark testleri için hazırlanan "Gold" soru-cevap veri setleridir. **Bu klasördeki veriler RAG sistemine indekslenmez.**
-- **`data/synthetic/`**: Agent davranışlarını güvenli ortamda test edebilmek için LLM aracılığıyla sentetik olarak türetilen kontrollü veriler. (Kişisel veri içermez, RAG'e indekslenmez.)
-- **`data/routing/`**: Yönlendirme agent'ının kullanacağı kurumsal birim tanımlarını içeren statik JSON/CSV kaynaklarıdır.
+## data/knowledge/
 
-## Veri Ekleme Kuralları (Ekip Üyeleri İçin)
-Lütfen repository'ye yeni bir dosya eklemeden önce şu adımları izleyin:
+**Production Legal RAG knowledge base.**
 
-1. **Veri türünü belirleyin:** Mevzuat ise `regulations`, sentetik test ise `synthetic`, benchmark ise `evaluation` altına ekleyin.
-2. Uygun klasöre yerleştirdikten sonra varsa README dosyasını güncelleyerek verinin kaynağını (provenance) dokümante edin. (Bkz. `docs/VERI_EKLEME_REHBERI.md`)
-3. **Gizlilik Kontrolü:** İçerikte gerçek vatandaş bilgisi (PII) kalmadığından emin olun.
-4. Gerekli ise, ingestion pipeline'ı çalıştırarak yeni veriyi chunk formatına çevirin.
-5. Yeni chunk'ların kalitesini manuel olarak gözden geçirin.
-6. Yalnızca gerekliyse RAG'e dahil etmek için selective Qdrant indekslemesi çalıştırın.
-7. Benchmark testlerini (evaluation) çalıştırıp model performansını test ettikten sonra geliştirme yapın.
+| Dosya | İçerik | Kullanım |
+|---|---|---|
+| `statute_chunks.csv` | 6350 satır, pre-chunked mevzuat | `chunk_documents.py` → Qdrant |
 
-## ⚠️ Önemli Uyarılar
+> **NEVER RE-CHUNK.** Bu dosya zaten madde düzeyinde bölünmüş (pre-chunked) hâlde gelir.
+> Bir sonraki adım: `scripts/chunk_documents.py` → `scripts/index_qdrant.py`
 
-1. `statute_chunks.csv`: Bu dosya zaten parçalanmış (pre-chunked) durumdadır. Yeniden chunk işleminden geçirilmemelidir!
-2. `qa_benchmark_gold.csv`: Sadece ve sadece değerlendirme (evaluation) içindir. RAG'e eklenirse sistem modeli ezberleyeceği (data leakage) için testler geçersiz kalır.
-3. `synthetic/debug`: `rag_eligible=false` olarak işaretlenmiştir. RAG'e eklemeyin.
-4. **Kısmi İndeksler (Partial Index):** Qdrant vektör veritabanındaki resmi evrak ve mevzuat indeksi (storage alanı çok büyük olduğu için) kısmi olabilir. Sistemin ana menüsündeki "Sistem Durumu" sayfasından güncel indekslenen parça (point) sayısını doğrulayabilirsiniz.
+---
+
+## data/regulations/
+
+**Resmî kanun ve yönetmelik PDF'leri (orijinal kaynak / provenance).**
+
+Buradaki PDF'ler statute_chunks.csv'nin orijinal kaynaklarıdır.
+Provenance ve başvuru amacıyla korunmaktadır.
+
+RAG için canonical kaynak `data/knowledge/statute_chunks.csv`'dir.
+Aynı kanun hem CSV'de hem PDF'de varsa chunk pipeline PDF'i atlar.
+
+Başlıca belgeler:
+- `3071kanun.pdf` — Dilekçe Hakkının Kullanılmasına Dair Kanun
+- `4982kanun.pdf` — Bilgi Edinme Hakkı Kanunu
+- `5442_il_idaresi_kanunu.pdf` — İl İdaresi Kanunu
+- `resmi_yazisma_yonetmeligi.pdf` — Resmî Yazışma Yönetmeliği
+- `resmiyazısmakılavuzu.pdf` — Resmî Yazışma Kılavuzu
+- *(diğerleri: 657, 193, 213, 2547, 2577, 4734, 4857, 5018, 5216, 5393, 5490, 5510, 6331, 6502, 6698, resmigazete)*
+
+---
+
+## data/institutions/
+
+**Kurum Profil Paketleri (Institution Packs).**
+
+Her kurum, kendi alt klasöründe YAML profil dosyası içerir.
+
+```
+data/institutions/
+└── kaymakamlik/
+    └── kurum_profili_kaymakamlik.yaml   ← Aktif demo kurumu
+```
+
+Bu YAML dosyası:
+- Routing Agent için **tek source-of-truth** olarak kullanılır.
+- Quality Agent birim doğrulama için bu dosyayı okur.
+- `unit_registry.json` KALDIRILDI.
+
+---
+
+## data/evaluation/
+
+**Benchmark ve değerlendirme verileri. Production RAG'e HİÇBİR ZAMAN dahil edilmez.**
+
+```
+data/evaluation/
+├── legal/
+│   ├── rag_test_seti.jsonl        (45 soru — LegalAgent RAG kalitesi)
+│   └── qa_benchmark_gold.csv      (290 soru-cevap — RAG benchmark)
+├── synthetic/
+│   └── evraklar.jsonl             (161 kayıt — ExtractionAgent / RoutingAgent)
+├── writing/
+│   └── gold_taslaklar.jsonl       (52 kayıt — WritingAgent taslak kalitesi)
+└── ocr/
+    ├── temiz/                     (24 PNG — kolay OCR)
+    ├── orta_kalite/               (24 PNG — orta güçlük OCR)
+    └── zor/                       (24 PNG — zor OCR)
+```
+
+Değerlendirme scriptleri: `scripts/evaluation/`
+
+---
+
+## Silinmiş Yapılar
+
+| Eski Yol | Durum | Gerekçe |
+|---|---|---|
+| `data/raw/` | SİLİNDİ | Tüm içerik ya `data/knowledge/`'a ya `data/evaluation/legal/`'e taşındı veya silindi |
+| `data/routing/unit_registry.json` | SİLİNDİ | Kurum profili YAML single source-of-truth oldu |
+| `data/processed/` | GİTİGNORE | Generated cache; `chunk_documents.py` çalıştırılınca yeniden üretilir |
+| `data/synthetic/` | SİLİNDİ | Sentetik üretim pipeline'ı kaldırıldı |
+| `train-00000-of-00001.parquet` | SİLİNDİ | Üçüncü taraf HuggingFace seti, production RAG için uygun değil |

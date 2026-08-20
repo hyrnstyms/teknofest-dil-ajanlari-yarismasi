@@ -1,3 +1,22 @@
+"""
+scripts/ingest_documents.py
+───────────────────────────────────────────────────────────────
+Belge ingestion pipeline.
+
+data/raw/ kaldırıldı.
+
+Şu an ingestion için yalnız:
+  - data/regulations/   → mevzuat PDF'leri (canonical source)
+  - (kullanıcı yükleme) → runtime upload, ayrı API üzerinden
+
+statute_chunks.csv → data/knowledge/statute_chunks.csv
+  chunk_documents.py tarafından doğrudan okunur;
+  bu script'e dahil EDİLMEZ (pre-chunked, re-chunk yok).
+
+qa_benchmark_gold.csv → data/evaluation/legal/
+  Hiçbir zaman ingestion'a girmez.
+"""
+
 from pathlib import Path
 import sys
 
@@ -15,23 +34,17 @@ from backend.app.ingestion.jsonl_writer import write_jsonl
 
 def main():
 
-    raw_documents = collect_documents(
-        "data/raw",
-        "raw",
-    )
-
     regulations = collect_documents(
         "data/regulations",
         "mevzuat",
     )
 
-    documents = raw_documents + regulations
+    documents = regulations
 
     print()
     print("================================")
     print("GENEL ÖZET")
     print("================================")
-    print(f"Raw documents       : {len(raw_documents)}")
     print(f"Regulation documents: {len(regulations)}")
     print(f"Toplam              : {len(documents)}")
 
