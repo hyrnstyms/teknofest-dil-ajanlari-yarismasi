@@ -1,15 +1,27 @@
 import json
 import csv
 from pathlib import Path
+from typing import Any
 from backend.app.agents.legal_agent import LegalAgent
-from backend.app.evaluation.schemas import EvaluationReport, CoverageInfo
+from backend.app.evaluation.schemas import EvaluationReport
 from backend.app.evaluation.adapters import normalize_turkish_label
 import re
 
 NORMALIZED_DOCUMENT_IDS = {
+    "4982": "4982",
+    "4982bilgiedinmehakkikanunu": "4982",
+    "4982_bilgi_edinme_kanunu": "4982",
     "bilgiedinmekanunu": "4982",
+    "3071": "3071",
+    "3071dilekcehakkikanunu": "3071",
     "dilekce_hakki_kanunu": "3071",
     "3071_dilekce_hakki_kanunu": "3071",
+    "5442": "5442",
+    "5442ilidaresikanunu": "5442",
+    "5442_il_idaresi_kanunu": "5442",
+    "resmiyazismayonetmeligi": "resmi_yazisma_yonetmeligi",
+    "resmi_yazisma_yonetmeligi": "resmi_yazisma_yonetmeligi",
+    "resmiyazismakilavuzu": "resmi_yazisma_kilavuzu",
     "resmi_yazisma_kurallari": "resmi_yazisma_kurallari", 
     "resmi_yazisma_kilavuzu": "resmi_yazisma_kilavuzu",
     "kvkk": "6698",
@@ -37,19 +49,70 @@ def normalize_madde(madde: str) -> str:
     m = m.replace("madde", "").replace(".", "").replace("-", "").strip()
     return m
 
-def build_canonical_corpus() -> set:
+def _clean_metadata_value(value: Any) -> str:
+    if value is None:
+        return ""
+    cleaned = str(value).strip()
+    if cleaned.lower() in {"", "nan", "none", "null"}:
+        return ""
+    return cleaned
+
+
+def canonical_source_from_corpus_row(row: dict[str, Any]) -> str:
+    source_value = (_clean_metadata_value(row.get("kanun_no")) or _clean_metadata_value(row.get("kaynak")))
+    return normalize_legal_source(source_value)
+
+
+def canonical_source_from_retrieved(source: dict[str, Any]) -> str:
+    source_value = (_clean_metadata_value(source.get("law_number")) or _clean_metadata_value(source.get("document_id")) or _clean_metadata_value(source.get("source")))
+    return normalize_legal_source(source_value)
+
+
+def canonical_madde_from_retrieved(source: dict[str, Any]) -> str:
+    madde_value = (_clean_metadata_value(source.get("madde_no")) or _clean_metadata_value(source.get("article")))
+    return normalize_madde(madde_value)
+
+
+def build_canonical_corpus(csv_path: Path = Path("data/knowledge/statute_chunks.csv")) -> set[str]:
     canonical_set = set()
-    csv_path = Path("data/knowledge/statute_chunks.csv")
     if not csv_path.exists():
         return canonical_set
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            src = normalize_legal_source(row.get("kaynak", ""))
-            madde = normalize_madde(row.get("madde_no", ""))
+            src = canonical_source_from_corpus_row(row)
+            # QA rows use descriptive source names, while the canonical ID now
+            # prefers kanun_no. Retain the name as a compatibility alias.
+            source_alias = normalize_legal_source(_clean_metadata_value(row.get("kaynak")))
+            madde = normalize_madde(_clean_metadata_value(row.get("madde_no")))
             if src and madde:
                 canonical_set.add(f"{src}|{madde}")
+            if source_alias and madde:
+                canonical_set.add(f"{source_alias}|{madde}")
     return canonical_set
+
+
+def load_active_qa_benchmark(csv_path: Path, canonical_set: set[str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+    items: list[dict[str, str]] = []
+    stats = {"raw": 0, "active": 0, "inactive": 0, "active_supported": 0, "active_unsupported": 0}
+    if not csv_path.exists():
+        return items, stats
+    with open(csv_path, "r", encoding="utf-8") as f:
+        for index, row in enumerate(csv.DictReader(f)):
+            stats["raw"] += 1
+            if _clean_metadata_value(row.get("is_active")).lower() != "true":
+                stats["inactive"] += 1
+                continue
+            stats["active"] += 1
+            source = _clean_metadata_value(row.get("kaynak"))
+            madde = _clean_metadata_value(row.get("madde_no"))
+            canonical_key = f"{normalize_legal_source(source)}|{normalize_madde(madde)}"
+            if canonical_key in canonical_set:
+                stats["active_supported"] += 1
+            else:
+                stats["active_unsupported"] += 1
+            items.append({"id": _clean_metadata_value(row.get("row_id")) or f"qa_{index}", "suite": "qa_benchmark", "question": _clean_metadata_value(row.get("soru")), "source": source, "madde": madde})
+    return items, stats
 
 def evaluate_legal_rag() -> EvaluationReport:
     report = EvaluationReport(dataset_name="legal_rag")
@@ -75,7 +138,8 @@ def evaluate_legal_rag() -> EvaluationReport:
             for line in f:
                 data = json.loads(line)
                 items_to_evaluate.append({
-                    "id": f"rag_{len(items_to_evaluate)}",
+                    "id": data.get("id") or f"rag_{len(items_to_evaluate)}",
+                    "suite": "targeted_rag",
                     "question": data.get("soru", ""),
                     "source": data.get("kaynak_dokuman", ""),
                     "madde": data.get("dogru_madde_no", "")
@@ -83,16 +147,9 @@ def evaluate_legal_rag() -> EvaluationReport:
                 
     # 2. Load qa_benchmark_gold.csv (290)
     p2 = Path("data/evaluation/legal/qa_benchmark_gold.csv")
-    if p2.exists():
-        with open(p2, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for i, row in enumerate(reader):
-                items_to_evaluate.append({
-                    "id": f"qa_{i}",
-                    "question": row.get("soru", ""),
-                    "source": row.get("kaynak", ""),
-                    "madde": row.get("madde_no", "")
-                })
+    qa_items, qa_stats = load_active_qa_benchmark(p2, canonical_set)
+    items_to_evaluate.extend(qa_items)
+    report.unsupported["qa_benchmark"] = qa_stats
 
     for item in items_to_evaluate:
         total += 1
@@ -114,8 +171,8 @@ def evaluate_legal_rag() -> EvaluationReport:
             retrieved_keys = []
             
             for s in sources:
-                src_val = normalize_legal_source(s.get("law_number", s.get("source", "")))
-                mad_val = normalize_madde(s.get("madde_no", s.get("article", "")))
+                src_val = canonical_source_from_retrieved(s)
+                mad_val = canonical_madde_from_retrieved(s)
                 retrieved_keys.append(f"{src_val}|{mad_val}")
                 
             rank = -1
@@ -134,6 +191,7 @@ def evaluate_legal_rag() -> EvaluationReport:
                     report.failure_examples.append({
                         "step": "retrieval",
                         "id": item["id"],
+                        "suite": item["suite"],
                         "gold": canonical_key,
                         "retrieved": retrieved_keys[:3]
                     })
