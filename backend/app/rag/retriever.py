@@ -15,6 +15,73 @@ from backend.app.rag.qdrant_store import (
 
 class Retriever:
 
+    @staticmethod
+    def _first_metadata_value(
+        *values: Any,
+    ) -> Any:
+        for value in values:
+            if value is None:
+                continue
+            if isinstance(value, str) and not value.strip():
+                continue
+            return value
+        return None
+
+    @classmethod
+    def _result_from_point(
+        cls,
+        point: Any,
+    ) -> dict[str, Any]:
+        payload = point.payload or {}
+        nested_metadata = payload.get("metadata")
+        metadata = (
+            nested_metadata
+            if isinstance(nested_metadata, dict)
+            else {}
+        )
+
+        source = cls._first_metadata_value(
+            payload.get("source"),
+            metadata.get("source"),
+        )
+        law_number = cls._first_metadata_value(
+            payload.get("law_number"),
+            metadata.get("law_number"),
+        )
+        document_id = cls._first_metadata_value(
+            payload.get("document_id"),
+            metadata.get("document_id"),
+        )
+        madde_no = cls._first_metadata_value(
+            payload.get("madde_no"),
+            metadata.get("madde_no"),
+            metadata.get("article"),
+        )
+        article = cls._first_metadata_value(
+            payload.get("article"),
+            metadata.get("article"),
+            payload.get("madde_no"),
+            metadata.get("madde_no"),
+        )
+
+        return {
+            "score": float(point.score),
+            "chunk_id": payload.get("chunk_id"),
+            "title": payload.get("title"),
+            "text": payload.get("text"),
+            "source": source,
+            "rag_domain": payload.get("rag_domain"),
+            "law_number": law_number,
+            "document_id": document_id,
+            "madde_no": madde_no,
+            "article": article,
+            "trusted_source": payload.get(
+                "trusted_source",
+                False,
+            ),
+            "metadata": metadata,
+        }
+
     def __init__(self):
         self.embedding_service = (
             EmbeddingService()
@@ -80,48 +147,8 @@ class Retriever:
         results = []
 
         for point in response.points:
-
-            payload = point.payload or {}
-
             results.append(
-                {
-                    "score": float(
-                        point.score
-                    ),
-
-                    "chunk_id": payload.get(
-                        "chunk_id"
-                    ),
-
-                    "title": payload.get(
-                        "title"
-                    ),
-
-                    "text": payload.get(
-                        "text"
-                    ),
-
-                    "source": payload.get(
-                        "source"
-                    ),
-
-                    "rag_domain": payload.get(
-                        "rag_domain"
-                    ),
-
-                    "law_number": payload.get(
-                        "law_number"
-                    ),
-
-                    "madde_no": payload.get(
-                        "madde_no"
-                    ),
-
-                    "trusted_source": payload.get(
-                        "trusted_source",
-                        False,
-                    ),
-                }
+                self._result_from_point(point)
             )
 
         return results
