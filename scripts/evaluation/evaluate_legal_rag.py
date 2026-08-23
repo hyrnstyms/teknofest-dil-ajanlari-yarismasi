@@ -5,6 +5,11 @@ from typing import Any
 from backend.app.agents.legal_agent import LegalAgent
 from backend.app.evaluation.schemas import EvaluationReport
 from backend.app.evaluation.adapters import normalize_turkish_label
+from scripts.evaluation.legal_answer_diagnostic import (
+    AttributionStatus,
+    attribute_answer_to_article,
+    ranking_metrics,
+)
 import re
 
 NORMALIZED_DOCUMENT_IDS = {
@@ -126,10 +131,19 @@ def load_active_qa_benchmark(csv_path: Path, canonical_set: set[str], source_ali
                 stats["active_supported"] += 1
             else:
                 stats["active_unsupported"] += 1
-            items.append({"id": _clean_metadata_value(row.get("row_id")) or f"qa_{index}", "suite": "qa_benchmark", "question": _clean_metadata_value(row.get("soru")), "source": canonical_source, "madde": madde})
+            items.append({
+                "id": _clean_metadata_value(row.get("row_id")) or f"qa_{index}",
+                "suite": "qa_benchmark",
+                "question": _clean_metadata_value(row.get("soru")),
+                "source": canonical_source,
+                "madde": madde,
+                "answer": _clean_metadata_value(row.get("cevap")),
+                "context": _clean_metadata_value(row.get("context")),
+                "context_articles": _clean_metadata_value(row.get("madde_nolari_context")),
+            })
     return items, stats
 
-def evaluate_legal_rag() -> EvaluationReport:
+def evaluate_legal_rag(include_answer_aware_diagnostic: bool = True) -> EvaluationReport:
     report = EvaluationReport(dataset_name="legal_rag")
     agent = LegalAgent()
     canonical_set = build_canonical_corpus()
@@ -144,6 +158,20 @@ def evaluate_legal_rag() -> EvaluationReport:
     hits_3 = 0
     hits_5 = 0
     mrr_sum = 0.0
+
+    diagnostic_primary_ranks: list[int] = []
+    diagnostic_source_ranks: list[int] = []
+    diagnostic_counts = {
+        "diagnostic_denominator": 0,
+        "single_article_count": 0,
+        "multi_article_count": 0,
+        "anchor_mismatch_count": 0,
+        "ambiguous_count": 0,
+        "answer_not_supported_count": 0,
+        "malformed_count": 0,
+        "false_miss_count": 0,
+        "high_confidence_corpus_missing_count": 0,
+    }
     
     items_to_evaluate = []
     
@@ -164,6 +192,26 @@ def evaluate_legal_rag() -> EvaluationReport:
     # 2. Load qa_benchmark_gold.csv (290)
     p2 = Path("data/evaluation/legal/qa_benchmark_gold.csv")
     qa_items, qa_stats = load_active_qa_benchmark(p2, canonical_set, source_aliases)
+    if include_answer_aware_diagnostic:
+        for qa_item in qa_items:
+            attribution = attribute_answer_to_article(
+                qa_item.get("context", ""), qa_item.get("answer", ""), qa_item["madde"],
+                qa_item.get("context_articles", ""), normalize_madde,
+            )
+            qa_item["_diagnostic_attribution"] = attribution
+            diagnostic_counts["single_article_count" if attribution.article_count == 1 else "multi_article_count"] += 1
+            if attribution.status == AttributionStatus.HIGH_CONFIDENCE_MISMATCH:
+                diagnostic_counts["anchor_mismatch_count"] += 1
+            elif attribution.status == AttributionStatus.AMBIGUOUS:
+                diagnostic_counts["ambiguous_count"] += 1
+            elif attribution.status == AttributionStatus.ANSWER_NOT_SUPPORTED:
+                diagnostic_counts["answer_not_supported_count"] += 1
+            elif attribution.status == AttributionStatus.MALFORMED:
+                diagnostic_counts["malformed_count"] += 1
+            if attribution.status in {AttributionStatus.HIGH_CONFIDENCE_SAME, AttributionStatus.HIGH_CONFIDENCE_MISMATCH}:
+                primary_key = f"{qa_item['source']}|{attribution.primary_article}"
+                if primary_key not in canonical_set:
+                    diagnostic_counts["high_confidence_corpus_missing_count"] += 1
     items_to_evaluate.extend(qa_items)
     report.unsupported["qa_benchmark"] = qa_stats
 
@@ -185,11 +233,13 @@ def evaluate_legal_rag() -> EvaluationReport:
             # res = agent.analyze(item["question"])
             # sources = res.get("sources", [])
             retrieved_keys = []
+            retrieved_sources = []
             
             for s in sources:
                 src_val = canonical_source_from_retrieved(s)
                 mad_val = canonical_madde_from_retrieved(s)
                 retrieved_keys.append(f"{src_val}|{mad_val}")
+                retrieved_sources.append(src_val)
                 
             rank = -1
             for idx, rk in enumerate(retrieved_keys):
@@ -197,6 +247,18 @@ def evaluate_legal_rag() -> EvaluationReport:
                     rank = idx + 1
                     break
                     
+            if include_answer_aware_diagnostic and item["suite"] == "qa_benchmark":
+                attribution = item["_diagnostic_attribution"]
+                if attribution.status in {AttributionStatus.HIGH_CONFIDENCE_SAME, AttributionStatus.HIGH_CONFIDENCE_MISMATCH}:
+                    primary_key = f"{gold_src}|{attribution.primary_article}"
+                    if primary_key in canonical_set:
+                        diagnostic_counts["diagnostic_denominator"] += 1
+                        primary_rank = next((i + 1 for i, key in enumerate(retrieved_keys) if key == primary_key), -1)
+                        source_rank = next((i + 1 for i, source in enumerate(retrieved_sources) if source == gold_src), -1)
+                        diagnostic_primary_ranks.append(primary_rank)
+                        diagnostic_source_ranks.append(source_rank)
+                        if rank == -1 and 0 < primary_rank <= 5:
+                            diagnostic_counts["false_miss_count"] += 1
             if rank != -1:
                 if rank <= 1: hits_1 += 1
                 if rank <= 3: hits_3 += 1
@@ -229,6 +291,20 @@ def evaluate_legal_rag() -> EvaluationReport:
         report.metrics["hit@5"] = hits_5 / evaluable
         report.metrics["mrr"] = mrr_sum / evaluable
         
+    if include_answer_aware_diagnostic:
+        diagnostic_denominator = diagnostic_counts["diagnostic_denominator"]
+        diagnostic_metrics = {
+            **diagnostic_counts,
+            **ranking_metrics(diagnostic_source_ranks, diagnostic_denominator, "source_"),
+            **ranking_metrics(diagnostic_primary_ranks, diagnostic_denominator, "primary_article_"),
+        }
+        if "primary_article_mrr" in diagnostic_metrics:
+            diagnostic_metrics["mrr"] = diagnostic_metrics.pop("primary_article_mrr")
+        report.diagnostics["answer_aware_not_official"] = {
+            "official_gold_benchmark": False,
+            "description": "Answer-aware attribution audit; it does not replace or modify legacy gold metrics.",
+            "metrics": diagnostic_metrics,
+        }
     return report
 
 if __name__ == "__main__":
