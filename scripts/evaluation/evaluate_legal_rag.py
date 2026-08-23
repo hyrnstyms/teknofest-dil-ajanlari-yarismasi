@@ -18,6 +18,7 @@ NORMALIZED_DOCUMENT_IDS = {
     "4982_bilgi_edinme_kanunu": "4982",
     "bilgiedinmekanunu": "4982",
     "3071": "3071",
+    "3071kanun": "3071",
     "3071dilekcehakkikanunu": "3071",
     "dilekce_hakki_kanunu": "3071",
     "3071_dilekce_hakki_kanunu": "3071",
@@ -31,6 +32,13 @@ NORMALIZED_DOCUMENT_IDS = {
     "resmi_yazisma_kilavuzu": "resmi_yazisma_kilavuzu",
     "kvkk": "6698",
     "cezamuhakemesikanunu": "5271"
+}
+
+# The local 3071 PDF is maintained as a small evaluation source outside the
+# generated statute_chunks.csv. Its Qdrant points are repaired idempotently by
+# scripts/evaluation/repair_3071_metadata.py.
+LOCAL_EVALUATION_CORPUS = {
+    *(f"3071|{article}" for article in range(1, 12)),
 }
 
 def normalize_legal_source(source: str) -> str:
@@ -91,7 +99,7 @@ def build_source_aliases(csv_path: Path = Path("data/knowledge/statute_chunks.cs
     return aliases
 
 def build_canonical_corpus(csv_path: Path = Path("data/knowledge/statute_chunks.csv")) -> set[str]:
-    canonical_set = set()
+    canonical_set = set(LOCAL_EVALUATION_CORPUS)
     if not csv_path.exists():
         return canonical_set
     with open(csv_path, 'r', encoding='utf-8') as f:

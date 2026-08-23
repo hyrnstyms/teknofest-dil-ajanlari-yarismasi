@@ -27,6 +27,7 @@ def test_legal_source_normalization():
         "3071 Dilekçe Hakkı Kanunu": "3071",
         "3071_dilekce_hakki_kanunu.pdf": "3071",
         "3071": "3071",
+        "3071kanun": "3071",
         "5442 İl İdaresi Kanunu": "5442",
         "5442_il_idaresi_kanunu.pdf": "5442",
         "5442": "5442",
@@ -84,3 +85,8 @@ def test_real_qa_benchmark_active_and_coverage_counts():
     }
     assert len(items) == 266
     assert {item["suite"] for item in items} == {"qa_benchmark"}
+
+
+def test_local_3071_evaluation_corpus_supports_targeted_articles():
+    canonical_set = build_canonical_corpus(Path("missing-statute-chunks.csv"))
+    assert {"3071|4", "3071|6", "3071|7"} <= canonical_set
