@@ -140,72 +140,35 @@ class LegalAgent:
         )
 
         system_prompt = """
-Sen Türkiye'deki kamu evrak süreçlerinde kullanılan
-kaynak-temelli bir mevzuat bilgi çıkarım sistemisin.
+Sen kaynak-temelli bir Türkçe mevzuat bilgi çıkarım sistemisin.
 
-Görevin hukuki yorum yapmak değil, verilen mevzuat
-kaynaklarından kullanıcının sorusunu cevaplayan
-kanıt parçalarını çıkarmaktır.
+KURALLAR:
+1. Yalnızca verilen kaynakları kullan.
+2. Kaynaklarda bulunmayan hukuki yorum, bilgi veya sonuç üretme.
+3. Evidence kısa olmalı ve ilgili kaynak metninde birebir doğrulanabilmelidir.
+4. Kaynaklar soruyu doğrudan cevaplamıyorsa tahmin etme ve {"items":[]} döndür.
+5. Yalnızca şu JSON şemasını döndür; JSON dışında açıklama yazma:
+   {"items":[{"evidence":"kaynakta geçen kısa ifade","source":"K1"}]}
 
-KESİN KURALLAR:
+ÖRNEK 1 — kaynak cevaplıyor:
+Soru: Başvuru kaç gün içinde cevaplanır?
+K1 Metin: Başvurunun sonucu en geç otuz gün içinde bildirilir.
+Çıktı: {"items":[{"evidence":"Başvurunun sonucu en geç otuz gün içinde bildirilir.","source":"K1"}]}
 
-1. SADECE verilen mevzuat kaynaklarını kullan.
-
-2. Kaynakta bulunmayan hiçbir şart, belge, prosedür,
-   kişi rolü veya hukuki sonuç ekleme.
-
-3. Hukuki terimleri değiştirme.
-
-Örneğin kaynakta "başvuru sahibi" yazıyorsa bunu
-"tüketici", "vatandaş", "müşteri" veya başka bir
-ifadeye dönüştürme.
-
-4. "Gerçek kişi", "tüzel kişi", "başvuru sahibi",
-   "yetkili kişi", "kurum ve kuruluş" gibi terimleri
-   kaynakta geçtiği biçimde koru.
-
-5. evidence alanına yazdığın ifade, verilen kaynak
-   metninde gerçekten bulunmalıdır.
-
-6. evidence metnini mümkün olduğunca kaynaktan
-   doğrudan ve kısa bir parça olarak seç.
-
-7. Soruya cevap vermeyen bölümleri çıkarma.
-
-8. Farklı kaynakları birleştirerek yeni bir hukuki
-   kural oluşturma.
-
-9. Kaynakta olmayan parantez içi açıklamalar ekleme.
-
-10. JSON dışında hiçbir açıklama yazma.
-
-SADECE ŞU JSON FORMATINI DÖNDÜR:
-
-{
-    "items": [
-        {
-            "evidence": "kaynakta geçen ifade",
-            "source": "K1"
-        }
-    ]
-}
+ÖRNEK 2 — kaynak cevaplamıyor:
+Soru: Başvuru ücreti ne kadardır?
+K1 Metin: Başvurunun sonucu yazılı olarak bildirilir.
+Çıktı: {"items":[]}
 """
 
         user_prompt = f"""
 SORU:
-
 {query}
 
 MEVZUAT KAYNAKLARI:
-
 {context}
 
-Soruyu doğrudan cevaplayan kaynak ifadelerini çıkar.
-
-Her evidence değeri, ilgili kaynak metninde gerçekten
-bulunan bir ifade olmalıdır.
-
-Yeni açıklama, yorum veya hukuki şart üretme.
+Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
 """
 
         raw_response = self.llm.chat(
@@ -258,7 +221,8 @@ Yeni açıklama, yorum veya hukuki şart üretme.
 
         answer = (
             self._render_evidence_answer(
-                validated_items
+                validated_items,
+                sources,
             )
         )
 
@@ -357,40 +321,27 @@ Yeni açıklama, yorum veya hukuki şart üretme.
         ):
             source_id = f"K{index}"
 
-            title = (
-                source.get("title")
-                or "Mevzuat"
-            )
-
-            law_number = (
-                source.get(
-                    "law_number"
-                )
-                or "Bilinmiyor"
-            )
-
-            article = (
-                source.get(
-                    "madde_no"
-                )
-                or "Bilinmiyor"
-            )
+            title = source.get("title") or source.get("source")
+            source_type = source.get("source_type")
+            law_number = source.get("law_number")
+            article = source.get("madde_no") or source.get("article")
 
             text = (
                 source.get("text")
                 or ""
             )
 
-            context_parts.append(
-                f"""
-[{source_id}]
-Başlık: {title}
-Kanun No: {law_number}
-Madde: {article}
-
-{text}
-""".strip()
-            )
+            metadata_lines = [f"[{source_id}]"]
+            if title:
+                metadata_lines.append(f"Kaynak Adı: {title}")
+            if source_type:
+                metadata_lines.append(f"Kaynak Türü: {source_type}")
+            if law_number:
+                metadata_lines.append(f"Kanun/Yönetmelik No: {law_number}")
+            if article:
+                metadata_lines.append(f"Madde: {article}")
+            metadata_lines.extend(("Metin:", str(text)))
+            context_parts.append("\n".join(metadata_lines))
 
         return "\n\n---\n\n".join(
             context_parts
@@ -524,6 +475,7 @@ Madde: {article}
     @staticmethod
     def _render_evidence_answer(
         items: list[dict[str, str]],
+        sources: list[dict[str, Any]],
     ) -> str:
         """
         Doğrulanmış evidence parçalarından
@@ -538,10 +490,28 @@ Madde: {article}
             "",
         ]
 
+        source_map = {
+            f"K{index}": source
+            for index, source in enumerate(sources, start=1)
+        }
+
         for item in items:
+            source_id = item["source"]
+            source = source_map.get(source_id, {})
+            citation_parts = []
+            title = source.get("title") or source.get("source")
+            law_number = source.get("law_number")
+            article = source.get("madde_no") or source.get("article")
+            if title:
+                citation_parts.append(str(title))
+            if law_number:
+                citation_parts.append(str(law_number))
+            if article:
+                citation_parts.append(f"Madde {article}")
+            citation = ", ".join(citation_parts) or source_id
             lines.append(
                 f"- {item['evidence']} "
-                f"[{item['source']}]"
+                f"[{citation}]"
             )
 
         return "\n".join(
