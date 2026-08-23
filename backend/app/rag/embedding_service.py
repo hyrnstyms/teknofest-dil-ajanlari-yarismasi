@@ -63,6 +63,8 @@ class EmbeddingService:
                     else:
                         raise e
             print("Qdrant schema validation passed.")
+        except ValueError:
+            raise
         except ImportError:
             print("QdrantStore not found, skipping schema validation.")
         except Exception as e:

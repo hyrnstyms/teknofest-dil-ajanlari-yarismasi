@@ -73,6 +73,18 @@ def canonical_madde_from_retrieved(source: dict[str, Any]) -> str:
     return normalize_madde(madde_value)
 
 
+def build_source_aliases(csv_path: Path = Path("data/knowledge/statute_chunks.csv")) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    if not csv_path.exists():
+        return aliases
+    with open(csv_path, "r", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            law_number = _clean_metadata_value(row.get("kanun_no"))
+            source_alias = normalize_legal_source(_clean_metadata_value(row.get("kaynak")))
+            if law_number and source_alias:
+                aliases[source_alias] = law_number
+    return aliases
+
 def build_canonical_corpus(csv_path: Path = Path("data/knowledge/statute_chunks.csv")) -> set[str]:
     canonical_set = set()
     if not csv_path.exists():
@@ -92,8 +104,9 @@ def build_canonical_corpus(csv_path: Path = Path("data/knowledge/statute_chunks.
     return canonical_set
 
 
-def load_active_qa_benchmark(csv_path: Path, canonical_set: set[str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+def load_active_qa_benchmark(csv_path: Path, canonical_set: set[str], source_aliases: dict[str, str] | None = None) -> tuple[list[dict[str, str]], dict[str, int]]:
     items: list[dict[str, str]] = []
+    source_aliases = source_aliases or {}
     stats = {"raw": 0, "active": 0, "inactive": 0, "active_supported": 0, "active_unsupported": 0}
     if not csv_path.exists():
         return items, stats
@@ -106,18 +119,21 @@ def load_active_qa_benchmark(csv_path: Path, canonical_set: set[str]) -> tuple[l
             stats["active"] += 1
             source = _clean_metadata_value(row.get("kaynak"))
             madde = _clean_metadata_value(row.get("madde_no"))
-            canonical_key = f"{normalize_legal_source(source)}|{normalize_madde(madde)}"
+            canonical_source = normalize_legal_source(source)
+            canonical_source = source_aliases.get(canonical_source, canonical_source)
+            canonical_key = f"{canonical_source}|{normalize_madde(madde)}"
             if canonical_key in canonical_set:
                 stats["active_supported"] += 1
             else:
                 stats["active_unsupported"] += 1
-            items.append({"id": _clean_metadata_value(row.get("row_id")) or f"qa_{index}", "suite": "qa_benchmark", "question": _clean_metadata_value(row.get("soru")), "source": source, "madde": madde})
+            items.append({"id": _clean_metadata_value(row.get("row_id")) or f"qa_{index}", "suite": "qa_benchmark", "question": _clean_metadata_value(row.get("soru")), "source": canonical_source, "madde": madde})
     return items, stats
 
 def evaluate_legal_rag() -> EvaluationReport:
     report = EvaluationReport(dataset_name="legal_rag")
     agent = LegalAgent()
     canonical_set = build_canonical_corpus()
+    source_aliases = build_source_aliases()
     
     total = 0
     matched_corpus = 0
@@ -147,7 +163,7 @@ def evaluate_legal_rag() -> EvaluationReport:
                 
     # 2. Load qa_benchmark_gold.csv (290)
     p2 = Path("data/evaluation/legal/qa_benchmark_gold.csv")
-    qa_items, qa_stats = load_active_qa_benchmark(p2, canonical_set)
+    qa_items, qa_stats = load_active_qa_benchmark(p2, canonical_set, source_aliases)
     items_to_evaluate.extend(qa_items)
     report.unsupported["qa_benchmark"] = qa_stats
 

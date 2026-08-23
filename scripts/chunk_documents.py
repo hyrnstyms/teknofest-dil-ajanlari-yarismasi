@@ -1,3 +1,4 @@
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -36,7 +37,7 @@ STATUTE_FILE = Path(
     "data/knowledge/statute_chunks.csv"
 )
 
-OUTPUT_FILE = Path(
+DEFAULT_OUTPUT_FILE = Path(
     "data/processed/chunks.jsonl"
 )
 
@@ -315,7 +316,7 @@ def deduplicate(
     )
 
 
-def main():
+def main(output_file: Path = DEFAULT_OUTPUT_FILE):
 
     documents = (
         load_documents()
@@ -396,12 +397,12 @@ def main():
         )
     )
 
-    OUTPUT_FILE.parent.mkdir(
+    output_file.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    with OUTPUT_FILE.open(
+    with output_file.open(
         "w",
         encoding="utf-8",
     ) as file:
@@ -493,9 +494,12 @@ def main():
     )
 
     print(
-        f"Çıktı: {OUTPUT_FILE}"
+        f"Çıktı: {output_file}"
     )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_FILE)
+    args = parser.parse_args()
+    main(output_file=args.output)
