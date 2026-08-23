@@ -57,7 +57,7 @@ def test_empty_items_uses_safe_fallback_without_hallucination():
 def test_missing_metadata_is_not_invented_and_does_not_crash():
     source = {"text": "Kısa doğrulanabilir ifade."}
     agent, llm = agent_with({"items": [{"evidence": source["text"], "source": "K1"}]})
-    answer, _ = agent._generate_grounded_answer("Soru", [source])
+    answer, _ = agent._generate_grounded_answer("Do\u011frulanabilir ifade nedir?", [source])
     assert "[K1]" in answer
     assert "Bilinmiyor" not in llm.calls[0]["user"]
     assert "Kaynak Adı:" not in llm.calls[0]["user"]
@@ -81,3 +81,44 @@ def test_prompt_contains_two_short_examples_and_structured_context():
     assert "Kanun/Yönetmelik No: 3071" in call["user"]
     assert "Madde: 7" in call["user"]
     assert "Metin:" in call["user"]
+
+
+def test_supported_3071_evidence_passes_relevance_guard():
+    evidence = "Ba\u015fvurunun sonucu en ge\u00e7 otuz g\u00fcn i\u00e7inde bildirilir."
+    agent, _ = agent_with({"items": [{"evidence": evidence, "source": "K1"}]})
+    query = (
+        "Yetkili makamlara yap\u0131lan dilek\u00e7e ba\u015fvurular\u0131n\u0131n sonucu "
+        "en ge\u00e7 ka\u00e7 g\u00fcn i\u00e7inde cevaplan\u0131r?"
+    )
+    answer, items = agent._generate_grounded_answer(query, [SOURCE])
+    assert items == [{"evidence": evidence, "source": "K1"}]
+    assert "Madde 7" in answer
+
+
+def test_supported_4982_evidence_passes_relevance_guard():
+    source = {
+        "title": "Bilgi Edinme Kanunu",
+        "law_number": "4982",
+        "madde_no": "11",
+        "text": (
+            "Kurum ve kurulu\u015flar, ba\u015fvuru \u00fczerine istenen bilgi veya belgeye "
+            "eri\u015fimi onbe\u015f i\u015f g\u00fcn\u00fc i\u00e7inde sa\u011flarlar."
+        ),
+    }
+    evidence = "onbe\u015f i\u015f g\u00fcn\u00fc i\u00e7inde sa\u011flarlar."
+    agent, _ = agent_with({"items": [{"evidence": evidence, "source": "K1"}]})
+    answer, items = agent._generate_grounded_answer(
+        "Bilgi veya belgeye eri\u015fim s\u00fcresi ne kadard\u0131r?", [source]
+    )
+    assert items == [{"evidence": evidence, "source": "K1"}]
+    assert "4982, Madde 11" in answer
+
+
+def test_wrong_context_evidence_is_rejected_even_when_it_exists_in_source():
+    evidence = "Ba\u015fvurunun sonucu en ge\u00e7 otuz g\u00fcn i\u00e7inde bildirilir."
+    agent, _ = agent_with({"items": [{"evidence": evidence, "source": "K1"}]})
+    answer, items = agent._generate_grounded_answer(
+        "Bo\u015fanma davas\u0131nda yetkili mahkeme hangisidir?", [SOURCE]
+    )
+    assert items == []
+    assert "do\u011frulanabilir bir bilgi \u00e7\u0131kar\u0131lamad\u0131" in answer

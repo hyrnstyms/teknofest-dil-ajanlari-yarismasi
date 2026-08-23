@@ -1,9 +1,20 @@
 import json
+import re
+import unicodedata
 from typing import Any
 
 from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
 from backend.app.rag.retriever import Retriever
+
+
+LEGAL_TOKEN_RE = re.compile(r"[a-z\u00e7\u011f\u0131i\u00f6\u015f\u00fc0-9]+")
+QUERY_STOPWORDS = {
+    "acaba", "bir", "bu", "da", "de", "hangi", "hangisi", "hangisidir",
+    "ile", "icin", "i\u00e7in", "kac", "ka\u00e7", "kadar",
+    "mi", "m\u0131", "mu", "m\u00fc", "ne", "nedir", "nelerdir",
+    "nas\u0131l", "soru", "ve", "veya",
+}
 
 
 class LegalAgent:
@@ -209,6 +220,7 @@ Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
             self._validate_evidence_items(
                 items=items,
                 sources=sources,
+                query=query,
             )
         )
 
@@ -351,6 +363,7 @@ Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
         self,
         items: list[dict[str, Any]],
         sources: list[dict[str, Any]],
+        query: str = "",
     ) -> list[dict[str, str]]:
         """
         LLM tarafından çıkarılan evidence gerçekten
@@ -435,6 +448,14 @@ Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
             ):
                 continue
 
+            # A verbatim sentence may still be irrelevant to the question.
+            # Require a deterministic lexical link without another model call.
+            if query and not self._is_query_relevant(
+                query=query,
+                source_text=source_map[source_id],
+            ):
+                continue
+
             dedup_key = (
                 source_id,
                 normalized_evidence,
@@ -455,6 +476,37 @@ Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
             )
 
         return validated
+
+    @classmethod
+    def _is_query_relevant(
+        cls,
+        query: str,
+        source_text: str,
+    ) -> bool:
+        query_tokens = cls._informative_tokens(query)
+        if not query_tokens:
+            return False
+
+        source_tokens = cls._informative_tokens(source_text)
+        shared_count = len(query_tokens & source_tokens)
+
+        # One concept is sufficient for a terse query. Multi-concept queries
+        # require two anchors so an incidental single word cannot pass.
+        required_shared = 1 if len(query_tokens) <= 2 else 2
+        return shared_count >= required_shared
+
+    @staticmethod
+    def _informative_tokens(text: str) -> set[str]:
+        normalized = unicodedata.normalize("NFKC", str(text)).casefold()
+        normalized = normalized.replace("i\u0307", "i")
+        normalized = normalized.translate(str.maketrans({
+            "\u00e2": "a", "\u00ee": "i", "\u00fb": "u",
+        }))
+        return {
+            token
+            for token in LEGAL_TOKEN_RE.findall(normalized)
+            if len(token) > 1 and token not in QUERY_STOPWORDS
+        }
 
     @staticmethod
     def _normalize_text(
