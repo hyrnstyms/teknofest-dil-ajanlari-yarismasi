@@ -15,6 +15,13 @@ QUERY_STOPWORDS = {
     "mi", "m\u0131", "mu", "m\u00fc", "ne", "nedir", "nelerdir",
     "nas\u0131l", "soru", "ve", "veya",
 }
+EXPLICIT_LAW_RE = re.compile(r"\b(\d{3,6})\s+sayili\b")
+ARTICLE_AFTER_RE = re.compile(
+    r"\bmadde(?:si)?\s*[:.]?\s*(\d+(?:/[a-z])?)\b"
+)
+ARTICLE_BEFORE_RE = re.compile(
+    r"\b(\d+(?:/[a-z])?)\s+(?:inci|uncu|nci|ncu)\s+madde(?:si)?\b"
+)
 
 
 class LegalAgent:
@@ -60,13 +67,41 @@ class LegalAgent:
         Kullanıcı sorgusunu mevzuat açısından analiz eder.
         """
 
+        explicit_law, explicit_article = (
+            self._extract_explicit_reference(query)
+        )
+        effective_law = law_number or explicit_law
+        retrieval_limit = (
+            max(top_k, 20)
+            if explicit_law and explicit_article
+            else top_k
+        )
+
         retrieved_sources = (
             self.retriever.search_legal(
                 query=query,
-                limit=top_k,
-                law_number=law_number,
+                limit=retrieval_limit,
+                law_number=effective_law,
             )
         )
+
+        # An explicit query-derived law number is a preference, not a hard
+        # failure mode. If that law is absent, preserve semantic retrieval.
+        if explicit_law and law_number is None and not retrieved_sources:
+            retrieved_sources = self.retriever.search_legal(
+                query=query,
+                limit=top_k,
+                law_number=None,
+            )
+
+        if explicit_law and explicit_article:
+            retrieved_sources = self._prioritize_explicit_article(
+                retrieved_sources,
+                law_number=explicit_law,
+                article=explicit_article,
+            )
+
+        retrieved_sources = retrieved_sources[:top_k]
 
         if not retrieved_sources:
             return self._empty_result(
@@ -507,6 +542,55 @@ Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
             for token in LEGAL_TOKEN_RE.findall(normalized)
             if len(token) > 1 and token not in QUERY_STOPWORDS
         }
+
+    @classmethod
+    def _extract_explicit_reference(
+        cls,
+        query: str,
+    ) -> tuple[str | None, str | None]:
+        normalized = cls._reference_text(query)
+        law_match = EXPLICIT_LAW_RE.search(normalized)
+        if not law_match:
+            return None, None
+
+        article = None
+        for pattern in (ARTICLE_AFTER_RE, ARTICLE_BEFORE_RE):
+            match = pattern.search(normalized)
+            if not match:
+                continue
+            if normalized[max(0, match.start() - 8):match.start()].endswith(
+                "gecici "
+            ):
+                continue
+            article = match.group(1)
+            break
+
+        return law_match.group(1), article
+
+    @staticmethod
+    def _reference_text(text: str) -> str:
+        normalized = unicodedata.normalize("NFKC", str(text)).casefold()
+        normalized = normalized.replace("i\u0307", "i")
+        return normalized.translate(str.maketrans({
+            "\u00e7": "c", "\u011f": "g", "\u0131": "i",
+            "\u00f6": "o", "\u015f": "s", "\u00fc": "u",
+            "\u00e2": "a", "\u00ee": "i", "\u00fb": "u",
+        }))
+
+    @staticmethod
+    def _prioritize_explicit_article(
+        sources: list[dict[str, Any]],
+        law_number: str,
+        article: str,
+    ) -> list[dict[str, Any]]:
+        def is_exact(source: dict[str, Any]) -> bool:
+            source_law = str(source.get("law_number") or "").strip()
+            source_article = str(
+                source.get("madde_no") or source.get("article") or ""
+            ).strip().casefold()
+            return source_law == law_number and source_article == article
+
+        return sorted(sources, key=lambda source: not is_exact(source))
 
     @staticmethod
     def _normalize_text(
