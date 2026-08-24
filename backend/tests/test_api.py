@@ -24,6 +24,54 @@ def test_ready():
     assert res.status_code == 200
     # Even if degraded, status code should be 200, but ready field might be false
 
+
+def test_ready_reuses_embedding_and_qdrant_singletons(monkeypatch):
+    from backend.app.main import (
+        _get_embedding_service_singleton,
+        _get_qdrant_store_singleton,
+    )
+
+    constructor_calls = {"embedding": 0, "qdrant": 0}
+
+    class FakeEmbeddingService:
+        def __init__(self):
+            constructor_calls["embedding"] += 1
+            self.model = object()
+
+    class FakeQdrantClient:
+        def get_collections(self):
+            return []
+
+    class FakeQdrantStore:
+        def __init__(self):
+            constructor_calls["qdrant"] += 1
+            self.client = FakeQdrantClient()
+
+    class FakeOllamaResponse:
+        status_code = 200
+
+    monkeypatch.setattr("requests.get", lambda *args, **kwargs: FakeOllamaResponse())
+    monkeypatch.setattr(
+        "backend.app.rag.embedding_service.EmbeddingService",
+        FakeEmbeddingService,
+    )
+    monkeypatch.setattr(
+        "backend.app.rag.qdrant_store.QdrantStore",
+        FakeQdrantStore,
+    )
+
+    _get_embedding_service_singleton.cache_clear()
+    _get_qdrant_store_singleton.cache_clear()
+    try:
+        responses = [client.get("/ready") for _ in range(3)]
+
+        assert all(response.status_code == 200 for response in responses)
+        assert all(response.json()["ready"] is True for response in responses)
+        assert constructor_calls == {"embedding": 1, "qdrant": 1}
+    finally:
+        _get_embedding_service_singleton.cache_clear()
+        _get_qdrant_store_singleton.cache_clear()
+
 def test_analyze_text(monkeypatch):
     # Mock workflow to avoid heavy LLM calls
     from backend.app.graph.workflow import KamuaiWorkflow
