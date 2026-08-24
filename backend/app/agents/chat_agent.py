@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from rapidfuzz import fuzz
+
+if TYPE_CHECKING:
+    from backend.app.agents.legal_agent import LegalAgent
 
 
 ESLESME_ESIGI = 70
@@ -14,6 +19,20 @@ FALLBACK_MESAJI = (
     "Bu konuda size yardımcı olamadım. Sorunuzu farklı şekilde ifade edebilir "
     "veya bir mevzuat sorusu soruyorsanız doğrudan kanun/madde belirterek "
     "sorabilirsiniz."
+)
+
+MEVZUAT_SORUSU_RE = re.compile(
+    r"\b(?:kanun\w*|madde\w*|yönetmeli\w*|yonetmeli\w*|sayılı\w*|sayili\w*)\b",
+    flags=re.UNICODE,
+)
+
+MEVZUAT_SERVIS_HATASI_MESAJI = (
+    "Mevzuat arama hizmetine şu anda ulaşılamıyor. Lütfen daha sonra tekrar "
+    "deneyin."
+)
+
+MEVZUAT_KANIT_BULUNAMADI_MESAJI = (
+    "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı."
 )
 
 
@@ -351,9 +370,69 @@ def match_faq(user_message: str, esik: int = ESLESME_ESIGI) -> str:
     return FALLBACK_MESAJI
 
 
+def is_mevzuat_sorusu(message: str) -> bool:
+    """Mesajın açık bir mevzuat anahtar sözcüğü içerip içermediğini belirler."""
+
+    return bool(MEVZUAT_SORUSU_RE.search(_normalize_text(message)))
+
+
+@lru_cache(maxsize=1)
+def _get_legal_agent() -> "LegalAgent":
+    """Ağır RAG bağımlılıklarını ilk mevzuat sorusuna kadar yüklemez."""
+
+    from backend.app.agents.legal_agent import LegalAgent
+
+    return LegalAgent()
+
+
+def handle_legal_question(message: str) -> str:
+    """Mevzuat sorusunu mevcut LegalAgent'a iletip kaynaklı yanıtı biçimler."""
+
+    try:
+        result = _get_legal_agent().analyze(query=message)
+    except Exception:
+        return MEVZUAT_SERVIS_HATASI_MESAJI
+
+    answer = str(result.get("answer") or "").strip()
+    evidence = result.get("evidence") or []
+
+    if not evidence:
+        return answer or MEVZUAT_KANIT_BULUNAMADI_MESAJI
+
+    if not answer:
+        return MEVZUAT_KANIT_BULUNAMADI_MESAJI
+
+    try:
+        score = float(result.get("retrieval_score"))
+    except (TypeError, ValueError):
+        return answer
+
+    score = min(max(score, 0.0), 1.0)
+    score_text = f"{score * 100:.1f}".replace(".", ",")
+    return (
+        f"{answer}\n\n"
+        f"Kaynak eşleşme skoru: %{score_text}\n"
+        "Not: Bu değer hukuki doğruluk olasılığı değil, mevzuat arama "
+        "benzerlik skorudur."
+    )
+
+
+def handle_chat_message(message: str) -> str:
+    """Mod B mevzuat yönlendirmesini, aksi durumda Mod A SSS'yi çalıştırır."""
+
+    if is_mevzuat_sorusu(message):
+        return handle_legal_question(message)
+    return match_faq(message)
+
+
 __all__ = [
     "ESLESME_ESIGI",
     "FALLBACK_MESAJI",
+    "MEVZUAT_KANIT_BULUNAMADI_MESAJI",
+    "MEVZUAT_SERVIS_HATASI_MESAJI",
     "SSS_LISTESI",
+    "handle_chat_message",
+    "handle_legal_question",
+    "is_mevzuat_sorusu",
     "match_faq",
 ]

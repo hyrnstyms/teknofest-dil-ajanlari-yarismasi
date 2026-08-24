@@ -3,10 +3,19 @@ from rapidfuzz import fuzz
 
 from backend.app.agents.chat_agent import (
     FALLBACK_MESAJI,
+    MEVZUAT_KANIT_BULUNAMADI_MESAJI,
+    MEVZUAT_SERVIS_HATASI_MESAJI,
     SSS_LISTESI,
+    _get_legal_agent,
     _normalize_text,
+    handle_chat_message,
+    handle_legal_question,
+    is_mevzuat_sorusu,
     match_faq,
 )
+
+
+_LEGAL_AGENT_CACHE_INFO_AFTER_IMPORT = _get_legal_agent.cache_info()
 
 
 FAQ_VARIATIONS = [
@@ -89,3 +98,136 @@ def test_empty_message_always_returns_a_string_fallback():
 def test_every_faq_has_exactly_a_question_and_answer():
     assert len(FAQ_VARIATIONS) == len(SSS_LISTESI)
     assert all(set(item) == {"soru", "cevap"} for item in SSS_LISTESI)
+
+
+def test_legal_agent_is_still_lazy_after_import_and_all_mod_a_tests():
+    initial = _LEGAL_AGENT_CACHE_INFO_AFTER_IMPORT
+    current = _get_legal_agent.cache_info()
+
+    assert initial.hits + initial.misses == 0
+    assert current.hits + current.misses == 0
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "4982 sayılı kanunda cevap süresi ne kadar?",
+        "3071 sayılı Kanun Madde 7 neyi düzenler?",
+        "Resmî yazışmalar yönetmeliğine göre sayı alanı nasıl yazılır?",
+    ],
+)
+def test_is_mevzuat_sorusu_detects_explicit_legal_questions(message: str):
+    assert is_mevzuat_sorusu(message) is True
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Evrak nasıl yüklenir?",
+        "Mevzuat eşleşme oranı ne demek?",
+        "Chatbot'a mevzuatla ilgili soru sorabilir miyim?",
+    ],
+)
+def test_is_mevzuat_sorusu_preserves_mod_a_usage_questions(message: str):
+    assert is_mevzuat_sorusu(message) is False
+
+
+class FakeLegalAgent:
+    def __init__(self, result=None, error=None):
+        self.result = result
+        self.error = error
+        self.calls = []
+
+    def analyze(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error:
+            raise self.error
+        return self.result
+
+
+def test_handle_legal_question_calls_agent_and_formats_grounded_result(monkeypatch):
+    agent = FakeLegalAgent({
+        "answer": (
+            "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n"
+            "- Erişim on beş iş günü içinde sağlanır. "
+            "[Bilgi Edinme Kanunu, 4982, Madde 11]"
+        ),
+        "evidence": [{
+            "evidence": "Erişim on beş iş günü içinde sağlanır.",
+            "source": "K1",
+        }],
+        "sources": [{
+            "title": "Bilgi Edinme Kanunu",
+            "law_number": "4982",
+            "madde_no": "11",
+        }],
+        "retrieval_score": 0.824,
+    })
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_legal_agent",
+        lambda: agent,
+    )
+
+    message = "4982 sayılı Kanun Madde 11 kapsamında erişim süresi nedir?"
+    response = handle_legal_question(message)
+
+    assert agent.calls == [{"query": message}]
+    assert "[Bilgi Edinme Kanunu, 4982, Madde 11]" in response
+    assert "Kaynak eşleşme skoru: %82,4" in response
+    assert "hukuki doğruluk olasılığı değil" in response
+
+
+def test_handle_legal_question_returns_agent_no_evidence_message(monkeypatch):
+    agent = FakeLegalAgent({
+        "answer": "İlgili mevzuat kaynağı bulunamadı.",
+        "evidence": [],
+        "sources": [],
+        "retrieval_score": 0.0,
+    })
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_legal_agent",
+        lambda: agent,
+    )
+
+    assert handle_legal_question("9999 sayılı kanun nedir?") == (
+        "İlgili mevzuat kaynağı bulunamadı."
+    )
+
+
+def test_handle_legal_question_uses_safe_fallback_for_empty_result(monkeypatch):
+    agent = FakeLegalAgent({"answer": "", "evidence": [], "sources": []})
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_legal_agent",
+        lambda: agent,
+    )
+
+    assert handle_legal_question("Kanun maddesi nedir?") == (
+        MEVZUAT_KANIT_BULUNAMADI_MESAJI
+    )
+
+
+def test_handle_legal_question_hides_service_exception(monkeypatch):
+    agent = FakeLegalAgent(error=ConnectionError("Qdrant bağlantısı kurulamadı"))
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_legal_agent",
+        lambda: agent,
+    )
+
+    assert handle_legal_question("3071 sayılı kanun nedir?") == (
+        MEVZUAT_SERVIS_HATASI_MESAJI
+    )
+
+
+def test_handle_chat_message_routes_legal_question_first(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_legal_question",
+        lambda message: f"LEGAL:{message}",
+    )
+
+    message = "4982 sayılı kanunda süre ne kadar?"
+    assert handle_chat_message(message) == f"LEGAL:{message}"
+
+
+def test_handle_chat_message_keeps_mod_a_behavior():
+    message = "Evrakı sisteme nasıl yükleyebilirim?"
+    assert handle_chat_message(message) == match_faq(message)
