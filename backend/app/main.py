@@ -262,6 +262,56 @@ def approve_analysis(analysis_id: str):
     return {"status": "success", "message": "Analiz ve taslak personel tarafından onaylandı."}
 
 
+@app.get("/api/analysis/{analysis_id}/export/docx")
+def export_docx(analysis_id: str):
+    """Onaylı taslağı biçimlendirilmiş .docx dosyası olarak dışa aktarır."""
+    if analysis_id not in analysis_store:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."},
+        )
+
+    state = analysis_store[analysis_id]
+
+    # Draft ve draft_type bilgisini çıkar
+    draft_data = state.get("draft", {})
+    draft = draft_data.get("draft", draft_data)
+    draft_type = (
+        draft_data.get("draft_type")
+        or draft.get("draft_type")
+        or state.get("draft_type")
+        or "ust_yazi"
+    )
+
+    # Context oluştur
+    from backend.app.official_writing.context_adapter import build_official_writing_context
+    from backend.app.official_writing.docx_renderer import render_to_docx
+
+    try:
+        adapter_res = build_official_writing_context(draft, state, draft_type)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "context_error", "message": f"Context oluşturulurken hata: {str(exc)}"},
+        )
+
+    context = adapter_res.get("context", {})
+
+    try:
+        docx_buffer = render_to_docx(context)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "docx_render_error", "message": f"DOCX üretilirken hata: {str(exc)}"},
+        )
+
+    return Response(
+        content=docx_buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": "attachment; filename=resmi_yazi_taslak.docx"},
+    )
+
+
 @app.post("/api/analysis/{analysis_id}/reject")
 def reject_analysis(analysis_id: str, req: RejectRequest):
     if analysis_id not in analysis_store:

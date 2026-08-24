@@ -1,13 +1,39 @@
 import React, { useState } from "react";
-import { FileSignature } from "lucide-react";
+import { FileSignature, Download } from "lucide-react";
 import { DraftInfo } from "../../types";
 
 interface Props {
   draft: DraftInfo;
+  analysisId?: string;
 }
 
-export const OfficialDraftPanel: React.FC<Props> = ({ draft }) => {
+export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
   const [activeTab, setActiveTab] = useState<"official" | "raw">("official");
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadDocx = async () => {
+    if (!analysisId) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(`/api/analysis/${analysisId}/export/docx`);
+      if (!response.ok) {
+        throw new Error("DOCX indirme hatası");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "resmi_yazi_taslak.docx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("DOCX indirme hatası:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (!draft?.official_render && !draft?.draft_text) {
     return (
@@ -26,11 +52,24 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft }) => {
         <div className="flex items-center gap-2">
           <FileSignature size={18}/> Resmî Yazı Taslağı
         </div>
-        {draft.draft_type && (
-          <div className="badge badge-info text-xs">
-            Taslak Türü: {formatDraftType(draft.draft_type)}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {draft.draft_type && (
+            <div className="badge badge-info text-xs">
+              Taslak Türü: {formatDraftType(draft.draft_type)}
+            </div>
+          )}
+          {analysisId && (
+            <button
+              className="btn btn-sm btn-outline flex items-center gap-1"
+              onClick={handleDownloadDocx}
+              disabled={downloading}
+              title="DOCX olarak indir"
+            >
+              <Download size={14}/>
+              {downloading ? "İndiriliyor..." : "DOCX"}
+            </button>
+          )}
+        </div>
       </div>
       <div className="card-body bg-gray-50">
         <div className="tabs">
@@ -75,3 +114,4 @@ function formatDraftType(type: string): string {
     default: return type.replace(/_/g, ' ').toUpperCase();
   }
 }
+
