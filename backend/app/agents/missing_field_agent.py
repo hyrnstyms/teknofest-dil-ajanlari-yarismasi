@@ -1,11 +1,28 @@
 from typing import Any, Dict
 
+# Canonical mapping rules based on document_type.
+# Using "*" for process_intent means it applies to all intents for that document_type.
 REQUIREMENT_RULES = {
-    ("dilekce", "bilgi_talebi"): {
-        "required_fields": ["person_name", "address", "signature_present"],
-        "source_type": "deterministic_rule",
-        "rule_id": "rule_dilekce_bilgi",
-        "description": "Bilgi edinme başvurularında isim, adres ve imza zorunludur."
+    ("dilekce", "*"): {
+        "required_fields": ["person_name", "address", "signature_present", "subject", "request"],
+    },
+    ("bilgi_edinme", "*"): {
+        "required_fields": ["person_name", "address", "signature_present", "request"],
+    },
+    ("sosyal_yardim_basvuru", "*"): {
+        "required_fields": ["person_name", "address", "signature_present", "phone"],
+    },
+    ("tapu_kadastro_basvuru", "*"): {
+        "required_fields": ["person_name", "signature_present", "request"],
+    },
+    ("ihale_itirazi", "*"): {
+        "required_fields": ["person_name", "address", "signature_present", "subject", "request", "document_date"],
+    },
+    ("kurumlar_arasi_yazi", "*"): {
+        "required_fields": ["document_number", "document_date", "sender_unit", "recipient", "subject", "signature_present"],
+    },
+    ("*", "*"): {
+        "required_fields": ["person_name", "signature_present", "subject", "request"], # Generic fallback
     }
 }
 
@@ -32,97 +49,75 @@ class MissingFieldAgent:
             "needs_human_review": False
         }
         
-        rule_key = (document_type, process_intent)
-        rule = REQUIREMENT_RULES.get(rule_key)
+        document_type = document_type or ""
+        process_intent = process_intent or ""
         
-        if rule:
-            required = rule["required_fields"]
+        # 1. Find the rule
+        rule = REQUIREMENT_RULES.get((document_type, process_intent))
+        if not rule:
+            rule = REQUIREMENT_RULES.get((document_type, "*"))
+        if not rule:
+            rule = REQUIREMENT_RULES.get(("*", "*"))
             
-            # Check legal evidence
-            legal_evidence_found = False
-            if legal_analysis and "evidence" in legal_analysis and legal_analysis["evidence"]:
-                # Only use valid evidence, never hallucinate specific laws
-                for ev in legal_analysis["evidence"]:
-                    result["legal_basis"].append({
-                        "evidence": ev,
-                        "validated": True,
-                        "source_type": "verified_legal_evidence"
-                    })
-                legal_evidence_found = True
-            
-            if not legal_evidence_found:
-                result["warnings"].append("Zorunlu alanlara ilişkin doğrulanmış mevzuat dayanağı bulunamadı.")
-                
-        else:
-            required = []
-            result["warnings"].append(f"'{process_intent}' işlemi için tanımlanmış eksik alan kuralı bulunamadı.")
-            
+        required = rule.get("required_fields", [])
         result["required_fields"] = required
+        
+        # We also check legal_analysis evidence if provided
+        if legal_analysis and "evidence" in legal_analysis and legal_analysis["evidence"]:
+            for ev in legal_analysis["evidence"]:
+                result["legal_basis"].append({
+                    "evidence": ev,
+                    "validated": True,
+                    "source_type": "verified_legal_evidence"
+                })
         
         # 2. Check each required field against extracted_fields
         for field in required:
             field_data = extracted_fields.get(field)
             
+            # Unbox the value safely
+            val = None
+            status = None
+            
+            if field_data is not None:
+                if isinstance(field_data, dict):
+                    val = field_data.get("value")
+                    status = field_data.get("status")
+                else:
+                    val = field_data
+                    
             if field_data is None:
-                # the field key doesn't even exist in extracted output
+                # The field wasn't even extracted
                 if field in ["signature_present", "authority_document_present"]:
                     result["uncertain_fields"].append(field)
-                    result["warnings"].append(f"{field} durumu yalnızca metin üzerinden doğrulanamadı.")
+                    result["field_results"][field] = {"status": "uncertain", "reason": "Not found in extraction."}
                     result["needs_human_review"] = True
-                    result["field_results"][field] = {
-                        "status": "uncertain",
-                        "reason": "Alan extracted_fields içinde yok."
-                    }
                 else:
                     result["missing_fields"].append(field)
-                    result["warnings"].append(f"{field} bilgisi belgede bulunamadı.")
-                    result["field_results"][field] = {
-                        "status": "missing",
-                        "reason": "Alan extracted_fields içinde yok."
-                    }
-                continue
-                
-            val = field_data.get("value")
-            status = field_data.get("status")
-            
-            if field in ["signature_present", "authority_document_present"]:
-                if status == "unknown" or val is None:
-                    result["uncertain_fields"].append(field)
-                    result["warnings"].append(f"{field} durumu yalnızca metin üzerinden doğrulanamadı.")
-                    result["needs_human_review"] = True
-                    result["field_results"][field] = {
-                        "status": "uncertain",
-                        "value": val,
-                        "reason": "Değer None veya unknown."
-                    }
-                elif val is True:
-                    result["present_fields"].append(field)
-                    result["field_results"][field] = {
-                        "status": "present",
-                        "value": True
-                    }
-                elif val is False:
-                    result["missing_fields"].append(field)
-                    result["warnings"].append(f"{field} belgede eksik (False).")
-                    result["field_results"][field] = {
-                        "status": "missing",
-                        "value": False,
-                        "reason": "Açıkça False olarak belirtilmiş."
-                    }
+                    result["field_results"][field] = {"status": "missing", "reason": "Not found in extraction."}
             else:
-                if val:
-                    result["present_fields"].append(field)
-                    result["field_results"][field] = {
-                        "status": "present",
-                        "value": val
-                    }
+                if field in ["signature_present", "authority_document_present"]:
+                    if status == "unknown" or val is None:
+                        result["uncertain_fields"].append(field)
+                        result["field_results"][field] = {"status": "uncertain", "reason": "Unknown status."}
+                        result["needs_human_review"] = True
+                    elif val is True or val == "present":
+                        result["present_fields"].append(field)
+                        result["field_results"][field] = {"status": "present", "value": True}
+                    elif val is False or val == "missing":
+                        result["missing_fields"].append(field)
+                        result["field_results"][field] = {"status": "missing", "value": False, "reason": "Explicitly false."}
+                    else:
+                        # Fallback for weird boolean representations
+                        result["present_fields"].append(field)
+                        result["field_results"][field] = {"status": "present", "value": val}
                 else:
-                    result["missing_fields"].append(field)
-                    result["warnings"].append(f"{field} bilgisi belgede bulunamadı.")
-                    result["field_results"][field] = {
-                        "status": "missing",
-                        "value": val,
-                        "reason": "Değer boş veya yok."
-                    }
-                    
+                    # Textual fields
+                    if val is None or val == "" or (isinstance(val, (list, dict)) and len(val) == 0):
+                        result["missing_fields"].append(field)
+                        result["field_results"][field] = {"status": "missing", "reason": "Empty or null."}
+                    else:
+                        result["present_fields"].append(field)
+                        result["field_results"][field] = {"status": "present", "value": val}
+                        
         return result
