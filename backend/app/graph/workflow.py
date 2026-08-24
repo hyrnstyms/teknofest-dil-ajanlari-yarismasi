@@ -16,17 +16,24 @@ from backend.app.agents.quality_agent import QualityAgent
 from backend.app.llm.factory import create_llm_client
 
 class KamuaiWorkflow:
-    def __init__(self):
+    def __init__(self, institution: str = "kaymakamlik"):
+        """
+        Args:
+            institution: Aktif kurum profil id'si.
+                         Varsayılan "kaymakamlik"; "belediye" gibi
+                         başka kurumlar da desteklenir (Track 3).
+        """
+        self.institution = institution
         self.llm = create_llm_client()
         self.doc_agent = DocumentAgent(llm=self.llm)
         self.extract_agent = ExtractionAgent(llm=self.llm)
         self.legal_agent = LegalAgent(llm=self.llm)
         self.missing_field_agent = MissingFieldAgent()
         self.summary_agent = SummaryAgent(llm=self.llm)
-        self.routing_agent = RoutingAgent()
+        self.routing_agent = RoutingAgent(institution=institution)
         self.writing_agent = WritingAgent(llm=self.llm)
         self.quality_agent = QualityAgent()
-        
+
         self.graph = self._build_graph()
 
     def _build_graph(self):
@@ -239,10 +246,15 @@ class KamuaiWorkflow:
             }
         return self._measure_time(_run, state, "human_review_agent")
 
-    def run(self, raw_text: str, document_id: str = "test-doc-1"):
+    def run(
+        self,
+        raw_text: str,
+        document_id: str = "test-doc-1",
+    ):
         initial_state = DocumentState(
             document_id=document_id,
-            raw_text=raw_text
+            raw_text=raw_text,
+            kurum_profili_id=self.institution,
         )
         final_state = self.graph.invoke(initial_state)
         return final_state
