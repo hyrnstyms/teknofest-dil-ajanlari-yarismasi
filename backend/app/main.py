@@ -8,6 +8,7 @@ import shutil
 from copy import deepcopy
 from pathlib import Path
 from datetime import datetime
+from functools import lru_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,20 @@ def get_workflow():
     if workflow is None:
         workflow = KamuaiWorkflow()
     return workflow
+
+
+@lru_cache(maxsize=1)
+def _get_embedding_service_singleton():
+    from backend.app.rag.embedding_service import EmbeddingService
+
+    return EmbeddingService()
+
+
+@lru_cache(maxsize=1)
+def _get_qdrant_store_singleton():
+    from backend.app.rag.qdrant_store import QdrantStore
+
+    return QdrantStore()
 
 ocr_svc = None
 def get_ocr_service():
@@ -117,7 +132,7 @@ def readiness_check():
         from backend.app.rag.qdrant_store import QdrantStore
         
         try:
-            emb = EmbeddingService()
+            emb = _get_embedding_service_singleton()
             if emb.model:
                 services["embedding"]["status"] = "ok"
             else:
@@ -129,7 +144,7 @@ def readiness_check():
             ready = False
             
         try:
-            store = QdrantStore()
+            store = _get_qdrant_store_singleton()
             # Try to fetch collections to verify connection
             store.client.get_collections()
             services["qdrant"]["status"] = "ok"
