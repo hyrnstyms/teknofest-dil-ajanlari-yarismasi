@@ -39,3 +39,6 @@ xlrd
 # Testing
 pytest
 httpx
+
+# Track 4 - QR kodu
+qrcode[pil]

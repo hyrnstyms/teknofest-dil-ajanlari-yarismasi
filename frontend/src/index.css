@@ -11,6 +11,8 @@
   --warning-color: #f59e0b;
   --error-color: #ef4444;
   --info-color: #3b82f6;
+  --chat-purple: #7c3aed;
+  --chat-lime: #a3e635;
 
   --border-radius: 8px;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);

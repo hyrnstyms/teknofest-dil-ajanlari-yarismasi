@@ -7,6 +7,7 @@ import { api } from './services/api';
 import { DocumentState } from './types';
 import './index.css';
 import { AlertCircle } from 'lucide-react';
+import { ChatWidget } from './components/chat/ChatWidget';
 
 function App() {
   const [appState, setAppState] = useState<DocumentState | null>(null);
@@ -56,6 +57,12 @@ function App() {
     }
   };
 
+  const handleChatDraftUpdated = (updatedDraft: DocumentState["draft"]) => {
+    setAppState((previous) =>
+      previous ? { ...previous, draft: updatedDraft } : previous
+    );
+  };
+
   return (
     <div className="container">
       <Header />
@@ -88,6 +95,12 @@ function App() {
       {appState && (
         <Dashboard state={appState} onUpdate={handleUpdate} />
       )}
+
+      <ChatWidget
+        analysisId={appState?.analysis_id}
+        currentDraft={appState?.draft}
+        onDraftUpdated={handleChatDraftUpdated}
+      />
     </div>
   );
 }

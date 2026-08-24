@@ -1,15 +1,51 @@
 import React, { useState } from "react";
-import { FileSignature } from "lucide-react";
+import { FileSignature, Download } from "lucide-react";
 import { DraftInfo } from "../../types";
 
 interface Props {
   draft: DraftInfo;
+  analysisId?: string;
 }
 
-export const OfficialDraftPanel: React.FC<Props> = ({ draft }) => {
+export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
   const [activeTab, setActiveTab] = useState<"official" | "raw">("official");
+  const [downloading, setDownloading] = useState(false);
+  const officialText =
+    typeof draft?.official_rendered_text === "string"
+      ? draft.official_rendered_text
+      : typeof draft?.official_render === "string"
+        ? draft.official_render
+        : "";
+  const rawDraftText =
+    typeof draft?.rendered_text === "string"
+      ? draft.rendered_text
+      : draft?.draft_text || draft?.draft?.body || "";
 
-  if (!draft?.official_render && !draft?.draft_text) {
+  const handleDownloadDocx = async () => {
+    if (!analysisId) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(`/api/analysis/${analysisId}/export/docx`);
+      if (!response.ok) {
+        throw new Error("DOCX indirme hatası");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "resmi_yazi_taslak.docx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("DOCX indirme hatası:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (!officialText && !rawDraftText) {
     return (
       <div className="card mb-4">
         <div className="card-header"><FileSignature size={18}/> Resmî Yazı Taslağı</div>
@@ -26,11 +62,24 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft }) => {
         <div className="flex items-center gap-2">
           <FileSignature size={18}/> Resmî Yazı Taslağı
         </div>
-        {draft.draft_type && (
-          <div className="badge badge-info text-xs">
-            Taslak Türü: {formatDraftType(draft.draft_type)}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {draft.draft_type && (
+            <div className="badge badge-info text-xs">
+              Taslak Türü: {formatDraftType(draft.draft_type)}
+            </div>
+          )}
+          {analysisId && (
+            <button
+              className="btn btn-sm btn-outline flex items-center gap-1"
+              onClick={handleDownloadDocx}
+              disabled={downloading}
+              title="DOCX olarak indir"
+            >
+              <Download size={14}/>
+              {downloading ? "İndiriliyor..." : "DOCX"}
+            </button>
+          )}
+        </div>
       </div>
       <div className="card-body bg-gray-50">
         <div className="tabs">
@@ -51,12 +100,12 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft }) => {
         <div className="mt-4">
           {activeTab === "official" ? (
             <div className="official-document">
-              {draft.official_render || <p className="text-center text-secondary mt-10">Resmî görünüm mevcut değil.</p>}
+              {officialText || <p className="text-center text-secondary mt-10">Resmî görünüm mevcut değil.</p>}
             </div>
           ) : (
             <textarea 
               readOnly 
-              value={draft.draft_text || "Ham taslak mevcut değil."}
+              value={rawDraftText || "Ham taslak mevcut değil."}
               style={{ minHeight: '400px', backgroundColor: '#fff' }}
             />
           )}
@@ -75,3 +124,4 @@ function formatDraftType(type: string): string {
     default: return type.replace(/_/g, ' ').toUpperCase();
   }
 }
+

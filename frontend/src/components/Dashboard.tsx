@@ -30,7 +30,7 @@ export const Dashboard: React.FC<Props> = ({ state, onUpdate }) => {
       {/* Sağ Kolon */}
       <div className="flex-col">
         <RoutingCard routing={state.routing} />
-        <OfficialDraftPanel draft={state.draft} />
+        <OfficialDraftPanel draft={state.draft} analysisId={state.analysis_id || state.document_id} />
         <QualityFormatCard quality={state.quality} />
         <HumanReviewPanel 
           review={state.human_review} 
