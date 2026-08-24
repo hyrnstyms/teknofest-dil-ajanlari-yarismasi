@@ -19,8 +19,7 @@ from backend.app.ingestion.document_loader import load_file
 from backend.app.agents.chat_agent import handle_draft_edit
 from backend.app.agents.chat_agent import (
     handle_chat_message,
-    is_mevzuat_sorusu,
-    is_taslak_duzenleme_talebi,
+    resolve_chat_mode,
 )
 
 # Initialize FastAPI app
@@ -457,16 +456,7 @@ def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
 
 @app.post("/api/chat/message")
 def chat_message(req: ChatMessageRequest):
-    """Mod A/B/C mesajlarını tek ve kararlı bir yanıt sözleşmesiyle işler."""
-
-    draft_edit_requested = is_taslak_duzenleme_talebi(req.message)
-    mode = (
-        "taslak_duzenleme"
-        if draft_edit_requested
-        else "mevzuat"
-        if is_mevzuat_sorusu(req.message)
-        else "kilavuz"
-    )
+    """Mod A/B/C/D mesajlarını tek ve kararlı bir yanıt sözleşmesiyle işler."""
 
     current_state = None
     current_draft = None
@@ -495,6 +485,9 @@ def chat_message(req: ChatMessageRequest):
             "muhatap_turu": current_state.get("muhatap_turu"),
         }
 
+    mode = resolve_chat_mode(req.message)
+    draft_edit_requested = mode == "taslak_duzenleme"
+
     if draft_edit_requested and (
         req.analysis_id is None
         or not isinstance(current_draft, dict)
@@ -513,6 +506,7 @@ def chat_message(req: ChatMessageRequest):
         req.message,
         current_draft=current_draft,
         workflow_context=workflow_context,
+        resolved_mode=mode,
     )
 
     if isinstance(result, dict):
