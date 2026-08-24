@@ -1,3 +1,7 @@
+import json
+from copy import deepcopy
+from types import SimpleNamespace
+
 import pytest
 from rapidfuzz import fuzz
 
@@ -6,16 +10,22 @@ from backend.app.agents.chat_agent import (
     MEVZUAT_KANIT_BULUNAMADI_MESAJI,
     MEVZUAT_SERVIS_HATASI_MESAJI,
     SSS_LISTESI,
+    TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI,
+    TASLAK_DUZENLEME_SISTEM_PROMPTU,
+    _get_evren_client,
     _get_legal_agent,
     _normalize_text,
     handle_chat_message,
+    handle_draft_edit,
     handle_legal_question,
     is_mevzuat_sorusu,
+    is_taslak_duzenleme_talebi,
     match_faq,
 )
 
 
 _LEGAL_AGENT_CACHE_INFO_AFTER_IMPORT = _get_legal_agent.cache_info()
+_EVREN_CLIENT_CACHE_INFO_AFTER_IMPORT = _get_evren_client.cache_info()
 
 
 FAQ_VARIATIONS = [
@@ -103,6 +113,14 @@ def test_every_faq_has_exactly_a_question_and_answer():
 def test_legal_agent_is_still_lazy_after_import_and_all_mod_a_tests():
     initial = _LEGAL_AGENT_CACHE_INFO_AFTER_IMPORT
     current = _get_legal_agent.cache_info()
+
+    assert initial.hits + initial.misses == 0
+    assert current.hits + current.misses == 0
+
+
+def test_evren_client_is_still_lazy_after_import_and_all_mod_a_tests():
+    initial = _EVREN_CLIENT_CACHE_INFO_AFTER_IMPORT
+    current = _get_evren_client.cache_info()
 
     assert initial.hits + initial.misses == 0
     assert current.hits + current.misses == 0
@@ -231,3 +249,418 @@ def test_handle_chat_message_routes_legal_question_first(monkeypatch):
 def test_handle_chat_message_keeps_mod_a_behavior():
     message = "Evrakı sisteme nasıl yükleyebilirim?"
     assert handle_chat_message(message) == match_faq(message)
+
+
+class FakeEvrenClient:
+    def __init__(self, *, content=None, error=None):
+        self.content = content
+        self.error = error
+        self.calls = []
+        self.chat = SimpleNamespace(completions=self)
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error:
+            raise self.error
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(content=self.content),
+                )
+            ]
+        )
+
+
+def _valid_context(subject="Başvuru İncelemesi", body=None):
+    return {
+        "tc_baslik": {
+            "idare_adi": "ÖRENLİ KAYMAKAMLIĞI",
+            "birim_adi": "Yazı İşleri Müdürlüğü",
+        },
+        "sayi": "E-12345678-100.01-1",
+        "tarih": "24.08.2026",
+        "konu": subject,
+        "muhatap": {"tur": "kurum", "isim": "ÖRNEK KURUMU"},
+        "muhatap_turu": "kurum_ust",
+        "kapalis_ifadesi": "arz ederim.",
+        "ilgi": [],
+        "metin_paragraflari": [
+            body or "Başvurunuz incelenmiş ve işlem tamamlanmıştır."
+        ],
+        "imza": {
+            "ad_soyad": "Ada ÖRNEK",
+            "unvan": "Birim Yetkilisi",
+            "yetki_turu": "normal",
+        },
+        "ekler": [],
+        "dagitim": None,
+        "iletisim": {"adres": "", "irtibat": ""},
+        "sayfa_no": None,
+        "uygunsuz_belge_uyarisi": None,
+    }
+
+
+def _current_draft(
+    *,
+    draft_type="ust_yazi",
+    subject="Başvuru İncelemesi",
+    body="Başvurunuz incelenmiş ve işlem tamamlanmıştır.",
+):
+    context = _valid_context(subject=subject, body=body)
+    return {
+        "draft_type": draft_type,
+        "draft_generation_mode": "llm",
+        "draft": {
+            "sender_unit": "Yazı İşleri Müdürlüğü",
+            "recipient": "ÖRNEK KURUMU",
+            "subject": subject,
+            "body": body,
+            "closing": None,
+        },
+        "rendered_text": body,
+        "official_rendered_text": "Önceki resmî görünüm",
+        "official_render": {
+            "attempted": True,
+            "success": True,
+            "template": "ust_yazi.jinja2",
+            "context": context,
+            "missing_fields": [],
+            "warnings": [],
+            "source_map": {
+                "konu": "extraction.fields.subject.value",
+                "metin_paragraflari": "draft.body",
+            },
+            "fallback_policies": {},
+        },
+        "verified_facts_used": ["İşlem Türü: inceleme"],
+        "requires_human_approval": True,
+    }
+
+
+def _evren_payload(*, target=None, old=None, new=None, answer=None):
+    edit = None
+    if target is not None:
+        edit = {
+            "hedef_bolum": target,
+            "eski_metin": old,
+            "yeni_metin": new,
+        }
+    return {
+        "sohbet_yaniti": answer or "Taslak değişikliği hazırlandı.",
+        "belge_duzenlemesi": edit,
+    }
+
+
+def _install_fake_evren(monkeypatch, *, payload=None, raw=None, error=None):
+    content = raw if raw is not None else json.dumps(payload, ensure_ascii=False)
+    client = FakeEvrenClient(content=content, error=error)
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_evren_client",
+        lambda: client,
+    )
+    return client
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Taslağın konusundaki Başvuru İncelemesi ifadesini değiştir.",
+        "Gövde metnine sonuç paragrafını ekle.",
+        "İkinci paragrafı yeniden yaz.",
+    ],
+)
+def test_is_taslak_duzenleme_talebi_detects_explicit_edits(message):
+    assert is_taslak_duzenleme_talebi(message) is True
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Chatbot'a taslağı değiştirmesini söyleyebilir miyim?",
+        "Taslak nedir, nasıl kullanılır?",
+        "4982 sayılı kanun maddesini açıklar mısın?",
+        "Mevzuat eşleşme oranı ne demek?",
+        "Evrakı sisteme nasıl yüklerim?",
+    ],
+)
+def test_is_taslak_duzenleme_talebi_does_not_conflict_with_mod_a_or_b(message):
+    assert is_taslak_duzenleme_talebi(message) is False
+
+
+def test_handle_draft_edit_sends_exact_evren_parameters(monkeypatch):
+    payload = _evren_payload(
+        target="govde",
+        old="işlem tamamlanmıştır",
+        new="işlem uygun şekilde tamamlanmıştır",
+    )
+    client = _install_fake_evren(monkeypatch, payload=payload)
+
+    result = handle_draft_edit("Gövde metnini düzelt.", _current_draft(), {})
+
+    assert result["status"] == "applied"
+    assert len(client.calls) == 1
+    call = client.calls[0]
+    assert call["model"] == "llm-fast"
+    assert call["temperature"] == 0
+    assert call["max_tokens"] == 1200
+    assert call["response_format"] == {"type": "json_object"}
+    assert call["extra_body"] == {"enable_thinking": False}
+    assert call["timeout"] == 30.0
+    assert call["messages"][0] == {
+        "role": "system",
+        "content": TASLAK_DUZENLEME_SISTEM_PROMPTU,
+    }
+
+
+def test_handle_draft_edit_accepts_null_edit_without_changing_draft(monkeypatch):
+    current = _current_draft()
+    original = deepcopy(current)
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(answer="Mevcut taslak için değişiklik önerilmedi."),
+    )
+
+    result = handle_draft_edit("Taslağı kontrol et.", current, {})
+
+    assert result["status"] == "no_change"
+    assert result["updated_draft"] is None
+    assert current == original
+
+
+def test_handle_draft_edit_applies_unique_subject_patch(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="konu",
+            old="Başvuru İncelemesi",
+            new="Başvuru Sonucu",
+            answer="Konu değişikliği hazırlandı.",
+        ),
+    )
+
+    result = handle_draft_edit("Taslağın konusunu değiştir.", _current_draft(), {})
+
+    assert result["status"] == "applied"
+    updated = result["updated_draft"]
+    assert updated["draft"]["subject"] == "Başvuru Sonucu"
+    assert updated["official_render"]["context"]["konu"] == "Başvuru Sonucu"
+    assert updated["mod_c_validated_context"]["konu"] == "Başvuru Sonucu"
+    assert "Başvuru Sonucu" in updated["official_rendered_text"]
+
+
+def test_handle_draft_edit_applies_unique_body_patch(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="govde",
+            old="işlem tamamlanmıştır",
+            new="işlem uygun şekilde tamamlanmıştır",
+        ),
+    )
+
+    result = handle_draft_edit("Gövde metnini düzelt.", _current_draft(), {})
+
+    assert result["status"] == "applied"
+    updated = result["updated_draft"]
+    assert "uygun şekilde" in updated["draft"]["body"]
+    assert "uygun şekilde" in updated["official_rendered_text"]
+    assert updated["official_render"]["context"]["metin_paragraflari"] == [
+        updated["draft"]["body"]
+    ]
+
+
+def test_handle_draft_edit_rejects_missing_old_text(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="govde",
+            old="taslakta bulunmayan ifade",
+            new="yeni bilgi metni",
+        ),
+    )
+
+    result = handle_draft_edit("Gövde metnini değiştir.", _current_draft(), {})
+
+    assert result["status"] == "rejected"
+    assert result["updated_draft"] is None
+    assert "bulunamadı" in result["sohbet_yaniti"]
+
+
+def test_handle_draft_edit_rejects_repeated_old_text(monkeypatch):
+    current = _current_draft(body="Bilgi verildi. Bilgi yeniden verildi.")
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="govde",
+            old="Bilgi",
+            new="Başvuru bilgisi",
+        ),
+    )
+
+    result = handle_draft_edit("Gövde metnini düzelt.", current, {})
+
+    assert result["status"] == "rejected"
+    assert result["updated_draft"] is None
+    assert "birden fazla" in result["sohbet_yaniti"]
+
+
+def test_handle_draft_edit_never_mutates_current_draft_in_place(monkeypatch):
+    current = _current_draft()
+    original = deepcopy(current)
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="konu",
+            old="Başvuru İncelemesi",
+            new="Başvuru Sonucu",
+        ),
+    )
+
+    result = handle_draft_edit("Konu metnini değiştir.", current, {})
+
+    assert result["status"] == "applied"
+    assert current == original
+    assert result["updated_draft"] is not current
+
+
+def test_handle_draft_edit_preserves_old_draft_when_validator_fails(monkeypatch):
+    current = _current_draft()
+    original = deepcopy(current)
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="konu",
+            old="Başvuru İncelemesi",
+            new="Başvuru Sonucu.",
+        ),
+    )
+
+    result = handle_draft_edit("Konu metnini değiştir.", current, {})
+
+    assert result["status"] == "rejected"
+    assert result["updated_draft"] is None
+    assert current == original
+    assert any(
+        item["kural_kodu"] == "KONU_FORMAT"
+        for item in result["validation_errors"]
+    )
+
+
+def test_handle_draft_edit_preserves_old_draft_when_renderer_raises(
+    monkeypatch,
+):
+    current = _current_draft()
+    original = deepcopy(current)
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="govde",
+            old="işlem tamamlanmıştır",
+            new="işlem uygun şekilde tamamlanmıştır",
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.render_ust_yazi",
+        lambda context: (_ for _ in ()).throw(RuntimeError("render failed")),
+    )
+
+    result = handle_draft_edit("Gövde metnini değiştir.", current, {})
+
+    assert result["status"] == "error"
+    assert result["updated_draft"] is None
+    assert current == original
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "geçerli json değil",
+        json.dumps({"sohbet_yaniti": "Taslak değişikliği hazırlandı."}),
+    ],
+)
+def test_handle_draft_edit_rejects_invalid_json_or_missing_schema(
+    monkeypatch,
+    raw,
+):
+    _install_fake_evren(monkeypatch, raw=raw)
+
+    result = handle_draft_edit("Konu metnini değiştir.", _current_draft(), {})
+
+    assert result["status"] == "error"
+    assert result["updated_draft"] is None
+    assert result["sohbet_yaniti"] == TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI
+
+
+@pytest.mark.parametrize("foreign_text", ["你好", "New information text"])
+def test_handle_draft_edit_rejects_cjk_or_foreign_content(
+    monkeypatch,
+    foreign_text,
+):
+    _install_fake_evren(
+        monkeypatch,
+        payload=_evren_payload(
+            target="konu",
+            old="Başvuru İncelemesi",
+            new=foreign_text,
+        ),
+    )
+
+    result = handle_draft_edit("Konu metnini değiştir.", _current_draft(), {})
+
+    assert result["status"] == "error"
+    assert result["updated_draft"] is None
+
+
+def test_handle_draft_edit_hides_api_timeout(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        error=TimeoutError("EVREN timeout"),
+    )
+
+    result = handle_draft_edit("Gövde metnini değiştir.", _current_draft(), {})
+
+    assert result["status"] == "error"
+    assert result["updated_draft"] is None
+    assert result["sohbet_yaniti"] == TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI
+
+
+def test_handle_draft_edit_rejects_unsupported_draft_type_before_evren(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_evren_client",
+        lambda: (_ for _ in ()).throw(AssertionError("EVREN çağrılmamalı")),
+    )
+
+    result = handle_draft_edit(
+        "Taslak gövdesini değiştir.",
+        _current_draft(draft_type="diger"),
+        {},
+    )
+
+    assert result["status"] == "rejected"
+    assert result["updated_draft"] is None
+    assert "desteklenmiyor" in result["sohbet_yaniti"]
+
+
+def test_handle_chat_message_prioritizes_mod_c_with_draft_context(monkeypatch):
+    current = _current_draft()
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_draft_edit",
+        lambda message, current_draft, workflow_context: {
+            "status": "applied",
+            "sohbet_yaniti": message,
+            "updated_draft": current_draft,
+            "validation_errors": [],
+            "validation_warnings": [],
+        },
+    )
+
+    result = handle_chat_message(
+        "Taslak konusunu değiştir.",
+        current_draft=current,
+        workflow_context={"routing": {}},
+    )
+
+    assert result["status"] == "applied"
+    assert result["updated_draft"] is current

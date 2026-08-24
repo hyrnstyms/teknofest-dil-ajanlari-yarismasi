@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app, analysis_store
@@ -109,3 +111,88 @@ def test_upload_txt(tmp_path):
         res = client.post("/api/documents/upload", files={"file": ("test.txt", f, "text/plain")})
         assert res.status_code == 200
         assert res.json()["text"] == "dummy test text"
+
+
+def test_chat_edit_draft_updates_analysis_state_atomically(monkeypatch):
+    original_draft = {
+        "draft_type": "ust_yazi",
+        "draft": {
+            "subject": "Eski Başvuru Konusu",
+            "body": "Eski başvuru metni.",
+        },
+    }
+    updated_draft = {
+        "draft_type": "ust_yazi",
+        "draft": {
+            "subject": "Yeni Başvuru Konusu",
+            "body": "Eski başvuru metni.",
+        },
+        "mod_c_validated_context": {"konu": "Yeni Başvuru Konusu"},
+    }
+    analysis_store["mod-c-test"] = {
+        "draft": deepcopy(original_draft),
+        "extraction": {},
+        "routing": {},
+        "human_review": {"status": "pending_review"},
+        "audit_history": [],
+    }
+    state_before = analysis_store["mod-c-test"]
+
+    monkeypatch.setattr(
+        "backend.app.main.handle_draft_edit",
+        lambda message, current_draft, workflow_context: {
+            "status": "applied",
+            "sohbet_yaniti": "Konu değişikliği hazırlandı.",
+            "updated_draft": deepcopy(updated_draft),
+            "validation_errors": [],
+            "validation_warnings": [],
+        },
+    )
+
+    response = client.post(
+        "/api/analysis/mod-c-test/chat/edit-draft",
+        json={"message": "Taslak konusunu değiştir."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "applied"
+    stored = analysis_store["mod-c-test"]
+    assert stored is not state_before
+    assert stored["draft"] == updated_draft
+    assert stored["human_review"]["status"] == "edited"
+    assert stored["human_review"]["mod_c_original_draft"] == original_draft
+    assert stored["audit_history"][-1]["event"] == "draft_edited_via_chat"
+
+
+def test_chat_edit_draft_keeps_state_unchanged_when_edit_is_rejected(
+    monkeypatch,
+):
+    analysis_store["mod-c-rejected"] = {
+        "draft": {
+            "draft_type": "diger",
+            "draft": {"subject": "Konu", "body": "Gövde"},
+        },
+        "human_review": {"status": "pending_review"},
+        "audit_history": [],
+    }
+    original_state = deepcopy(analysis_store["mod-c-rejected"])
+
+    monkeypatch.setattr(
+        "backend.app.main.handle_draft_edit",
+        lambda message, current_draft, workflow_context: {
+            "status": "rejected",
+            "sohbet_yaniti": "Taslak türü desteklenmiyor.",
+            "updated_draft": None,
+            "validation_errors": [],
+            "validation_warnings": [],
+        },
+    )
+
+    response = client.post(
+        "/api/analysis/mod-c-rejected/chat/edit-draft",
+        json={"message": "Taslak gövdesini değiştir."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "rejected"
+    assert analysis_store["mod-c-rejected"] == original_state

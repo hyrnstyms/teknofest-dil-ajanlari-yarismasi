@@ -12,6 +12,7 @@ sayfa düzeni parametrelerinin sayısal olarak doğru olduğu kontrol edilir.
 from __future__ import annotations
 
 import io
+from copy import deepcopy
 
 import pytest
 from docx import Document
@@ -446,5 +447,60 @@ class TestExportDocxEndpointQR:
             )
         finally:
             # Temizle
+            analysis_store.pop(test_id, None)
+
+    def test_export_uses_mod_c_validated_context_without_rebuilding(
+        self,
+        ust_yazi_context,
+        monkeypatch,
+    ):
+        """Mod C konusu, extraction konusu tarafından DOCX'te geri alınmamalı."""
+        from fastapi.testclient import TestClient
+        from backend.app.main import app, analysis_store
+
+        client = TestClient(app)
+        test_id = "mod-c-context-export-test"
+        candidate_context = deepcopy(ust_yazi_context)
+        candidate_context["konu"] = "Düzenlenmiş Başvuru Konusu"
+
+        analysis_store[test_id] = {
+            "draft": {
+                "draft_type": "ust_yazi",
+                "draft": {
+                    "subject": "Düzenlenmiş Başvuru Konusu",
+                    "body": "Başvuru işlemi tamamlanmıştır.",
+                },
+                "mod_c_validated_context": candidate_context,
+            },
+            "extraction": {
+                "fields": {
+                    "subject": {
+                        "value": "Eski Başvuru Konusu",
+                        "validated": True,
+                    }
+                }
+            },
+            "routing": {},
+            "kurum_profili_id": "kaymakamlik_v1",
+        }
+
+        def fail_if_adapter_is_called(*args, **kwargs):
+            raise AssertionError("Mod C context varken adapter çağrılmamalı")
+
+        monkeypatch.setattr(
+            "backend.app.official_writing.context_adapter."
+            "build_official_writing_context",
+            fail_if_adapter_is_called,
+        )
+
+        try:
+            response = client.get(f"/api/analysis/{test_id}/export/docx")
+            assert response.status_code == 200
+
+            doc = Document(io.BytesIO(response.content))
+            text = _all_text(doc)
+            assert "Düzenlenmiş Başvuru Konusu" in text
+            assert "Eski Başvuru Konusu" not in text
+        finally:
             analysis_store.pop(test_id, None)
 

@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 import uuid
 import os
 import shutil
+from copy import deepcopy
 from pathlib import Path
 from datetime import datetime
 import logging
@@ -15,6 +16,7 @@ from backend.app.graph.workflow import KamuaiWorkflow
 from backend.app.telemetry.service import telemetry_service
 from backend.app.telemetry.roi import calculate_roi_summary
 from backend.app.ingestion.document_loader import load_file
+from backend.app.agents.chat_agent import handle_draft_edit
 
 # Initialize FastAPI app
 app = FastAPI(title="KAMUAI MVP API")
@@ -62,6 +64,9 @@ class RejectRequest(BaseModel):
 class EditRequest(BaseModel):
     subject: Optional[str] = None
     body: Optional[str] = None
+
+class ChatDraftEditRequest(BaseModel):
+    message: str
 
 
 @app.get("/health")
@@ -283,19 +288,26 @@ def export_docx(analysis_id: str):
         or "ust_yazi"
     )
 
-    # Context oluştur
-    from backend.app.official_writing.context_adapter import build_official_writing_context
+    # Mod C tarafından doğrulanmış context varsa yeniden adapter çalıştırma.
     from backend.app.official_writing.docx_renderer import render_to_docx
 
-    try:
-        adapter_res = build_official_writing_context(draft, state, draft_type)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail={"code": "context_error", "message": f"Context oluşturulurken hata: {str(exc)}"},
+    validated_context = draft_data.get("mod_c_validated_context")
+    if isinstance(validated_context, dict) and validated_context:
+        context = deepcopy(validated_context)
+    else:
+        from backend.app.official_writing.context_adapter import (
+            build_official_writing_context,
         )
 
-    context = adapter_res.get("context", {})
+        try:
+            adapter_res = build_official_writing_context(draft, state, draft_type)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail={"code": "context_error", "message": f"Context oluşturulurken hata: {str(exc)}"},
+            )
+
+        context = adapter_res.get("context", {})
 
     try:
         docx_buffer = render_to_docx(context, evrak_id=analysis_id)
@@ -375,6 +387,58 @@ def edit_analysis(analysis_id: str, req: EditRequest):
     telemetry_service.update_human_review(analysis_id, "edited")
     
     return {"status": "success", "message": "Taslak güncellendi."}
+
+
+@app.post("/api/analysis/{analysis_id}/chat/edit-draft")
+def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
+    if analysis_id not in analysis_store:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "analysis_not_found",
+                "message": "İstenen analiz kaydı bulunamadı.",
+            },
+        )
+
+    current_state = analysis_store[analysis_id]
+    current_draft = current_state.get("draft")
+    workflow_context = {
+        "extraction": current_state.get("extraction", {}),
+        "routing": current_state.get("routing", {}),
+        "kurum_profili_id": current_state.get(
+            "kurum_profili_id",
+            "kaymakamlik_v1",
+        ),
+        "muhatap": current_state.get("muhatap"),
+        "muhatap_turu": current_state.get("muhatap_turu"),
+    }
+
+    result = handle_draft_edit(
+        req.message,
+        current_draft,
+        workflow_context,
+    )
+
+    updated_draft = result.get("updated_draft")
+    if result.get("status") == "applied" and isinstance(updated_draft, dict):
+        candidate_state = deepcopy(current_state)
+        human_review = candidate_state.setdefault("human_review", {})
+        if "mod_c_original_draft" not in human_review:
+            human_review["mod_c_original_draft"] = deepcopy(
+                candidate_state.get("draft", {})
+            )
+        human_review["status"] = "edited"
+
+        candidate_state["draft"] = deepcopy(updated_draft)
+        candidate_state.setdefault("audit_history", []).append({
+            "event": "draft_edited_via_chat",
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi.",
+        })
+
+        analysis_store[analysis_id] = candidate_state
+
+    return result
 
 
 @app.get("/api/system/status")
