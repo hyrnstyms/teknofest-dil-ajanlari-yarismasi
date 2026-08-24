@@ -298,7 +298,7 @@ def export_docx(analysis_id: str):
     context = adapter_res.get("context", {})
 
     try:
-        docx_buffer = render_to_docx(context)
+        docx_buffer = render_to_docx(context, evrak_id=analysis_id)
     except Exception as exc:
         raise HTTPException(
             status_code=500,

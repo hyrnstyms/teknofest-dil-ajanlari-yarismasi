@@ -316,3 +316,135 @@ class TestRenderToDocxPageLayout:
         assert run.font.name == "Times New Roman"
         from docx.shared import Pt
         assert run.font.size == Pt(12)
+
+
+# ── Test 4: QR Doğrulama Kodu ─────────────────────────────────────────────
+
+class TestRenderToDocxQRCode:
+    """QR doğrulama kodu ekleme/yoklama testleri."""
+
+    SAMPLE_EVRAK_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    def test_render_to_docx_with_qr_contains_image(self, ust_yazi_context):
+        """evrak_id verildiğinde DOCX en az bir inline shape (görüntü) içermeli."""
+        result = render_to_docx(ust_yazi_context, evrak_id=self.SAMPLE_EVRAK_ID)
+        doc = Document(result)
+        # python-docx: inline_shapes belgedeki tüm inline görüntüleri listeler
+        assert len(doc.inline_shapes) >= 1, (
+            "evrak_id verildiğinde DOCX'te en az bir inline shape (QR görüntüsü) bekleniyor."
+        )
+
+    def test_render_to_docx_without_evrak_id_no_qr(self, ust_yazi_context):
+        """evrak_id verilmezse DOCX'te inline shape (QR) olmamalı."""
+        result = render_to_docx(ust_yazi_context)
+        doc = Document(result)
+        assert len(doc.inline_shapes) == 0, (
+            "evrak_id verilmezse DOCX'te inline shape olmamalı (geriye dönük uyumluluk)."
+        )
+
+    def test_render_to_docx_qr_content_is_decodable(self, ust_yazi_context):
+        """QR kodunun içeriği cv2 ile decode edilip evrak_id ile eşleşmeli."""
+        import cv2
+        import numpy as np
+        from docx.opc.constants import RELATIONSHIP_TYPE as RT
+
+        result = render_to_docx(ust_yazi_context, evrak_id=self.SAMPLE_EVRAK_ID)
+        doc = Document(result)
+
+        # DOCX'ten görüntü blob'larını çıkar
+        image_blobs = []
+        for rel in doc.part.rels.values():
+            if "image" in rel.reltype:
+                image_blobs.append(rel.target_part.blob)
+
+        assert len(image_blobs) >= 1, "DOCX'te en az bir görüntü bekleniyor."
+
+        # İlk görüntüyü cv2 ile decode et
+        img_bytes = image_blobs[0]
+        arr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+        assert img is not None, "Görüntü cv2 ile okunamadı."
+
+        detector = cv2.QRCodeDetector()
+        decoded_value, _, _ = detector.detectAndDecode(img)
+
+        expected = "KAMUAI-DOGRULAMA:" + self.SAMPLE_EVRAK_ID
+        assert decoded_value == expected, (
+            f"QR içeriği eşleşmiyor. Beklenen: '{expected}', "
+            f"Okunan: '{decoded_value}'"
+        )
+
+    def test_qr_dogrulama_text_present(self, ust_yazi_context):
+        """QR eklendiğinde doğrulama açıklama metni de belgede olmalı."""
+        result = render_to_docx(ust_yazi_context, evrak_id=self.SAMPLE_EVRAK_ID)
+        doc = Document(result)
+        text = _all_text(doc)
+        assert "QR kodu okutunuz" in text
+
+
+# ── Test 5: Endpoint Entegrasyon — analysis_id QR'a ulaşıyor mu ────────────
+
+class TestExportDocxEndpointQR:
+    """FastAPI endpoint'inin analysis_id'yi QR'a doğru geçirdiğini doğrular."""
+
+    def test_export_endpoint_passes_analysis_id_to_qr(self):
+        """GET /api/analysis/{id}/export/docx endpoint'i analysis_id'yi
+        QR koduna doğru şekilde kodlamalı."""
+        import cv2
+        import numpy as np
+        from fastapi.testclient import TestClient
+        from backend.app.main import app, analysis_store
+
+        client = TestClient(app)
+
+        # Sahte analiz kaydı oluştur
+        test_id = "test-uuid-1234-5678-abcdef012345"
+        analysis_store[test_id] = {
+            "draft": {
+                "body": "Test metni.",
+                "subject": "Test Konusu",
+            },
+            "draft_type": "ust_yazi",
+            "extraction": {},
+            "routing": {},
+            "kurum_profili_id": "kaymakamlik_v1",
+        }
+
+        try:
+            response = client.get(f"/api/analysis/{test_id}/export/docx")
+            assert response.status_code == 200
+            assert "wordprocessingml" in response.headers.get("content-type", "")
+
+            # DOCX'i geri oku
+            docx_bytes = io.BytesIO(response.content)
+            doc = Document(docx_bytes)
+
+            # En az bir inline shape (QR) olmalı
+            assert len(doc.inline_shapes) >= 1, (
+                "Endpoint üzerinden üretilen DOCX'te QR görüntüsü bekleniyor."
+            )
+
+            # QR'ı decode et ve analysis_id'nin doğru kodlandığını kontrol et
+            image_blobs = []
+            for rel in doc.part.rels.values():
+                if "image" in rel.reltype:
+                    image_blobs.append(rel.target_part.blob)
+
+            assert len(image_blobs) >= 1
+
+            arr = np.frombuffer(image_blobs[0], np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+            assert img is not None
+
+            detector = cv2.QRCodeDetector()
+            decoded_value, _, _ = detector.detectAndDecode(img)
+
+            expected = "KAMUAI-DOGRULAMA:" + test_id
+            assert decoded_value == expected, (
+                f"Endpoint QR içeriği eşleşmiyor. "
+                f"Beklenen: '{expected}', Okunan: '{decoded_value}'"
+            )
+        finally:
+            # Temizle
+            analysis_store.pop(test_id, None)
+

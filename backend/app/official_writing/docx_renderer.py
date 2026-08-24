@@ -30,6 +30,8 @@ from docx.shared import Pt, Cm, Mm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 
+import qrcode
+
 
 def _set_run_font(run, name: str = "Times New Roman", size_pt: int = 12, bold: bool = False):
     """Bir run'a yazı tipi, boyut ve kalınlık ayarı uygular."""
@@ -152,13 +154,41 @@ def _add_imza_block(doc: Document, imza: dict[str, Any]) -> None:
                    left_indent=indent_cm)
 
 
-def render_to_docx(context: dict[str, Any]) -> io.BytesIO:
+def generate_qr_image(data: str) -> io.BytesIO:
+    """
+    Verilen metni QR koda kodlayıp PNG görüntüsü olarak döndürür.
+
+    Args:
+        data: QR koda kodlanacak metin.
+
+    Returns:
+        BytesIO nesnesi (PNG formatında QR kod görüntüsü).
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
+
+
+def render_to_docx(context: dict[str, Any], evrak_id: str | None = None) -> io.BytesIO:
     """
     build_official_writing_context() çıktısındaki 'context' sözlüğünü
     kullanarak biçimlendirilmiş bir .docx dosyası üretir.
 
     Args:
         context: build_official_writing_context()["context"] sözlüğü.
+        evrak_id: Opsiyonel evrak kimliği. Verilirse QR doğrulama kodu
+                  iletişim bölümünün üstüne eklenir. None ise QR eklenmez
+                  (geriye dönük uyumluluk).
 
     Returns:
         BytesIO nesnesi (.docx içeriği).
@@ -285,6 +315,23 @@ def render_to_docx(context: dict[str, Any]) -> io.BytesIO:
             _add_paragraph(doc, "Bilgi:", bold=True)
             for yer in bilgi:
                 _add_paragraph(doc, yer)
+
+    # ── 10a. QR DOĞRULAMA KODU ─────────────────────────────────────────────
+    if evrak_id:
+        _add_empty_paragraph(doc)
+        qr_data = "KAMUAI-DOGRULAMA:" + evrak_id
+        qr_buffer = generate_qr_image(qr_data)
+        qr_para = doc.add_paragraph()
+        qr_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        _set_paragraph_spacing(qr_para)
+        qr_run = qr_para.add_run()
+        qr_run.add_picture(qr_buffer, width=Cm(2.0))
+        dogrulama_para = _add_paragraph(
+            doc,
+            "Bu belgenin do\u011frulanm\u0131\u015f sureti i\u00e7in QR kodu okutunuz.",
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+            font_size=8,
+        )
 
     # ── 11. İLETİŞİM BİLGİSİ (Madde 10) ──────────────────────────────────
     iletisim = context.get("iletisim", {})
