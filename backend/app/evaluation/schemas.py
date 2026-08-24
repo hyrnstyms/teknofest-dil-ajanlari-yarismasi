@@ -32,6 +32,7 @@ class EvaluationReport(BaseModel):
     status: str = "pass"
     coverage: CoverageInfo = Field(default_factory=CoverageInfo)
     metrics: Dict[str, float] = Field(default_factory=dict)
+    diagnostics: Dict[str, Any] = Field(default_factory=dict)
     unsupported: Dict[str, Any] = Field(default_factory=dict)
     runtime_failures: int = 0
     errors: List[str] = Field(default_factory=list)

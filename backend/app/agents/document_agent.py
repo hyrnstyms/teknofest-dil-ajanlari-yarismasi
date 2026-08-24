@@ -4,6 +4,7 @@ from typing import Any
 
 from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
+from backend.app.agents.priority_agent import PriorityAgent
 
 
 ALLOWED_DOCUMENT_TYPES = {
@@ -43,6 +44,7 @@ class DocumentAgent:
             llm
             or create_llm_client()
         )
+        self.priority_agent = PriorityAgent()
 
     def analyze(
         self,
@@ -57,6 +59,8 @@ class DocumentAgent:
             return self._empty_result(
                 "Evrak metni boş."
             )
+
+        priority = self.priority_agent.assess(text)
 
         # ---------------------------------------------
         # 1. LLM classification
@@ -198,6 +202,8 @@ class DocumentAgent:
             "needs_human_review": (
                 needs_human_review
             ),
+
+            **priority,
 
             # Debug / geliştirme sırasında yararlı.
             "raw_llm_result": (
@@ -1076,6 +1082,7 @@ Evrakı sınıflandır.
             ),
             "evidence_mode": "none",
             "needs_human_review": True,
+            **self.priority_agent.assess(""),
             "error": message,
             "llm": (
                 self._llm_info()

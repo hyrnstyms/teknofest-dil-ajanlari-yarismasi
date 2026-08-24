@@ -1,9 +1,27 @@
 import json
+import re
+import unicodedata
 from typing import Any
 
 from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
 from backend.app.rag.retriever import Retriever
+
+
+LEGAL_TOKEN_RE = re.compile(r"[a-z\u00e7\u011f\u0131i\u00f6\u015f\u00fc0-9]+")
+QUERY_STOPWORDS = {
+    "acaba", "bir", "bu", "da", "de", "hangi", "hangisi", "hangisidir",
+    "ile", "icin", "i\u00e7in", "kac", "ka\u00e7", "kadar",
+    "mi", "m\u0131", "mu", "m\u00fc", "ne", "nedir", "nelerdir",
+    "nas\u0131l", "soru", "ve", "veya",
+}
+EXPLICIT_LAW_RE = re.compile(r"\b(\d{3,6})\s+sayili\b")
+ARTICLE_AFTER_RE = re.compile(
+    r"\bmadde(?:si)?\s*[:.]?\s*(\d+(?:/[a-z])?)\b"
+)
+ARTICLE_BEFORE_RE = re.compile(
+    r"\b(\d+(?:/[a-z])?)\s+(?:inci|uncu|nci|ncu)\s+madde(?:si)?\b"
+)
 
 
 class LegalAgent:
@@ -49,13 +67,41 @@ class LegalAgent:
         Kullanıcı sorgusunu mevzuat açısından analiz eder.
         """
 
+        explicit_law, explicit_article = (
+            self._extract_explicit_reference(query)
+        )
+        effective_law = law_number or explicit_law
+        retrieval_limit = (
+            max(top_k, 20)
+            if explicit_law and explicit_article
+            else top_k
+        )
+
         retrieved_sources = (
             self.retriever.search_legal(
                 query=query,
-                limit=top_k,
-                law_number=law_number,
+                limit=retrieval_limit,
+                law_number=effective_law,
             )
         )
+
+        # An explicit query-derived law number is a preference, not a hard
+        # failure mode. If that law is absent, preserve semantic retrieval.
+        if explicit_law and law_number is None and not retrieved_sources:
+            retrieved_sources = self.retriever.search_legal(
+                query=query,
+                limit=top_k,
+                law_number=None,
+            )
+
+        if explicit_law and explicit_article:
+            retrieved_sources = self._prioritize_explicit_article(
+                retrieved_sources,
+                law_number=explicit_law,
+                article=explicit_article,
+            )
+
+        retrieved_sources = retrieved_sources[:top_k]
 
         if not retrieved_sources:
             return self._empty_result(
@@ -140,72 +186,35 @@ class LegalAgent:
         )
 
         system_prompt = """
-Sen Türkiye'deki kamu evrak süreçlerinde kullanılan
-kaynak-temelli bir mevzuat bilgi çıkarım sistemisin.
+Sen kaynak-temelli bir Türkçe mevzuat bilgi çıkarım sistemisin.
 
-Görevin hukuki yorum yapmak değil, verilen mevzuat
-kaynaklarından kullanıcının sorusunu cevaplayan
-kanıt parçalarını çıkarmaktır.
+KURALLAR:
+1. Yalnızca verilen kaynakları kullan.
+2. Kaynaklarda bulunmayan hukuki yorum, bilgi veya sonuç üretme.
+3. Evidence kısa olmalı ve ilgili kaynak metninde birebir doğrulanabilmelidir.
+4. Kaynaklar soruyu doğrudan cevaplamıyorsa tahmin etme ve {"items":[]} döndür.
+5. Yalnızca şu JSON şemasını döndür; JSON dışında açıklama yazma:
+   {"items":[{"evidence":"kaynakta geçen kısa ifade","source":"K1"}]}
 
-KESİN KURALLAR:
+ÖRNEK 1 — kaynak cevaplıyor:
+Soru: Başvuru kaç gün içinde cevaplanır?
+K1 Metin: Başvurunun sonucu en geç otuz gün içinde bildirilir.
+Çıktı: {"items":[{"evidence":"Başvurunun sonucu en geç otuz gün içinde bildirilir.","source":"K1"}]}
 
-1. SADECE verilen mevzuat kaynaklarını kullan.
-
-2. Kaynakta bulunmayan hiçbir şart, belge, prosedür,
-   kişi rolü veya hukuki sonuç ekleme.
-
-3. Hukuki terimleri değiştirme.
-
-Örneğin kaynakta "başvuru sahibi" yazıyorsa bunu
-"tüketici", "vatandaş", "müşteri" veya başka bir
-ifadeye dönüştürme.
-
-4. "Gerçek kişi", "tüzel kişi", "başvuru sahibi",
-   "yetkili kişi", "kurum ve kuruluş" gibi terimleri
-   kaynakta geçtiği biçimde koru.
-
-5. evidence alanına yazdığın ifade, verilen kaynak
-   metninde gerçekten bulunmalıdır.
-
-6. evidence metnini mümkün olduğunca kaynaktan
-   doğrudan ve kısa bir parça olarak seç.
-
-7. Soruya cevap vermeyen bölümleri çıkarma.
-
-8. Farklı kaynakları birleştirerek yeni bir hukuki
-   kural oluşturma.
-
-9. Kaynakta olmayan parantez içi açıklamalar ekleme.
-
-10. JSON dışında hiçbir açıklama yazma.
-
-SADECE ŞU JSON FORMATINI DÖNDÜR:
-
-{
-    "items": [
-        {
-            "evidence": "kaynakta geçen ifade",
-            "source": "K1"
-        }
-    ]
-}
+ÖRNEK 2 — kaynak cevaplamıyor:
+Soru: Başvuru ücreti ne kadardır?
+K1 Metin: Başvurunun sonucu yazılı olarak bildirilir.
+Çıktı: {"items":[]}
 """
 
         user_prompt = f"""
 SORU:
-
 {query}
 
 MEVZUAT KAYNAKLARI:
-
 {context}
 
-Soruyu doğrudan cevaplayan kaynak ifadelerini çıkar.
-
-Her evidence değeri, ilgili kaynak metninde gerçekten
-bulunan bir ifade olmalıdır.
-
-Yeni açıklama, yorum veya hukuki şart üretme.
+Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
 """
 
         raw_response = self.llm.chat(
@@ -246,6 +255,7 @@ Yeni açıklama, yorum veya hukuki şart üretme.
             self._validate_evidence_items(
                 items=items,
                 sources=sources,
+                query=query,
             )
         )
 
@@ -258,7 +268,8 @@ Yeni açıklama, yorum veya hukuki şart üretme.
 
         answer = (
             self._render_evidence_answer(
-                validated_items
+                validated_items,
+                sources,
             )
         )
 
@@ -357,40 +368,27 @@ Yeni açıklama, yorum veya hukuki şart üretme.
         ):
             source_id = f"K{index}"
 
-            title = (
-                source.get("title")
-                or "Mevzuat"
-            )
-
-            law_number = (
-                source.get(
-                    "law_number"
-                )
-                or "Bilinmiyor"
-            )
-
-            article = (
-                source.get(
-                    "madde_no"
-                )
-                or "Bilinmiyor"
-            )
+            title = source.get("title") or source.get("source")
+            source_type = source.get("source_type")
+            law_number = source.get("law_number")
+            article = source.get("madde_no") or source.get("article")
 
             text = (
                 source.get("text")
                 or ""
             )
 
-            context_parts.append(
-                f"""
-[{source_id}]
-Başlık: {title}
-Kanun No: {law_number}
-Madde: {article}
-
-{text}
-""".strip()
-            )
+            metadata_lines = [f"[{source_id}]"]
+            if title:
+                metadata_lines.append(f"Kaynak Adı: {title}")
+            if source_type:
+                metadata_lines.append(f"Kaynak Türü: {source_type}")
+            if law_number:
+                metadata_lines.append(f"Kanun/Yönetmelik No: {law_number}")
+            if article:
+                metadata_lines.append(f"Madde: {article}")
+            metadata_lines.extend(("Metin:", str(text)))
+            context_parts.append("\n".join(metadata_lines))
 
         return "\n\n---\n\n".join(
             context_parts
@@ -400,6 +398,7 @@ Madde: {article}
         self,
         items: list[dict[str, Any]],
         sources: list[dict[str, Any]],
+        query: str = "",
     ) -> list[dict[str, str]]:
         """
         LLM tarafından çıkarılan evidence gerçekten
@@ -484,6 +483,14 @@ Madde: {article}
             ):
                 continue
 
+            # A verbatim sentence may still be irrelevant to the question.
+            # Require a deterministic lexical link without another model call.
+            if query and not self._is_query_relevant(
+                query=query,
+                source_text=source_map[source_id],
+            ):
+                continue
+
             dedup_key = (
                 source_id,
                 normalized_evidence,
@@ -505,6 +512,86 @@ Madde: {article}
 
         return validated
 
+    @classmethod
+    def _is_query_relevant(
+        cls,
+        query: str,
+        source_text: str,
+    ) -> bool:
+        query_tokens = cls._informative_tokens(query)
+        if not query_tokens:
+            return False
+
+        source_tokens = cls._informative_tokens(source_text)
+        shared_count = len(query_tokens & source_tokens)
+
+        # One concept is sufficient for a terse query. Multi-concept queries
+        # require two anchors so an incidental single word cannot pass.
+        required_shared = 1 if len(query_tokens) <= 2 else 2
+        return shared_count >= required_shared
+
+    @staticmethod
+    def _informative_tokens(text: str) -> set[str]:
+        normalized = unicodedata.normalize("NFKC", str(text)).casefold()
+        normalized = normalized.replace("i\u0307", "i")
+        normalized = normalized.translate(str.maketrans({
+            "\u00e2": "a", "\u00ee": "i", "\u00fb": "u",
+        }))
+        return {
+            token
+            for token in LEGAL_TOKEN_RE.findall(normalized)
+            if len(token) > 1 and token not in QUERY_STOPWORDS
+        }
+
+    @classmethod
+    def _extract_explicit_reference(
+        cls,
+        query: str,
+    ) -> tuple[str | None, str | None]:
+        normalized = cls._reference_text(query)
+        law_match = EXPLICIT_LAW_RE.search(normalized)
+        if not law_match:
+            return None, None
+
+        article = None
+        for pattern in (ARTICLE_AFTER_RE, ARTICLE_BEFORE_RE):
+            match = pattern.search(normalized)
+            if not match:
+                continue
+            if normalized[max(0, match.start() - 8):match.start()].endswith(
+                "gecici "
+            ):
+                continue
+            article = match.group(1)
+            break
+
+        return law_match.group(1), article
+
+    @staticmethod
+    def _reference_text(text: str) -> str:
+        normalized = unicodedata.normalize("NFKC", str(text)).casefold()
+        normalized = normalized.replace("i\u0307", "i")
+        return normalized.translate(str.maketrans({
+            "\u00e7": "c", "\u011f": "g", "\u0131": "i",
+            "\u00f6": "o", "\u015f": "s", "\u00fc": "u",
+            "\u00e2": "a", "\u00ee": "i", "\u00fb": "u",
+        }))
+
+    @staticmethod
+    def _prioritize_explicit_article(
+        sources: list[dict[str, Any]],
+        law_number: str,
+        article: str,
+    ) -> list[dict[str, Any]]:
+        def is_exact(source: dict[str, Any]) -> bool:
+            source_law = str(source.get("law_number") or "").strip()
+            source_article = str(
+                source.get("madde_no") or source.get("article") or ""
+            ).strip().casefold()
+            return source_law == law_number and source_article == article
+
+        return sorted(sources, key=lambda source: not is_exact(source))
+
     @staticmethod
     def _normalize_text(
         text: str,
@@ -524,6 +611,7 @@ Madde: {article}
     @staticmethod
     def _render_evidence_answer(
         items: list[dict[str, str]],
+        sources: list[dict[str, Any]],
     ) -> str:
         """
         Doğrulanmış evidence parçalarından
@@ -538,10 +626,28 @@ Madde: {article}
             "",
         ]
 
+        source_map = {
+            f"K{index}": source
+            for index, source in enumerate(sources, start=1)
+        }
+
         for item in items:
+            source_id = item["source"]
+            source = source_map.get(source_id, {})
+            citation_parts = []
+            title = source.get("title") or source.get("source")
+            law_number = source.get("law_number")
+            article = source.get("madde_no") or source.get("article")
+            if title:
+                citation_parts.append(str(title))
+            if law_number:
+                citation_parts.append(str(law_number))
+            if article:
+                citation_parts.append(f"Madde {article}")
+            citation = ", ".join(citation_parts) or source_id
             lines.append(
                 f"- {item['evidence']} "
-                f"[{item['source']}]"
+                f"[{citation}]"
             )
 
         return "\n".join(

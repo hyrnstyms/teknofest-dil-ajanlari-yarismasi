@@ -20,20 +20,20 @@ from backend.app.rag.qdrant_store import (
 )
 
 
-CHUNKS_FILE = Path(
+DEFAULT_CHUNKS_FILE = Path(
     "data/processed/chunks.jsonl"
 )
 
 
-def load_chunks() -> list[dict[str, Any]]:
-    if not CHUNKS_FILE.exists():
+def load_chunks(chunks_file: Path = DEFAULT_CHUNKS_FILE) -> list[dict[str, Any]]:
+    if not chunks_file.exists():
         raise FileNotFoundError(
-            f"{CHUNKS_FILE} bulunamadı."
+            f"{chunks_file} bulunamadı."
         )
 
     chunks = []
 
-    with CHUNKS_FILE.open(
+    with chunks_file.open(
         "r",
         encoding="utf-8",
     ) as file:
@@ -443,9 +443,11 @@ def main(
     batch_size: int,
     mode: str,
     law_number: str | None,
+    chunks_file: Path = DEFAULT_CHUNKS_FILE,
+    device: str = "cpu",
 ) -> None:
 
-    all_chunks = load_chunks()
+    all_chunks = load_chunks(chunks_file)
 
     legal_chunks, document_chunks = (
         select_chunks(
@@ -479,7 +481,7 @@ def main(
     print()
 
     embedding_service = (
-        EmbeddingService()
+        EmbeddingService(device=device)
     )
 
     qdrant_store = QdrantStore()
@@ -580,6 +582,18 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--device",
+        choices=["cpu", "cuda"],
+        default="cpu",
+    )
+
+    parser.add_argument(
+        "--chunks-file",
+        type=Path,
+        default=DEFAULT_CHUNKS_FILE,
+    )
+
+    parser.add_argument(
         "--law-number",
         type=str,
         default=None,
@@ -591,4 +605,6 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         mode=args.mode,
         law_number=args.law_number,
+        chunks_file=args.chunks_file,
+        device=args.device,
     )
