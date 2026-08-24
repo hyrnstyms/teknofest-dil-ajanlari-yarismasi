@@ -7,20 +7,28 @@ from rapidfuzz import fuzz
 
 from backend.app.agents.chat_agent import (
     FALLBACK_MESAJI,
+    KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI,
+    KUCUK_SOHBET_SISTEM_PROMPTU,
     MEVZUAT_KANIT_BULUNAMADI_MESAJI,
     MEVZUAT_SERVIS_HATASI_MESAJI,
+    ROUTER_SISTEM_PROMPTU,
     SSS_LISTESI,
+    TASLAK_BAGLAMI_GEREKLI_MESAJI,
     TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI,
     TASLAK_DUZENLEME_SISTEM_PROMPTU,
     _get_evren_client,
     _get_legal_agent,
     _normalize_text,
+    classify_with_router,
     handle_chat_message,
     handle_draft_edit,
+    handle_kucuk_sohbet,
     handle_legal_question,
+    is_kucuk_sohbet,
     is_mevzuat_sorusu,
     is_taslak_duzenleme_talebi,
     match_faq,
+    resolve_chat_mode,
 )
 
 
@@ -256,7 +264,12 @@ class FakeEvrenClient:
         self.content = content
         self.error = error
         self.calls = []
+        self.with_options_calls = []
         self.chat = SimpleNamespace(completions=self)
+
+    def with_options(self, **kwargs):
+        self.with_options_calls.append(kwargs)
+        return self
 
     def create(self, **kwargs):
         self.calls.append(kwargs)
@@ -664,3 +677,376 @@ def test_handle_chat_message_prioritizes_mod_c_with_draft_context(monkeypatch):
 
     assert result["status"] == "applied"
     assert result["updated_draft"] is current
+
+
+def test_is_kucuk_sohbet_accepts_selam():
+    assert is_kucuk_sohbet("selam") is True
+
+
+def test_is_kucuk_sohbet_accepts_merhaba():
+    assert is_kucuk_sohbet("merhaba") is True
+
+
+def test_is_kucuk_sohbet_accepts_nasilsin():
+    assert is_kucuk_sohbet("nasılsın?") is True
+
+
+def test_is_kucuk_sohbet_accepts_tesekkurler():
+    assert is_kucuk_sohbet("teşekkürler") is True
+
+
+def test_is_kucuk_sohbet_accepts_gorusuruz():
+    assert is_kucuk_sohbet("görüşürüz") is True
+
+
+def test_is_kucuk_sohbet_rejects_unrelated_legal_question():
+    assert is_kucuk_sohbet("4982 sayılı kanun ne zaman çıktı?") is False
+
+
+def test_is_kucuk_sohbet_rejects_mixed_greeting_and_information_request():
+    assert is_kucuk_sohbet("Merhaba, 5 gün içinde cevap gelir mi?") is False
+
+
+def test_is_kucuk_sohbet_rejects_unknown_question_topic():
+    assert is_kucuk_sohbet("Merhaba, başvuru durumu?") is False
+
+
+def test_is_kucuk_sohbet_rejects_long_message():
+    assert is_kucuk_sohbet("Merhaba " + ("çok " * 20)) is False
+
+
+def test_handle_kucuk_sohbet_sends_exact_evren_parameters(monkeypatch):
+    client = _install_fake_evren(
+        monkeypatch,
+        raw="Merhaba, size nasıl yardımcı olabilirim?",
+    )
+
+    result = handle_kucuk_sohbet("Merhaba")
+
+    assert result == "Merhaba, size nasıl yardımcı olabilirim?"
+    assert len(client.calls) == 1
+    call = client.calls[0]
+    assert call["model"] == "llm-fast"
+    assert call["temperature"] == 0.3
+    assert call["max_tokens"] == 60
+    assert call["extra_body"] == {"enable_thinking": False}
+    assert call["timeout"] == 15.0
+    assert "response_format" not in call
+    assert call["messages"] == [
+        {"role": "system", "content": KUCUK_SOHBET_SISTEM_PROMPTU},
+        {"role": "user", "content": "Merhaba"},
+    ]
+
+
+def test_handle_kucuk_sohbet_returns_clean_short_turkish_response(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        raw="Merhaba! Umarım gününüz güzel geçiyordur.",
+    )
+
+    assert handle_kucuk_sohbet("Selam") == (
+        "Merhaba! Umarım gününüz güzel geçiyordur."
+    )
+
+
+def test_handle_kucuk_sohbet_rejects_cjk_response(monkeypatch):
+    _install_fake_evren(monkeypatch, raw="Merhaba 你好")
+
+    assert handle_kucuk_sohbet("Merhaba") == (
+        KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI
+    )
+
+
+def test_handle_kucuk_sohbet_rejects_forbidden_number_and_law_claim(
+    monkeypatch,
+):
+    _install_fake_evren(
+        monkeypatch,
+        raw="4982 sayılı kanun için yardımcı olabilirim.",
+    )
+
+    assert handle_kucuk_sohbet("Merhaba") == (
+        KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI
+    )
+
+
+def test_handle_kucuk_sohbet_rejects_overlong_response(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        raw="Güvenli ve sıcak bir sohbet yanıtıdır. " * 8,
+    )
+
+    assert handle_kucuk_sohbet("Selam") == (
+        KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI
+    )
+
+
+def test_handle_kucuk_sohbet_rejects_written_duration_claim(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        raw="Yanıt iki gün içinde hazır olacaktır.",
+    )
+
+    assert handle_kucuk_sohbet("Merhaba") == (
+        KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI
+    )
+
+
+def test_handle_kucuk_sohbet_rejects_markdown_response(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        raw="**Merhaba**, size yardımcı olabilirim.",
+    )
+
+    assert handle_kucuk_sohbet("Merhaba") == (
+        KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI
+    )
+
+
+def test_handle_kucuk_sohbet_hides_api_timeout(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        error=TimeoutError("EVREN timeout"),
+    )
+
+    assert handle_kucuk_sohbet("Merhaba") == (
+        KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI
+    )
+
+
+def test_handle_chat_message_routes_mod_d_before_mod_a(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_kucuk_sohbet",
+        lambda message: f"SOHBET:{message}",
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.match_faq",
+        lambda message: (_ for _ in ()).throw(
+            AssertionError("Mod A çağrılmamalı")
+        ),
+    )
+
+    assert handle_chat_message("nasılsın?") == "SOHBET:nasılsın?"
+
+
+def test_handle_chat_message_prioritizes_mod_b_over_mod_d(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_legal_question",
+        lambda message: f"LEGAL:{message}",
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.is_kucuk_sohbet",
+        lambda message: True,
+    )
+
+    message = "Merhaba, 4982 sayılı kanun nedir?"
+    assert handle_chat_message(message) == f"LEGAL:{message}"
+
+
+def test_mixed_greeting_information_request_keeps_mod_a_fallback(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_kucuk_sohbet",
+        lambda message: (_ for _ in ()).throw(
+            AssertionError("Mod D çağrılmamalı")
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        lambda message: "X",
+    )
+
+    message = "Merhaba, 5 gün içinde cevap gelir mi?"
+    assert handle_chat_message(message) == FALLBACK_MESAJI
+
+
+def test_classify_with_router_sends_exact_evren_parameters(monkeypatch):
+    message = "Dilekçelere kaç günde cevap vermemiz gerekiyor?"
+    client = _install_fake_evren(monkeypatch, raw=" M ")
+
+    assert classify_with_router(message) == "M"
+    assert client.with_options_calls == [{"max_retries": 0}]
+    assert len(client.calls) == 1
+    call = client.calls[0]
+    assert call["model"] == "router"
+    assert call["temperature"] == 0
+    assert call["max_tokens"] == 10
+    assert call["extra_body"] == {"enable_thinking": False}
+    assert call["timeout"] == 8.0
+    assert call["messages"][0] == {
+        "role": "system",
+        "content": ROUTER_SISTEM_PROMPTU,
+    }
+    assert message in call["messages"][1]["content"]
+
+
+@pytest.mark.parametrize("raw", ["M çünkü", "etiket M", "Y", "", "MM"])
+def test_classify_with_router_rejects_non_exact_output(monkeypatch, raw):
+    _install_fake_evren(monkeypatch, raw=raw)
+
+    assert classify_with_router("Bu işlem için izlenecek süre nedir?") == "X"
+
+
+def test_classify_with_router_hides_timeout(monkeypatch):
+    _install_fake_evren(
+        monkeypatch,
+        error=TimeoutError("router timeout"),
+    )
+
+    assert classify_with_router("Bu işlem için izlenecek süre nedir?") == "X"
+
+
+def test_classify_with_router_skips_evren_for_empty_message(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_evren_client",
+        lambda: (_ for _ in ()).throw(AssertionError("EVREN çağrılmamalı")),
+    )
+
+    assert classify_with_router("   ") == "X"
+
+
+@pytest.mark.parametrize(
+    ("message", "expected_mode"),
+    [
+        ("Taslak konusunu değiştir.", "taslak_duzenleme"),
+        ("4982 sayılı kanunda süre nedir?", "mevzuat"),
+        ("Merhaba", "kucuk_sohbet"),
+        ("Evrakı sisteme nasıl yükleyebilirim?", "kilavuz"),
+    ],
+)
+def test_resolve_chat_mode_never_calls_router_for_existing_modes(
+    monkeypatch,
+    message,
+    expected_mode,
+):
+    router_calls = []
+
+    def fail_if_called(value):
+        router_calls.append(value)
+        raise AssertionError("Router çağrılmamalı")
+
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        fail_if_called,
+    )
+
+    assert resolve_chat_mode(message) == expected_mode
+    assert router_calls == []
+
+
+@pytest.mark.parametrize(
+    ("router_label", "expected_mode"),
+    [
+        ("M", "mevzuat"),
+        ("D", "taslak_duzenleme"),
+        ("S", "kilavuz"),
+        ("X", "kilavuz"),
+    ],
+)
+def test_resolve_chat_mode_maps_router_labels(
+    monkeypatch,
+    router_label,
+    expected_mode,
+):
+    calls = []
+
+    def fake_router(message):
+        calls.append(message)
+        return router_label
+
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        fake_router,
+    )
+    message = "İşlemin sonuçlanma süresini öğrenmek istiyorum."
+
+    assert resolve_chat_mode(message) == expected_mode
+    assert calls == [message]
+
+
+def test_handle_chat_message_routes_natural_legal_question_via_router(monkeypatch):
+    message = "Dilekçelere kaç günde cevap vermemiz gerekiyor?"
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        lambda value: "M",
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_legal_question",
+        lambda value: f"LEGAL:{value}",
+    )
+
+    assert handle_chat_message(message) == f"LEGAL:{message}"
+
+
+def test_handle_chat_message_rejects_router_d_without_draft_context(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        lambda value: "D",
+    )
+
+    result = handle_chat_message("Giriş cümlesini daha nazik yapar mısın?")
+
+    assert result["status"] == "rejected"
+    assert result["sohbet_yaniti"] == TASLAK_BAGLAMI_GEREKLI_MESAJI
+    assert result["updated_draft"] is None
+
+
+def test_handle_chat_message_routes_router_d_with_draft_context(monkeypatch):
+    current = _current_draft()
+    calls = []
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        lambda value: "D",
+    )
+
+    def fake_edit(message, current_draft, workflow_context):
+        calls.append((message, current_draft, workflow_context))
+        return {
+            "status": "applied",
+            "sohbet_yaniti": "Değişiklik uygulandı.",
+            "updated_draft": current_draft,
+            "validation_errors": [],
+            "validation_warnings": [],
+        }
+
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_draft_edit",
+        fake_edit,
+    )
+    message = "Giriş cümlesini daha nazik yapar mısın?"
+
+    result = handle_chat_message(
+        message,
+        current_draft=current,
+        workflow_context={"routing": {}},
+    )
+
+    assert result["status"] == "applied"
+    assert calls == [(message, current, {"routing": {}})]
+
+
+def test_handle_chat_message_uses_pre_resolved_mode_without_second_router_call(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.resolve_chat_mode",
+        lambda message: (_ for _ in ()).throw(
+            AssertionError("Router kararı ikinci kez çözülmemeli")
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.handle_legal_question",
+        lambda message: f"LEGAL:{message}",
+    )
+
+    assert handle_chat_message(
+        "Doğal mevzuat sorusu",
+        resolved_mode="mevzuat",
+    ) == "LEGAL:Doğal mevzuat sorusu"
+
+
+def test_evren_client_cache_stays_zero_after_mocked_mod_a_b_c_d_tests():
+    initial = _EVREN_CLIENT_CACHE_INFO_AFTER_IMPORT
+    current = _get_evren_client.cache_info()
+
+    assert initial.hits + initial.misses == 0
+    assert current.hits + current.misses == 0

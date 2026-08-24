@@ -14,6 +14,7 @@ interface Props {
 const MODE_LABELS: Record<ChatMode, string> = {
   kilavuz: "Kılavuz",
   mevzuat: "Mevzuat",
+  kucuk_sohbet: "Sohbet",
   taslak_duzenleme: "Taslak Düzenleme",
 };
 

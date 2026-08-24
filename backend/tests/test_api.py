@@ -201,8 +201,13 @@ def test_chat_edit_draft_keeps_state_unchanged_when_edit_is_rejected(
 def test_general_chat_routes_mod_a_without_analysis_id(monkeypatch):
     calls = []
 
-    def fake_handle(message, current_draft=None, workflow_context=None):
-        calls.append((message, current_draft, workflow_context))
+    def fake_handle(
+        message,
+        current_draft=None,
+        workflow_context=None,
+        resolved_mode=None,
+    ):
+        calls.append((message, current_draft, workflow_context, resolved_mode))
         return "Evrak yükleme alanını kullanabilirsiniz."
 
     monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
@@ -221,14 +226,50 @@ def test_general_chat_routes_mod_a_without_analysis_id(monkeypatch):
         "validation_errors": [],
         "validation_warnings": [],
     }
-    assert calls == [("Evrakı nasıl yüklerim?", None, {})]
+    assert calls == [("Evrakı nasıl yüklerim?", None, {}, "kilavuz")]
+
+
+def test_general_chat_labels_mod_d_small_talk(monkeypatch):
+    calls = []
+
+    def fake_handle(
+        message,
+        current_draft=None,
+        workflow_context=None,
+        resolved_mode=None,
+    ):
+        calls.append((message, current_draft, workflow_context, resolved_mode))
+        return "Merhaba, size nasıl yardımcı olabilirim?"
+
+    monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
+
+    response = client.post(
+        "/api/chat/message",
+        json={"message": "Merhaba"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "mode": "kucuk_sohbet",
+        "status": "answered",
+        "sohbet_yaniti": "Merhaba, size nasıl yardımcı olabilirim?",
+        "updated_draft": None,
+        "validation_errors": [],
+        "validation_warnings": [],
+    }
+    assert calls == [("Merhaba", None, {}, "kucuk_sohbet")]
 
 
 def test_general_chat_routes_mod_b_to_handle_chat_message(monkeypatch):
     calls = []
 
-    def fake_handle(message, current_draft=None, workflow_context=None):
-        calls.append((message, current_draft, workflow_context))
+    def fake_handle(
+        message,
+        current_draft=None,
+        workflow_context=None,
+        resolved_mode=None,
+    ):
+        calls.append((message, current_draft, workflow_context, resolved_mode))
         return "Kaynaklı mevzuat cevabı. [4982, Madde 11]"
 
     monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
@@ -242,7 +283,9 @@ def test_general_chat_routes_mod_b_to_handle_chat_message(monkeypatch):
     assert response.json()["mode"] == "mevzuat"
     assert response.json()["status"] == "answered"
     assert "[4982, Madde 11]" in response.json()["sohbet_yaniti"]
-    assert calls == [("4982 sayılı Kanun Madde 11 nedir?", None, {})]
+    assert calls == [
+        ("4982 sayılı Kanun Madde 11 nedir?", None, {}, "mevzuat")
+    ]
 
 
 def test_general_chat_routes_mod_c_and_updates_state_atomically(monkeypatch):
@@ -265,8 +308,13 @@ def test_general_chat_routes_mod_c_and_updates_state_atomically(monkeypatch):
     state_before = analysis_store["general-mod-c"]
     calls = []
 
-    def fake_handle(message, current_draft=None, workflow_context=None):
-        calls.append((message, current_draft, workflow_context))
+    def fake_handle(
+        message,
+        current_draft=None,
+        workflow_context=None,
+        resolved_mode=None,
+    ):
+        calls.append((message, current_draft, workflow_context, resolved_mode))
         return {
             "status": "applied",
             "sohbet_yaniti": "Konu değişikliği uygulandı.",
@@ -362,3 +410,123 @@ def test_general_chat_returns_not_found_for_unknown_analysis_id():
 
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "analysis_not_found"
+
+
+def test_general_chat_uses_router_legal_mode_once(monkeypatch):
+    route_calls = []
+    handler_calls = []
+
+    def fake_resolve(message):
+        route_calls.append(message)
+        return "mevzuat"
+
+    def fake_handle(
+        message,
+        current_draft=None,
+        workflow_context=None,
+        resolved_mode=None,
+    ):
+        handler_calls.append(
+            (message, current_draft, workflow_context, resolved_mode)
+        )
+        return "Doğrulanmış kaynaklı cevap."
+
+    monkeypatch.setattr("backend.app.main.resolve_chat_mode", fake_resolve)
+    monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
+    message = "Dilekçelere kaç günde cevap vermemiz gerekiyor?"
+
+    response = client.post("/api/chat/message", json={"message": message})
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "mevzuat"
+    assert response.json()["sohbet_yaniti"] == "Doğrulanmış kaynaklı cevap."
+    assert route_calls == [message]
+    assert handler_calls == [(message, None, {}, "mevzuat")]
+
+
+def test_general_chat_rejects_router_d_without_analysis_context(monkeypatch):
+    route_calls = []
+    monkeypatch.setattr(
+        "backend.app.main.resolve_chat_mode",
+        lambda message: route_calls.append(message) or "taslak_duzenleme",
+    )
+    monkeypatch.setattr(
+        "backend.app.main.handle_chat_message",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("Bağlam yokken chat handler çağrılmamalı")
+        ),
+    )
+    message = "Giriş cümlesini daha nazik yapar mısın?"
+
+    response = client.post("/api/chat/message", json={"message": message})
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "taslak_duzenleme"
+    assert response.json()["status"] == "rejected"
+    assert response.json()["sohbet_yaniti"] == (
+        "Önce bir evrak analiz edin, sonra taslak düzenleme özelliğini "
+        "kullanabilirsiniz."
+    )
+    assert route_calls == [message]
+
+
+def test_general_chat_applies_router_d_atomically(monkeypatch):
+    original_draft = {
+        "draft_type": "ust_yazi",
+        "draft": {"subject": "Eski Konu", "body": "Eski gövde."},
+    }
+    updated_draft = {
+        "draft_type": "ust_yazi",
+        "draft": {"subject": "Eski Konu", "body": "Yeni gövde."},
+        "official_rendered_text": "Yeni gövde.",
+    }
+    analysis_store["router-mod-c"] = {
+        "draft": deepcopy(original_draft),
+        "extraction": {"fields": {}},
+        "routing": {"recommended_unit": "Yazı İşleri"},
+        "human_review": {"status": "pending_review"},
+        "audit_history": [],
+    }
+    route_calls = []
+    handler_calls = []
+
+    def fake_resolve(message):
+        route_calls.append(message)
+        return "taslak_duzenleme"
+
+    def fake_handle(
+        message,
+        current_draft=None,
+        workflow_context=None,
+        resolved_mode=None,
+    ):
+        handler_calls.append(
+            (message, current_draft, workflow_context, resolved_mode)
+        )
+        return {
+            "status": "applied",
+            "sohbet_yaniti": "Gövde değişikliği uygulandı.",
+            "updated_draft": deepcopy(updated_draft),
+            "validation_errors": [],
+            "validation_warnings": [],
+        }
+
+    monkeypatch.setattr("backend.app.main.resolve_chat_mode", fake_resolve)
+    monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
+    message = "Giriş cümlesini daha nazik yapar mısın?"
+
+    response = client.post(
+        "/api/chat/message",
+        json={"message": message, "analysis_id": "router-mod-c"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "taslak_duzenleme"
+    assert response.json()["status"] == "applied"
+    assert route_calls == [message]
+    assert len(handler_calls) == 1
+    assert handler_calls[0][3] == "taslak_duzenleme"
+    assert analysis_store["router-mod-c"]["draft"] == updated_draft
+    assert analysis_store["router-mod-c"]["human_review"][
+        "mod_c_original_draft"
+    ] == original_draft

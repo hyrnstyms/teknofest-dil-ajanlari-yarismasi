@@ -1,6 +1,10 @@
 import type { DraftInfo } from "../../types";
 
-export type ChatMode = "kilavuz" | "mevzuat" | "taslak_duzenleme";
+export type ChatMode =
+  | "kilavuz"
+  | "mevzuat"
+  | "kucuk_sohbet"
+  | "taslak_duzenleme";
 
 export type ChatStatus =
   | "answered"
