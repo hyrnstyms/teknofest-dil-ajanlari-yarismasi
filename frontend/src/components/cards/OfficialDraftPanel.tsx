@@ -10,6 +10,16 @@ interface Props {
 export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
   const [activeTab, setActiveTab] = useState<"official" | "raw">("official");
   const [downloading, setDownloading] = useState(false);
+  const officialText =
+    typeof draft?.official_rendered_text === "string"
+      ? draft.official_rendered_text
+      : typeof draft?.official_render === "string"
+        ? draft.official_render
+        : "";
+  const rawDraftText =
+    typeof draft?.rendered_text === "string"
+      ? draft.rendered_text
+      : draft?.draft_text || draft?.draft?.body || "";
 
   const handleDownloadDocx = async () => {
     if (!analysisId) return;
@@ -35,7 +45,7 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
     }
   };
 
-  if (!draft?.official_render && !draft?.draft_text) {
+  if (!officialText && !rawDraftText) {
     return (
       <div className="card mb-4">
         <div className="card-header"><FileSignature size={18}/> Resmî Yazı Taslağı</div>
@@ -90,12 +100,12 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
         <div className="mt-4">
           {activeTab === "official" ? (
             <div className="official-document">
-              {draft.official_render || <p className="text-center text-secondary mt-10">Resmî görünüm mevcut değil.</p>}
+              {officialText || <p className="text-center text-secondary mt-10">Resmî görünüm mevcut değil.</p>}
             </div>
           ) : (
             <textarea 
               readOnly 
-              value={draft.draft_text || "Ham taslak mevcut değil."}
+              value={rawDraftText || "Ham taslak mevcut değil."}
               style={{ minHeight: '400px', backgroundColor: '#fff' }}
             />
           )}

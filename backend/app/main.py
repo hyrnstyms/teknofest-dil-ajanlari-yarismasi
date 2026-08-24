@@ -17,6 +17,11 @@ from backend.app.telemetry.service import telemetry_service
 from backend.app.telemetry.roi import calculate_roi_summary
 from backend.app.ingestion.document_loader import load_file
 from backend.app.agents.chat_agent import handle_draft_edit
+from backend.app.agents.chat_agent import (
+    handle_chat_message,
+    is_mevzuat_sorusu,
+    is_taslak_duzenleme_talebi,
+)
 
 # Initialize FastAPI app
 app = FastAPI(title="KAMUAI MVP API")
@@ -35,6 +40,11 @@ app.add_middleware(
 
 # In-memory Analysis Store
 analysis_store: Dict[str, Any] = {}
+
+TASLAK_BAGLAMI_GEREKLI_MESAJI = (
+    "Önce bir evrak analiz edin, sonra taslak düzenleme özelliğini "
+    "kullanabilirsiniz."
+)
 
 # Lazy initialization for workflow and other services
 workflow = None
@@ -67,6 +77,10 @@ class EditRequest(BaseModel):
 
 class ChatDraftEditRequest(BaseModel):
     message: str
+
+class ChatMessageRequest(BaseModel):
+    message: str
+    analysis_id: Optional[str] = None
 
 
 @app.get("/health")
@@ -439,6 +453,104 @@ def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
         analysis_store[analysis_id] = candidate_state
 
     return result
+
+
+@app.post("/api/chat/message")
+def chat_message(req: ChatMessageRequest):
+    """Mod A/B/C mesajlarını tek ve kararlı bir yanıt sözleşmesiyle işler."""
+
+    draft_edit_requested = is_taslak_duzenleme_talebi(req.message)
+    mode = (
+        "taslak_duzenleme"
+        if draft_edit_requested
+        else "mevzuat"
+        if is_mevzuat_sorusu(req.message)
+        else "kilavuz"
+    )
+
+    current_state = None
+    current_draft = None
+    workflow_context: Dict[str, Any] = {}
+
+    if req.analysis_id is not None:
+        if req.analysis_id not in analysis_store:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "analysis_not_found",
+                    "message": "İstenen analiz kaydı bulunamadı.",
+                },
+            )
+
+        current_state = analysis_store[req.analysis_id]
+        current_draft = current_state.get("draft")
+        workflow_context = {
+            "extraction": current_state.get("extraction", {}),
+            "routing": current_state.get("routing", {}),
+            "kurum_profili_id": current_state.get(
+                "kurum_profili_id",
+                "kaymakamlik_v1",
+            ),
+            "muhatap": current_state.get("muhatap"),
+            "muhatap_turu": current_state.get("muhatap_turu"),
+        }
+
+    if draft_edit_requested and (
+        req.analysis_id is None
+        or not isinstance(current_draft, dict)
+        or not current_draft
+    ):
+        return {
+            "mode": mode,
+            "status": "rejected",
+            "sohbet_yaniti": TASLAK_BAGLAMI_GEREKLI_MESAJI,
+            "updated_draft": None,
+            "validation_errors": [],
+            "validation_warnings": [],
+        }
+
+    result = handle_chat_message(
+        req.message,
+        current_draft=current_draft,
+        workflow_context=workflow_context,
+    )
+
+    if isinstance(result, dict):
+        response_data = {"mode": mode, **result}
+    else:
+        response_data = {
+            "mode": mode,
+            "status": "answered",
+            "sohbet_yaniti": result,
+            "updated_draft": None,
+            "validation_errors": [],
+            "validation_warnings": [],
+        }
+
+    updated_draft = response_data.get("updated_draft")
+    if (
+        mode == "taslak_duzenleme"
+        and response_data.get("status") == "applied"
+        and isinstance(updated_draft, dict)
+        and current_state is not None
+        and req.analysis_id is not None
+    ):
+        candidate_state = deepcopy(current_state)
+        human_review = candidate_state.setdefault("human_review", {})
+        if "mod_c_original_draft" not in human_review:
+            human_review["mod_c_original_draft"] = deepcopy(
+                candidate_state.get("draft", {})
+            )
+        human_review["status"] = "edited"
+        candidate_state["draft"] = deepcopy(updated_draft)
+        candidate_state.setdefault("audit_history", []).append({
+            "event": "draft_edited_via_chat",
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi.",
+        })
+        analysis_store[req.analysis_id] = candidate_state
+
+    return response_data
 
 
 @app.get("/api/system/status")
