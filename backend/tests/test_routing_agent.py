@@ -17,7 +17,7 @@ Test hedefleri (Karar Belgesi §18):
 """
 
 import pytest
-from backend.app.agents.routing_agent import RoutingAgent, _load_units_from_profile
+from backend.app.agents.routing_agent import RoutingAgent
 from backend.app.agents.quality_agent import QualityAgent
 from backend.app.institutions.profile_loader import load_institution_profile
 
@@ -37,8 +37,8 @@ def quality_agent():
 # ------------------------------------------------------------------
 # 1. Profil 9 birim yükleniyor
 # ------------------------------------------------------------------
-def test_profile_loads_9_units():
-    units = _load_units_from_profile(_INSTITUTION)
+def test_profile_loads_9_units(agent):
+    units = agent._units
     assert len(units) == 9, (
         f"Kaymakamlık profilinde 9 birim bekleniyor, {len(units)} bulundu."
     )
@@ -179,8 +179,9 @@ def test_routing_intent_score_contribution(agent):
         {},
     )
     assert res["recommended_unit"] == "İlçe Nüfus Müdürlüğü"
-    assert res["score_breakdown"]["intent_score"] == 50
-    assert res["score_breakdown"]["keyword_score"] >= 20
+    assert res["score_breakdown"]["intent_score"] == 20
+    assert res["score_breakdown"]["keyword_score"] == 50
+    assert res["score_breakdown"]["doc_type_score"] == 30
 
 
 # ------------------------------------------------------------------
@@ -195,12 +196,14 @@ def test_routing_intent_only_match(agent):
         "alakasız metin içeriği",
         {},
     )
-    # Birden çok birim 'basvuru' destekliyor (nufus, sydv vb).
-    # Keyword olmadığı için score 50'de kalır, margin düşük olabilir ve review gerekebilir
-    assert res["routing_score"] == 50
-    assert res["score_breakdown"]["intent_score"] == 50
-    assert res["score_breakdown"]["keyword_score"] == 0
+    # Dilekçe için üç tipik hedef birim 30 evrak türü + 20 intent
+    # puanıyla eşit kalır. Güvenli davranış, rastgele birim seçmek yerine
+    # otomatik öneriyi reddedip insan incelemesine yönlendirmektir.
+    assert res["recommended_unit"] is None
+    assert res["routing_score"] == 0
     assert res["needs_human_review"] is True
+    assert len(res["ranked_units"]) == 3
+    assert all(unit["score"] == 50 for unit in res["ranked_units"])
 
 
 # ------------------------------------------------------------------
@@ -218,7 +221,9 @@ def test_routing_wrong_intent_no_boost(agent):
         "kimlik",
         {},
     )
-    # Kimlik kelimesi nufus ile eşleşiyor -> keyword_score = 20
+    # Kimlik kelimesi nufus ile eşleşiyor -> keyword_score = 50
+    # Dilekçe evrak türü nufus için tipik hedef -> doc_type_score = 30
     # intent_score = 0 olmalı
     assert res["score_breakdown"]["intent_score"] == 0
-    assert res["score_breakdown"]["keyword_score"] == 20
+    assert res["score_breakdown"]["keyword_score"] == 50
+    assert res["score_breakdown"]["doc_type_score"] == 30
