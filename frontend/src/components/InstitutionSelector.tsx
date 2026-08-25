@@ -7,12 +7,16 @@ interface InstitutionSelectorProps {
   value: string;
   onChange: (institution: InstitutionOption | null) => void;
   disabled: boolean;
+  compact?: boolean;
+  topbar?: boolean;
 }
 
 export const InstitutionSelector: React.FC<InstitutionSelectorProps> = ({
   value,
   onChange,
   disabled,
+  compact = false,
+  topbar = false,
 }) => {
   const [options, setOptions] = useState<InstitutionOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,15 +51,13 @@ export const InstitutionSelector: React.FC<InstitutionSelectorProps> = ({
   }, []);
 
   return (
-    <div className="card mb-6">
-      <div className="card-header">
+    <div className={topbar ? "institution-selector topbar-selector" : compact ? "institution-selector compact" : "card mb-6 institution-selector"}>
+      {!topbar && <div className={compact ? "institution-selector-title" : "card-header"}>
         <Building2 size={20} className="text-primary" />
         Kurum Seçimi
-      </div>
-      <div className="card-body">
-        <label htmlFor="institution-selector" className="font-medium">
-          Analizin yapılacağı kurum
-        </label>
+      </div>}
+      <div className={topbar || compact ? "institution-selector-body" : "card-body"}>
+        {!topbar && <label htmlFor="institution-selector" className="font-medium">Analizin yapılacağı kurum</label>}
         <select
           id="institution-selector"
           value={value}
@@ -67,7 +69,8 @@ export const InstitutionSelector: React.FC<InstitutionSelectorProps> = ({
           }}
           disabled={disabled || isLoading || Boolean(loadError)}
           required
-          style={{ width: "100%", marginTop: "0.5rem" }}
+          aria-label={topbar ? "Seçili kurum" : undefined}
+          style={{ width: "100%", marginTop: topbar ? 0 : "0.5rem" }}
         >
           <option value="">
             {isLoading ? "Kurumlar yükleniyor..." : "Kurum seçin"}
@@ -78,7 +81,7 @@ export const InstitutionSelector: React.FC<InstitutionSelectorProps> = ({
             </option>
           ))}
         </select>
-        {selectedInstitution && (
+        {selectedInstitution && !compact && !topbar && (
           <div className="mt-4">
             <p className="font-medium">
               {selectedInstitution.ui_config.title ?? selectedInstitution.label}

@@ -15,6 +15,57 @@ export interface InstitutionOption {
   ui_config: InstitutionUiConfig;
 }
 
+export interface RoiSummary {
+  processed_documents: number;
+  average_processing_seconds: number;
+  human_review_required_rate: number;
+  approved_count: number;
+  edited_count: number;
+  rejected_count: number;
+  estimated_saved_seconds?: number;
+  estimated_saved_percentage?: number | null;
+  message?: string;
+}
+
+export interface AnalysisListItem {
+  analysis_id: string;
+  document_id?: string;
+  document_type?: string;
+  process_intent?: string;
+  subject?: string;
+  recommended_unit?: string;
+  human_review_status?: string;
+  quality_status?: string;
+  created_at?: string;
+  total_processing_ms?: number;
+}
+
+export interface PendingReviewItem {
+  analysis_id: string;
+  document_type?: string;
+  process_intent?: string;
+  subject?: string;
+  recommended_unit?: string;
+  quality_status?: string;
+  review_reasons?: string[];
+  created_at?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
 export const api = {
   async checkSystemReady(): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/ready`);
@@ -32,6 +83,35 @@ export const api = {
 
     const data = await response.json();
     return data.institution_options;
+  },
+
+  async getAnalysis(analysisId: string): Promise<DocumentState> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}`);
+    return parseResponse<DocumentState>(response);
+  },
+
+  async getRoiSummary(): Promise<RoiSummary> {
+    const response = await fetch(`${API_BASE_URL}/api/roi/summary`);
+    return parseResponse<RoiSummary>(response);
+  },
+
+  async getAnalyses(limit = 20): Promise<PaginatedResponse<AnalysisListItem>> {
+    const response = await fetch(`${API_BASE_URL}/api/analyses?limit=${limit}&offset=0`);
+    return parseResponse<PaginatedResponse<AnalysisListItem>>(response);
+  },
+
+  async getPendingReviews(limit = 20): Promise<PaginatedResponse<PendingReviewItem>> {
+    const response = await fetch(`${API_BASE_URL}/api/reviews/pending?limit=${limit}&offset=0`);
+    return parseResponse<PaginatedResponse<PendingReviewItem>>(response);
+  },
+
+  async downloadDocx(analysisId: string): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/export/docx`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail?.message || "DOCX indirilemedi.");
+    }
+    return response.blob();
   },
 
   async analyzeText(text: string, institution: string): Promise<DocumentState> {

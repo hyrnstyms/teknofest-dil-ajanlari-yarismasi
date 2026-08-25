@@ -48,7 +48,7 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
 
   if (review.status === "approved") {
     return (
-      <div className="card mb-4" style={{ borderColor: "var(--success-color)", backgroundColor: "#f0fdf4" }}>
+      <div className="card mb-4 review-state review-state-success">
         <div className="card-body flex items-center justify-center gap-2 text-success font-medium">
           <Check size={20} /> Personel tarafından onaylandı.
         </div>
@@ -58,7 +58,7 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
 
   if (review.status === "rejected") {
     return (
-      <div className="card mb-4" style={{ borderColor: "var(--error-color)", backgroundColor: "#fef2f2" }}>
+      <div className="card mb-4 review-state review-state-danger">
         <div className="card-body flex-col text-error font-medium">
           <div className="flex items-center gap-2 mb-2">
             <X size={20} /> Reddedildi
@@ -72,8 +72,8 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
   }
 
   return (
-    <div className="card mb-4 border-2" style={{ borderColor: "var(--warning-color)" }}>
-      <div className="card-header bg-yellow-50" style={{ color: "#92400e" }}>
+    <div className="card mb-4 border-2 review-state review-state-warning">
+      <div className="card-header">
         <UserCheck size={18} /> Personel Onayı Gerekiyor
       </div>
       <div className="card-body">
