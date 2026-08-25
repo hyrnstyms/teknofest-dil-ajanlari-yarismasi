@@ -103,7 +103,9 @@ class ExtractionAgent:
         # ---------------------------------------------
         # 2. DOCUMENT CONTEXT REUSE
         # ---------------------------------------------
-
+        # The user requested that we check the real schema of DocumentAgent.
+        # Often it's 'subject_excerpt' and 'request_excerpt' or 'process_intent'
+        
         subject_excerpt = document_context.get("subject_excerpt")
         if subject_excerpt:
             fields["subject"] = self._format_field(subject_excerpt, subject_excerpt, "document_agent")
@@ -130,19 +132,25 @@ class ExtractionAgent:
         recipient_val, recipient_ev = self._extract_recipient(text)
         if recipient_val:
             fields["recipient"] = self._format_field(recipient_val, recipient_ev, "deterministic")
+            
+        # Subject heuristic fallback (if not found in document_context)
+        if "subject" not in fields:
+            subject_val, subject_ev = self._extract_subject(text)
+            if subject_val:
+                fields["subject"] = self._format_field(subject_val, subject_ev, "heuristic")
+                
+        # Request heuristic fallback (if not found in document_context)
+        if "request" not in fields:
+            request_val, request_ev = self._extract_request(text)
+            if request_val:
+                fields["request"] = self._format_field(request_val, request_ev, "heuristic")
 
         # ---------------------------------------------
         # 3. LLM EXTRACTION (SEMANTIC)
         # ---------------------------------------------
 
-        semantic_candidates = ["person_name", "address", "institution", "sender_unit", "recipient"]
+        semantic_candidates = ["person_name", "address", "institution", "sender_unit", "recipient", "subject", "request"]
         target_semantic = [k for k in semantic_candidates if k not in fields]
-
-        if not subject_excerpt and "subject" not in fields:
-            target_semantic.append("subject")
-        if not request_excerpt and "request" not in fields:
-            target_semantic.append("request")
-            
         target_semantic.append("other_entities")
 
         llm_fields = self._extract_with_llm(text, target_semantic)
@@ -187,8 +195,8 @@ class ExtractionAgent:
             "warnings": warnings,
             "needs_human_review": needs_human_review,
             "llm": {
-                "provider": self.llm.get_provider_name(),
-                "model": self.llm.get_model_name(),
+                "provider": self.llm.get_provider_name() if getattr(self, "llm", None) else "unknown",
+                "model": self.llm.get_model_name() if getattr(self, "llm", None) else "unknown",
             },
         }
 
@@ -203,11 +211,9 @@ class ExtractionAgent:
         return None, None
 
     def _extract_phone(self, text: str) -> tuple[str | None, str | None]:
-        # Türkiye telefon formatlarını toleranslı çıkar
         match = re.search(r"(?:0|\+90)?\s*\(?5\d{2}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}", text)
         if match:
             evidence = match.group(0)
-            # Normalize
             digits = re.sub(r"\D", "", evidence)
             if digits.startswith("90"):
                 digits = digits[2:]
@@ -232,50 +238,60 @@ class ExtractionAgent:
             return False
         if tc[0] == "0":
             return False
-            
         digits = [int(c) for c in tc]
-        
         sum_odd = sum(digits[0:9:2])
         sum_even = sum(digits[1:8:2])
-        
         check1 = (sum_odd * 7 - sum_even) % 10
         if check1 != digits[9]:
             return False
-            
         check2 = sum(digits[0:10]) % 10
         if check2 != digits[10]:
             return False
-            
         return True
 
     def _extract_document_number(self, text: str) -> tuple[str | None, str | None]:
-        match = re.search(r"(?:Sayı|Belge No|Evrak No|Referans No)[\s:]+([A-Za-z0-9\-\/]+)", text, re.IGNORECASE)
-        if match:
-            return match.group(1).strip(), match.group(0).strip()
-        return None, None
+        # User requested stronger marker checks and preventing common numbers.
+        match = re.search(r"(?:Sayı|Belge No|Evrak No|Referans No|Referans|Başvuru No)[\s:]+([^\n]+)", text, re.IGNORECASE)
+        if not match:
+            return None, None
+            
+        cand = match.group(1).strip()
+        
+        # Phone check
+        if re.match(r"^(?:0|\+90)?\s*\(?5\d{2}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}$", cand):
+            return None, None
+            
+        # Date check
+        if re.match(r"^\d{1,4}[./-]\d{1,2}[./-]\d{1,4}$", cand):
+            return None, None
+            
+        # 11-digit TC check
+        if len(cand) == 11 and cand.isdigit():
+            return None, None
+            
+        # Common law numbers check
+        if cand in ["4982", "3071"] and "sayılı" in text.lower():
+            return None, None
+            
+        return cand, match.group(0).strip()
 
     def _extract_document_date(self, text: str) -> tuple[str | None, str | None]:
-        # Date regex for formats like 12.08.2026, 12/08/2026, 12-08-2026
         match = re.search(r"(?:Tarih)[\s:]+([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4})", text, re.IGNORECASE)
         if match:
             date_str = match.group(1).strip()
-            # ISO normalization attempt
             parts = re.split(r"[./-]", date_str)
             if len(parts) == 3:
                 day, month, year = parts
                 if len(year) == 2:
                     year = "20" + year
-                # simple normalization check
                 if len(year) == 4 and len(month) <= 2 and len(day) <= 2:
                     normalized = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
                     return normalized, match.group(0).strip()
             return date_str, match.group(0).strip()
-            
         return None, None
 
     def _extract_attachments(self, text: str) -> list[dict[str, str]]:
         attachments = []
-        # Use word boundary or newline start to avoid matching "örnek"
         matches = re.finditer(r"(?:\bEk|\bEkler|\bEK-\d+)[\s:]+(.+)", text, re.IGNORECASE)
         for m in matches:
             line = m.group(1).strip()
@@ -291,7 +307,6 @@ class ExtractionAgent:
         indicators = ["imza", "imzalıdır", "e-imza", "elektronik imza", "elektronik olarak imzalanmıştır"]
         for ind in indicators:
             if ind in lower_text:
-                # Find the actual case evidence
                 match = re.search(re.escape(ind), text, re.IGNORECASE)
                 evidence = match.group(0) if match else ind
                 return True, "present", evidence
@@ -307,10 +322,51 @@ class ExtractionAgent:
                 return True, "present", evidence
         return None, "unknown", None
 
+    def _is_invalid_person(self, val: str) -> bool:
+        lower_val = val.lower()
+        if "müdür" in lower_val or "sayın" in lower_val or "muhatap" in lower_val:
+            return True
+        if "[" in val and "]" in val:
+            return True
+        if "makamına" in lower_val or "birimine" in lower_val or "başkanlığına" in lower_val or "bakanlığına" in lower_val:
+            return True
+        return False
+
     def _extract_person_name(self, text: str) -> tuple[str | None, str | None]:
-        match = re.search(r"(?:Başvuru Sahibi|Ad Soyad|Adı Soyadı|Gönderen)[\s:]+([^\n]+)", text, re.IGNORECASE)
+        # Check placeholders
+        if "[AD_SOYAD]" in text or "[AD]" in text or "[SOYAD]" in text:
+            # Maybe return it directly if expected, or skip. User says:
+            # "gibi sentetik değerler varsa sistem bunları gerçek kişi gibi hallucinate etmesin; dataset gerçekten placeholder bekliyorsa mevcut değer korunabilir."
+            # We'll skip for now if it's purely placeholder in deterministic search, but if they are exactly the match, we might extract them if they are markers.
+            pass
+
+        # Try separate Ad and Soyad
+        ad_match = re.search(r"(?:^|\n)\s*Ad\s*:\s*([^\n]+)", text, re.IGNORECASE)
+        soyad_match = re.search(r"(?:^|\n)\s*Soyad\s*:\s*([^\n]+)", text, re.IGNORECASE)
+        if ad_match and soyad_match:
+            ad = ad_match.group(1).strip()
+            soyad = soyad_match.group(1).strip()
+            if not self._is_invalid_person(ad) and not self._is_invalid_person(soyad):
+                val = f"{ad} {soyad}"
+                # evidence is both
+                ev = f"{ad_match.group(0).strip()} {soyad_match.group(0).strip()}"
+                return val, ev
+
+        # Combined markers
+        match = re.search(r"(?:Ad Soyad|Adı Soyadı|Başvuru Sahibi|Başvuran|İmza / Ad Soyad)[\s:]+([^\n]+)", text, re.IGNORECASE)
         if match:
-            return match.group(1).strip(), match.group(0).strip()
+            val = match.group(1).strip()
+            if not self._is_invalid_person(val):
+                return val, match.group(0).strip()
+                
+        # Look for typical signature block at the bottom
+        # This is a bit heuristic, but let's look for "İmza\n<Name Surname>" or similar.
+        sig_match = re.search(r"(?:^|\n)\s*İmza\s*\n\s*([A-Za-zÇŞĞÜÖİçşğüöı\s]{3,40})(?:\n|$)", text, re.IGNORECASE)
+        if sig_match:
+            val = sig_match.group(1).strip()
+            if not self._is_invalid_person(val):
+                return val, sig_match.group(0).strip()
+                
         return None, None
 
     def _extract_address(self, text: str) -> tuple[str | None, str | None]:
@@ -343,9 +399,37 @@ class ExtractionAgent:
         return None, None
 
     def _extract_recipient(self, text: str) -> tuple[str | None, str | None]:
-        match = re.search(r"^([^\n]+(?:Birimine|Müdürlüğüne|Başkanlığına|Bakanlığına|Kurumuna)[^\n]*)$", text, re.IGNORECASE | re.MULTILINE)
+        match = re.search(r"^([^\n]+(?:Birimine|Müdürlüğüne|Başkanlığına|Bakanlığına|Kurumuna|Makamına)[^\n]*)$", text, re.IGNORECASE | re.MULTILINE)
         if match:
             return match.group(1).strip(), match.group(0).strip()
+        return None, None
+        
+    def _extract_subject(self, text: str) -> tuple[str | None, str | None]:
+        match = re.search(r"(?:^|\n)\s*(?:Konu|KONU)[\s:]+([^\n]+)", text)
+        if match:
+            val = match.group(1).strip()
+            lower_val = val.lower()
+            # Reject if it's a recipient misidentified as subject
+            if "makamına" in lower_val or "müdürlüğüne" in lower_val or "birimine" in lower_val:
+                return None, None
+            return val, match.group(0).strip()
+        return None, None
+        
+    def _extract_request(self, text: str) -> tuple[str | None, str | None]:
+        markers = [
+            r"arz ederim", r"talep ediyorum", r"talep ederim", r"gereğini arz ederim",
+            r"bilgilerin tarafıma verilmesini", r"başvuruyorum", r"itiraz ediyorum", 
+            r"şikayet ediyorum", r"izin verilmesini"
+        ]
+        # Build regex to find sentence containing any of the markers
+        for marker in markers:
+            # Find the marker in text
+            pattern = re.compile(r"([^\.\n]*?" + re.escape(marker) + r"[^\.\n]*\.?)", re.IGNORECASE)
+            match = pattern.search(text)
+            if match:
+                val = match.group(1).strip()
+                return val, val
+                
         return None, None
 
     # =====================================================
@@ -398,6 +482,7 @@ FORMAT ÖRNEĞİ (SADECE İSTENEN ALANLAR İÇİN):
                 json_mode=True,
             )
         except Exception:
+            # LLM failure is caught here, we return empty so deterministic fallback is retained.
             return {}
 
         return self._parse_json_object(raw)
@@ -457,7 +542,7 @@ FORMAT ÖRNEĞİ (SADECE İSTENEN ALANLAR İÇİN):
             "warnings": [message],
             "needs_human_review": True,
             "llm": {
-                "provider": self.llm.get_provider_name() if self.llm else "unknown",
-                "model": self.llm.get_model_name() if self.llm else "unknown",
+                "provider": getattr(self, "llm", None).get_provider_name() if getattr(self, "llm", None) else "unknown",
+                "model": getattr(self, "llm", None).get_model_name() if getattr(self, "llm", None) else "unknown",
             },
         }

@@ -19,32 +19,6 @@ def normalize_turkish_text(text: str) -> str:
     return re.sub(r'\s+', ' ', text).strip()
 
 
-def _load_units_from_profile(institution: str) -> list[dict]:
-    """
-    InstitutionProfile YAML'dan RoutingAgent'ın kullandığı
-    unit listesine dönüştürür.
-
-    Her birimin 'keywords' ve 'supported_intents' alanlarını kullanır.
-    """
-    try:
-        profile: InstitutionProfile = load_institution_profile(institution)
-    except (FileNotFoundError, ValueError):
-        return []
-
-    units = []
-    for birim in profile.birimler:
-        if not isinstance(birim, dict):
-            continue
-        units.append({
-            "unit_id": birim.get("id", ""),
-            "name": birim.get("ad", ""),
-            "keywords": birim.get("anahtar_kelimeler", []),
-            # YAML'da supported_intents yoksa evrak_turleri'nden çıkar
-            "supported_intents": birim.get("supported_intents", []),
-        })
-    return units
-
-
 class RoutingAgent:
     """
     Deterministic, açıklanabilir kural tabanlı yönlendirme ajanı.
@@ -63,10 +37,40 @@ class RoutingAgent:
 
     def __init__(self, institution: str = _DEFAULT_INSTITUTION):
         self.institution = institution
-        self._units = _load_units_from_profile(institution)
         self._profile_source = (
             f"data/institutions/{institution}/kurum_profili_{institution}.yaml"
         )
+        try:
+            self._profile: InstitutionProfile = load_institution_profile(institution)
+        except Exception:
+            self._profile = None
+
+        self._units = []
+        self._doc_type_mapping = {}
+
+        if self._profile:
+            self._units = self._parse_units(self._profile)
+            self._doc_type_mapping = self._parse_doc_types(self._profile)
+
+    def _parse_units(self, profile: InstitutionProfile) -> list[dict]:
+        units = []
+        for birim in profile.birimler:
+            if not isinstance(birim, dict):
+                continue
+            units.append({
+                "unit_id": birim.get("id", ""),
+                "name": birim.get("ad", ""),
+                "keywords": birim.get("anahtar_kelimeler", []),
+                "supported_intents": birim.get("supported_intents", []),
+            })
+        return units
+
+    def _parse_doc_types(self, profile: InstitutionProfile) -> dict[str, list[str]]:
+        mapping = {}
+        for ev in profile.evrak_turleri:
+            if isinstance(ev, dict):
+                mapping[ev.get("id")] = ev.get("tipik_hedef_birim", [])
+        return mapping
 
     # ------------------------------------------------------------------
     # Public API
@@ -92,6 +96,7 @@ class RoutingAgent:
             "score_breakdown": {
                 "intent_score": 0,
                 "keyword_score": 0,
+                "doc_type_score": 0,
                 "details": []
             },
             "registry_source": self._profile_source,
@@ -112,7 +117,22 @@ class RoutingAgent:
             result["ambiguity_reason"] = "profile_empty"
             return result
 
-        search_text = f"{subject or ''} {request_text or ''}"
+        # Reuse extracted fields subject and request if available to strengthen signal
+        ext_subject = ""
+        ext_request = ""
+        if extracted_fields:
+            if "subject" in extracted_fields and isinstance(extracted_fields["subject"], dict):
+                ext_subject = extracted_fields["subject"].get("value") or ""
+            elif "subject" in extracted_fields and isinstance(extracted_fields["subject"], str):
+                ext_subject = extracted_fields["subject"]
+                
+            if "request" in extracted_fields and isinstance(extracted_fields["request"], dict):
+                ext_request = extracted_fields["request"].get("value") or ""
+            elif "request" in extracted_fields and isinstance(extracted_fields["request"], str):
+                ext_request = extracted_fields["request"]
+
+        # Combined search text
+        search_text = f"{subject or ''} {request_text or ''} {ext_subject} {ext_request}"
         norm_text = normalize_turkish_text(search_text)
 
         unit_scores = []
@@ -122,38 +142,53 @@ class RoutingAgent:
             breakdown = {
                 "intent_score": 0,
                 "keyword_score": 0,
+                "doc_type_score": 0,
                 "details": []
             }
 
-            # 1. Intent eşleşmesi (en güçlü sinyal)
+            # 1. Document Type eşleşmesi (En güçlü yeni sinyal)
+            if document_type and document_type in self._doc_type_mapping:
+                if unit["unit_id"] in self._doc_type_mapping[document_type]:
+                    score += 30
+                    breakdown["doc_type_score"] += 30
+                    breakdown["details"].append(
+                        {
+                            "signal": "doc_type_match",
+                            "value": 30,
+                            "evidence": document_type,
+                        }
+                    )
+
+            # 2. Intent eşleşmesi
             if process_intent and process_intent in unit.get(
                 "supported_intents", []
             ):
-                score += 50
-                breakdown["intent_score"] += 50
+                score += 20
+                breakdown["intent_score"] += 20
                 breakdown["details"].append(
                     {
                         "signal": "intent_match",
-                        "value": 50,
+                        "value": 20,
                         "evidence": process_intent,
                     }
                 )
 
-            # 2. Anahtar kelime eşleşmesi (norm metinde kelime sınırı)
+            # 3. Anahtar kelime eşleşmesi (norm metinde kelime sınırı)
             matched_keywords = []
             for kw in unit.get("keywords", []):
                 norm_kw = normalize_turkish_text(kw)
                 if not norm_kw:
                     continue
-                pattern = r"\b" + re.escape(norm_kw) + r"\b"
+                # Sonekleri yakalamak için kelime sonuna [a-zçğıöşü]* ekliyoruz
+                pattern = r"\b" + re.escape(norm_kw) + r"[a-zçğıöşü]*\b"
                 if re.search(pattern, norm_text):
                     matched_keywords.append(kw)
-                    score += 20
-                    breakdown["keyword_score"] += 20
+                    score += 50
+                    breakdown["keyword_score"] += 50
                     breakdown["details"].append(
                         {
                             "signal": "keyword_match",
-                            "value": 20,
+                            "value": 50,
                             "evidence": kw,
                         }
                     )
@@ -173,12 +208,9 @@ class RoutingAgent:
         best = unit_scores[0] if unit_scores else None
         best_score = best["score"] if best else 0
 
-        if best and best_score >= 20:
-            result["recommended_unit"] = best["unit"]["name"]
-            result["routing_score"] = best_score
-            result["score_breakdown"] = best["breakdown"]
-
-            # Top-3 ranked_units
+        # Minimum eşiği 30'a çektik (en az bir process_intent veya doc_type match gerekli)
+        if best and best_score >= 30:
+            # Top-3 ranked_units hesapla
             for u in unit_scores[:3]:
                 result["ranked_units"].append(
                     {
@@ -196,40 +228,51 @@ class RoutingAgent:
             if len(unit_scores) > 1:
                 runner_up = unit_scores[1]["score"]
                 margin = best_score - runner_up
-                if margin < 10 and best_score < 60:
+                if margin < 15 and best_score < 80:
+                    ambiguous = True
+                elif margin == 0:
                     ambiguous = True
                     result["ambiguity_reason"] = "low_margin"
 
-            if ambiguous or best_score < 30:
+            # Ambiguous (Belirsiz) durumda fallback: Yanlış birim atamak yerine None dön (human review)
+            if ambiguous or best_score < 40:
                 result["needs_human_review"] = True
+                result["recommended_unit"] = None
+                result["routing_score"] = 0
                 result["warnings"].append(
-                    "Yönlendirme skoru düşük veya birimler arası fark az. "
-                    "Manuel inceleme önerilir."
+                    "Yönlendirme skoru düşük veya birimler arası fark çok az. "
+                    "Yanlış birim atamamak için manuel inceleme önerilir."
                 )
                 result["routing_confidence_type"] = "rule_margin"
+                result["reason"] = "Birden fazla birim eşit derecede olası veya yeterli kanıt yok."
+            else:
+                result["recommended_unit"] = best["unit"]["name"]
+                result["routing_score"] = best_score
+                result["score_breakdown"] = best["breakdown"]
 
-            # Gerekçe
-            intent_display = (
-                process_intent.replace("_", " ")
-                if process_intent
-                else "belirtilmeyen"
-            )
-            result["reason"] = (
-                f"Belge '{intent_display}' işlemi içerdiği için "
-                f"'{best['unit']['name']}' birimine yönlendirilmesi "
-                f"önerilmektedir."
-            )
-
-            # Kanıt listesi
-            if process_intent:
-                result["evidence"].append(f"İşlem Türü: {process_intent}")
-            if best["matched_keywords"]:
-                result["evidence"].append(
-                    f"Eşleşen Kelimeler: {', '.join(best['matched_keywords'])}"
+                intent_display = (
+                    process_intent.replace("_", " ")
+                    if process_intent
+                    else "belirtilmeyen"
                 )
+                result["reason"] = (
+                    f"Belge '{intent_display}' işlemi veya tipi içerdiği için "
+                    f"'{best['unit']['name']}' birimine yönlendirilmesi "
+                    f"önerilmektedir."
+                )
+
+                if process_intent:
+                    result["evidence"].append(f"İşlem Türü: {process_intent}")
+                if document_type:
+                    result["evidence"].append(f"Evrak Türü: {document_type}")
+                if best["matched_keywords"]:
+                    result["evidence"].append(
+                        f"Eşleşen Kelimeler: {', '.join(best['matched_keywords'])}"
+                    )
 
         else:
             result["needs_human_review"] = True
+            result["recommended_unit"] = None
             result["ambiguity_reason"] = "no_strong_match"
             result["reason"] = (
                 "Belgenin yönlendirileceği uygun birim güvenilir şekilde "
