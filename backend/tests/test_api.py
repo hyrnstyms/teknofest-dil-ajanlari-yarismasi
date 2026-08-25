@@ -19,10 +19,30 @@ def test_health():
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
 
-def test_ready():
+def test_ready(monkeypatch):
+    class FakeResponse:
+        status_code = 200
+
+    class FakeStore:
+        client = type(
+            "FakeClient",
+            (),
+            {"get_collections": lambda self: []},
+        )()
+
+    monkeypatch.setattr("requests.get", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(
+        "backend.app.main._get_embedding_service_singleton",
+        lambda: type("FakeEmbedding", (), {"model": object()})(),
+    )
+    monkeypatch.setattr(
+        "backend.app.main._get_qdrant_store_singleton",
+        lambda: FakeStore(),
+    )
+
     res = client.get("/ready")
     assert res.status_code == 200
-    # Even if degraded, status code should be 200, but ready field might be false
+    assert res.json()["ready"] is True
 
 
 def test_ready_reuses_embedding_and_qdrant_singletons(monkeypatch):
@@ -71,6 +91,113 @@ def test_ready_reuses_embedding_and_qdrant_singletons(monkeypatch):
     finally:
         _get_embedding_service_singleton.cache_clear()
         _get_qdrant_store_singleton.cache_clear()
+
+
+def test_ready_checks_evren_models_without_inference(monkeypatch):
+    from backend.app.llm.settings import LLMSettings
+
+    calls = []
+
+    class FakeResponse:
+        status_code = 200
+
+    class FakeStore:
+        client = type(
+            "FakeClient",
+            (),
+            {"get_collections": lambda self: []},
+        )()
+
+    def fake_get(url, **kwargs):
+        calls.append((url, kwargs))
+        return FakeResponse()
+
+    monkeypatch.setenv("LLM_PROVIDER", "evren")
+    monkeypatch.setattr(
+        LLMSettings,
+        "EVREN_BASE_URL",
+        "https://example.invalid/v1/",
+    )
+    monkeypatch.setattr(LLMSettings, "EVREN_API_KEY", "test-key")
+    monkeypatch.setattr("requests.get", fake_get)
+    monkeypatch.setattr(
+        "backend.app.main._get_embedding_service_singleton",
+        lambda: type("FakeEmbedding", (), {"model": object()})(),
+    )
+    monkeypatch.setattr(
+        "backend.app.main._get_qdrant_store_singleton",
+        lambda: FakeStore(),
+    )
+
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json()["ready"] is True
+    assert response.json()["services"]["llm"] == {
+        "provider": "evren",
+        "status": "ok",
+    }
+    assert response.json()["services"]["ollama"]["status"] == "ok"
+    assert calls == [
+        (
+            "https://example.invalid/v1/models",
+            {
+                "headers": {"Authorization": "Bearer test-key"},
+                "timeout": 5,
+            },
+        )
+    ]
+
+
+def test_ready_preserves_ollama_provider_check(monkeypatch):
+    from backend.app.llm.settings import LLMSettings
+
+    calls = []
+
+    class FakeResponse:
+        status_code = 200
+
+    class FakeStore:
+        client = type(
+            "FakeClient",
+            (),
+            {"get_collections": lambda self: []},
+        )()
+
+    def fake_get(url, **kwargs):
+        calls.append((url, kwargs))
+        return FakeResponse()
+
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setattr(
+        LLMSettings,
+        "OLLAMA_URL",
+        "http://ollama.invalid",
+    )
+    monkeypatch.setattr("requests.get", fake_get)
+    monkeypatch.setattr(
+        "backend.app.main._get_embedding_service_singleton",
+        lambda: type("FakeEmbedding", (), {"model": object()})(),
+    )
+    monkeypatch.setattr(
+        "backend.app.main._get_qdrant_store_singleton",
+        lambda: FakeStore(),
+    )
+
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json()["ready"] is True
+    assert response.json()["services"]["llm"] == {
+        "provider": "ollama",
+        "status": "ok",
+    }
+    assert calls == [
+        (
+            "http://ollama.invalid",
+            {"timeout": 5},
+        )
+    ]
 
 def test_analyze_text(monkeypatch):
     # Mock workflow to avoid heavy LLM calls

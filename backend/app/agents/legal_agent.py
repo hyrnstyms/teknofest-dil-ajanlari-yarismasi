@@ -49,7 +49,9 @@ class LegalAgent:
     ):
         self.llm = (
             llm
-            or create_llm_client()
+            or create_llm_client(
+                "legal_agent"
+            )
         )
 
         self.retriever = (

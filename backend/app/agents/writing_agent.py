@@ -45,7 +45,9 @@ class WritingAgent:
     ):
         self.llm = (
             llm
-            or create_llm_client()
+            or create_llm_client(
+                "writing_agent"
+            )
         )
 
         self.retriever = (

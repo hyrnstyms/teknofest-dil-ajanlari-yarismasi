@@ -16,7 +16,12 @@ class ExtractionAgent:
         self,
         llm: LLMClient | None = None,
     ):
-        self.llm = llm or create_llm_client()
+        self.llm = (
+            llm
+            or create_llm_client(
+                "extraction_agent"
+            )
+        )
 
     def extract(
         self,

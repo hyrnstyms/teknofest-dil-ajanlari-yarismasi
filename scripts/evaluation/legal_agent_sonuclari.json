@@ -6,7 +6,7 @@
     "ajan_madde": "3",
     "dogru_madde": "4",
     "retrieval_score": 0.6748,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Dilekçe hakkının kullanılmasında dilekçede bulunması zorunlu şartlar nelerdir?"
@@ -18,7 +18,7 @@
     "ajan_madde": "4",
     "dogru_madde": "4",
     "retrieval_score": 0.6666,
-    "evidence_count": 1,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Bir vatandaş, adresi eksik bir dilekçe verirse bu dilekçe işleme alınır mı?"
@@ -30,7 +30,7 @@
     "ajan_madde": "6",
     "dogru_madde": "6",
     "retrieval_score": 0.6792,
-    "evidence_count": 1,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Hangi durumlarda dilekçeler incelenmez ve işleme konulmaz?"
@@ -42,7 +42,7 @@
     "ajan_madde": "8",
     "dogru_madde": "7",
     "retrieval_score": 0.6602,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Dilekçeye idare tarafından kaç gün içinde cevap verilmesi zorunludur?"
@@ -66,7 +66,7 @@
     "ajan_madde": "5",
     "dogru_madde": "6",
     "retrieval_score": 0.6128,
-    "evidence_count": 2,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Dilekçede konusunun yargı merciine girmesi durumunda süreç nasıl işler?"
@@ -90,7 +90,7 @@
     "ajan_madde": "2",
     "dogru_madde": "1",
     "retrieval_score": 0.6327,
-    "evidence_count": 1,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Dilekçe hakkı kanununun amacı nedir?"
@@ -114,7 +114,7 @@
     "ajan_madde": "13",
     "dogru_madde": "11",
     "retrieval_score": 0.723,
-    "evidence_count": 0,
+    "evidence_count": 2,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Kurumlar bilgi edinme başvurularına kaç iş günü içinde cevap vermek zorundadır?"
@@ -126,7 +126,7 @@
     "ajan_madde": "11",
     "dogru_madde": "11",
     "retrieval_score": 0.692,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Bilgi edinme talebi başka bir kurumu ilgilendiriyorsa ek süre ne kadar olur?"
@@ -138,7 +138,7 @@
     "ajan_madde": "13",
     "dogru_madde": "13",
     "retrieval_score": 0.7501,
-    "evidence_count": 0,
+    "evidence_count": 3,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Kurum, bilgi edinme talebini reddederse itiraz süreci nasıl işler?"
@@ -162,7 +162,7 @@
     "ajan_madde": "16",
     "dogru_madde": "16",
     "retrieval_score": 0.694,
-    "evidence_count": 2,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Devlet sırrı niteliğindeki bilgi veya belgelere erişim hakkı var mıdır?"
@@ -186,7 +186,7 @@
     "ajan_madde": "11",
     "dogru_madde": "10",
     "retrieval_score": 0.5944,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Başvuru ücreti hangi durumlarda talep edilir?"
@@ -198,7 +198,7 @@
     "ajan_madde": "18",
     "dogru_madde": "18",
     "retrieval_score": 0.7088,
-    "evidence_count": 1,
+    "evidence_count": 2,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "İstihbarata ilişkin belgeler bilgi edinme hakkından muaf mıdır?"
@@ -222,7 +222,7 @@
     "ajan_madde": "9",
     "dogru_madde": "9",
     "retrieval_score": 0.6648,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Valinin hukuki statüsü ve ildeki konumu nedir?"
@@ -234,7 +234,7 @@
     "ajan_madde": "32",
     "dogru_madde": "32",
     "retrieval_score": 0.659,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "İlçe sınırlarında asayiş ve güvenliği sağlama görevi kime aittir?"
@@ -246,7 +246,7 @@
     "ajan_madde": "32",
     "dogru_madde": "32",
     "retrieval_score": 0.7226,
-    "evidence_count": 0,
+    "evidence_count": 2,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Kaymakam, ilçedeki kolluk kuvvetlerine doğrudan emir verebilir mi?"
@@ -270,7 +270,7 @@
     "ajan_madde": "11",
     "dogru_madde": "11",
     "retrieval_score": 0.6145,
-    "evidence_count": 1,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Vali, askeri birliklerden yardım isteyebilir mi?"
@@ -282,7 +282,7 @@
     "ajan_madde": "32",
     "dogru_madde": "31",
     "retrieval_score": 0.689,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Kaymakam, ilçede adli teşkilat üzerinde bir yetkiye sahip midir?"
@@ -306,7 +306,7 @@
     "ajan_madde": "31",
     "dogru_madde": "31",
     "retrieval_score": 0.6931,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Kaymakam ilçedeki belediyelerin kararlarını denetleyebilir mi?"
@@ -354,7 +354,7 @@
     "ajan_madde": "16",
     "dogru_madde": "15",
     "retrieval_score": 0.4954,
-    "evidence_count": 3,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "İlgi bölümü hangi durumlarda kullanılır?"
@@ -390,7 +390,7 @@
     "ajan_madde": "17",
     "dogru_madde": "17",
     "retrieval_score": 0.5924,
-    "evidence_count": 1,
+    "evidence_count": 3,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Resmi yazışmada imza bloğu nasıl düzenlenir?"
@@ -414,7 +414,7 @@
     "ajan_madde": "4",
     "dogru_madde": "10",
     "retrieval_score": 0.5529,
-    "evidence_count": 2,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Resmi yazışmada T.C. ibaresi nereye yazılır?"
@@ -438,7 +438,7 @@
     "ajan_madde": "28",
     "dogru_madde": "ELEKTRONIK IMZA",
     "retrieval_score": 0.5961,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Elektronik ortamda hazırlanan belgeler hangi imza türüyle imzalanır?"
@@ -462,7 +462,7 @@
     "ajan_madde": "19",
     "dogru_madde": "DAĞITIM",
     "retrieval_score": 0.5614,
-    "evidence_count": 1,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Dağıtım bölümünde yer alan 'Gereği' ve 'Bilgi' arasındaki fark nedir?"
@@ -474,7 +474,7 @@
     "ajan_madde": "18",
     "dogru_madde": "EK",
     "retrieval_score": 0.5846,
-    "evidence_count": 2,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Ekler nasıl numaralandırılır ve sıralanır?"
@@ -498,7 +498,7 @@
     "ajan_madde": "11,12",
     "dogru_madde": "METIN",
     "retrieval_score": 0.5472,
-    "evidence_count": 3,
+    "evidence_count": 0,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Metin içindeki sayılar nasıl yazılmalıdır?"
@@ -510,7 +510,7 @@
     "ajan_madde": "22",
     "dogru_madde": "GIZLI",
     "retrieval_score": 0.6149,
-    "evidence_count": 0,
+    "evidence_count": 1,
     "all_evidence_in_source": true,
     "bad_evidence": [],
     "soru": "Fiziksel ortamda gizlilik dereceli belgeler nasıl iletilir?"

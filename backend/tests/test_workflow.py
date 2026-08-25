@@ -5,12 +5,62 @@ from backend.app.llm.base import LLMClient
 
 @pytest.fixture
 def mock_workflow(monkeypatch):
+    class FakeRetriever:
+        def search_legal(self, *args, **kwargs):
+            return []
+
+    monkeypatch.setattr(
+        "backend.app.agents.legal_agent.Retriever",
+        FakeRetriever,
+    )
+    monkeypatch.setattr(
+        "backend.app.agents.writing_agent.Retriever",
+        FakeRetriever,
+    )
+
+    fast_llm = MagicMock(spec=LLMClient)
+    fast_llm.chat.return_value = "{}"
+    fast_llm.get_provider_name.return_value = "evren"
+    fast_llm.get_model_name.return_value = "llm-fast"
+
+    legal_llm = MagicMock(spec=LLMClient)
+    legal_llm.chat.return_value = '{"items":[]}'
+    legal_llm.get_provider_name.return_value = "evren"
+    legal_llm.get_model_name.return_value = "llm-large"
+
+    calls = []
+
+    def fake_create_llm_client(agent_name):
+        calls.append(agent_name)
+        if agent_name == "legal_agent":
+            return legal_llm
+        return fast_llm
+
+    monkeypatch.setattr(
+        "backend.app.graph.workflow.create_llm_client",
+        fake_create_llm_client,
+    )
     wf = KamuaiWorkflow()
-    # Mock LLM calls if necessary or use the LLM abstract
+    wf._test_llm_factory_calls = calls
+    wf._test_fast_llm = fast_llm
+    wf._test_legal_llm = legal_llm
     return wf
 
 def test_workflow_initialization(mock_workflow):
     assert mock_workflow.graph is not None
+
+
+def test_workflow_assigns_fast_and_large_evren_clients(mock_workflow):
+    assert mock_workflow._test_llm_factory_calls == [
+        "document_agent",
+        "legal_agent",
+    ]
+    assert mock_workflow.doc_agent.llm is mock_workflow._test_fast_llm
+    assert mock_workflow.extract_agent.llm is mock_workflow._test_fast_llm
+    assert mock_workflow.summary_agent.llm is mock_workflow._test_fast_llm
+    assert mock_workflow.writing_agent.llm is mock_workflow._test_fast_llm
+    assert mock_workflow.legal_agent.llm is mock_workflow._test_legal_llm
+    assert not hasattr(mock_workflow.quality_agent, "llm")
 
 def test_workflow_end_to_end_empty_text(mock_workflow):
     # This will test the error isolation and degradation

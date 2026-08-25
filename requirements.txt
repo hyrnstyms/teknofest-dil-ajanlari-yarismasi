@@ -20,6 +20,7 @@ modelscope==1.39.1
 # AI / Agents
 langgraph
 langchain-core
+openai>=3.3.1,<4
 
 # Embeddings / RAG
 sentence-transformers

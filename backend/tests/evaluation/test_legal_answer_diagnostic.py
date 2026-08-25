@@ -194,10 +194,10 @@ def test_diagnostic_integration_does_not_change_real_fixture_legacy_metrics(
     with_diagnostic = evaluator.evaluate_legal_rag(
         include_answer_aware_diagnostic=True
     )
-    # The five active 3071 targeted records are now supported by the local
-    # evaluation corpus; diagnostic enablement must still be fully isolated.
-    assert legacy_only.coverage.evaluable_records == 263
-    assert with_diagnostic.coverage.evaluable_records == 263
+    # The restored 45-record targeted fixture participates in coverage;
+    # diagnostic enablement must still be fully isolated from legacy metrics.
+    assert legacy_only.coverage.evaluable_records == 276
+    assert with_diagnostic.coverage.evaluable_records == 276
     assert with_diagnostic.metrics == legacy_only.metrics
     assert set(with_diagnostic.metrics) == {"hit@1", "hit@3", "hit@5", "mrr"}
     assert legacy_only.diagnostics == {}

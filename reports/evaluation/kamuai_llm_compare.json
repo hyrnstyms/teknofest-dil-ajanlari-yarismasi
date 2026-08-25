@@ -1,0 +1,3254 @@
+[
+  {
+    "id": "RAG-001",
+    "question": "Dilekçe hakkının kullanılmasında dilekçede bulunması zorunlu şartlar nelerdir?",
+    "expected_article": "Madde 4",
+    "expected_answer_summary": "Dilekçede başvuru sahibinin adı, soyadı, imzası ile iş veya yerleşim yeri adresi bulunmalıdır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "3",
+            "score": 0.67477447
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "2",
+            "score": 0.6151469
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.5954325
+          }
+        ],
+        "retrieval_score": 0.6748
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- dilekçe sahibinin adı-soyadı ve imzası ile iş veya ikametgâh adresinin bulunması gerekir [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 4]",
+        "evidence": [
+          {
+            "evidence": "dilekçe sahibinin adı-soyadı ve imzası ile iş veya ikametgâh adresinin bulunması gerekir",
+            "source": "K3"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "3",
+            "score": 0.67477447
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "2",
+            "score": 0.6151469
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.5954325
+          }
+        ],
+        "retrieval_score": 0.6748
+      }
+    }
+  },
+  {
+    "id": "RAG-002",
+    "question": "Bir vatandaş, adresi eksik bir dilekçe verirse bu dilekçe işleme alınır mı?",
+    "expected_article": "Madde 4",
+    "expected_answer_summary": "Dilekçede adres bulunması zorunludur, adresi olmayan dilekçeler incelenemez.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.6666444
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "5",
+            "score": 0.60619545
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "6",
+            "score": 0.598559
+          }
+        ],
+        "retrieval_score": 0.6666
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.6666444
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "5",
+            "score": 0.60619545
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "6",
+            "score": 0.598559
+          }
+        ],
+        "retrieval_score": 0.6666
+      }
+    }
+  },
+  {
+    "id": "RAG-003",
+    "question": "Hangi durumlarda dilekçeler incelenmez ve işleme konulmaz?",
+    "expected_article": "Madde 6",
+    "expected_answer_summary": "Belli bir konuyu ihtiva etmeyen, yargı mercilerinin görevine giren konularda olan ve zorunlu şartları taşımayan dilekçeler incelenmez.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "6",
+            "score": 0.67923415
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "5",
+            "score": 0.66096807
+          }
+        ],
+        "retrieval_score": 0.6792
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "6",
+            "score": 0.67923415
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "5",
+            "score": 0.66096807
+          }
+        ],
+        "retrieval_score": 0.6792
+      }
+    }
+  },
+  {
+    "id": "RAG-004",
+    "question": "Dilekçeye idare tarafından kaç gün içinde cevap verilmesi zorunludur?",
+    "expected_article": "Madde 7",
+    "expected_answer_summary": "Dilekçe sahiplerine en geç 30 gün içinde gerekçeli olarak cevap verilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- altmış gün içinde sonuçlandırılır. [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 8]",
+        "evidence": [
+          {
+            "evidence": "altmış gün içinde sonuçlandırılır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "8",
+            "score": 0.6601776
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "7",
+            "score": 0.6494547
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.6456259
+          }
+        ],
+        "retrieval_score": 0.6602
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Türk vatandaşlarının ve Türkiye’de ikamet eden yabancıların kendileri ve kamu ile ilgili dilek ve şikâyetleri konusunda yetkili makamlara yaptıkları başvuruların sonucu veya yapılmakta olan işlemin safahatı hakkında dilekçe sahiplerine en geç otuz gün içinde gerekçeli olarak cevap verilir. [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 7]",
+        "evidence": [
+          {
+            "evidence": "Türk vatandaşlarının ve Türkiye’de ikamet eden yabancıların kendileri ve kamu ile ilgili dilek ve şikâyetleri konusunda yetkili makamlara yaptıkları başvuruların sonucu veya yapılmakta olan işlemin safahatı hakkında dilekçe sahiplerine en geç otuz gün içinde gerekçeli olarak cevap verilir.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "8",
+            "score": 0.6601776
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "7",
+            "score": 0.6494547
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.6456259
+          }
+        ],
+        "retrieval_score": 0.6602
+      }
+    }
+  },
+  {
+    "id": "RAG-005",
+    "question": "Dilekçe sonucu beklenirken otuz günlük süre aşılırsa ne olur?",
+    "expected_article": "Madde 7",
+    "expected_answer_summary": "İşlem safahatı hakkında dilekçe sahibine 30 gün içinde gerekçeli bilgi verilir ve sonucun ayrıca bildirileceği ifade edilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.5388328
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "7",
+            "score": 0.53653723
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.53468245
+          }
+        ],
+        "retrieval_score": 0.5388
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.5388328
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "7",
+            "score": 0.53653723
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.53468245
+          }
+        ],
+        "retrieval_score": 0.5388
+      }
+    }
+  },
+  {
+    "id": "RAG-006",
+    "question": "Dilekçede konusunun yargı merciine girmesi durumunda süreç nasıl işler?",
+    "expected_article": "Madde 6",
+    "expected_answer_summary": "Yargı mercilerinin görevine giren konulardaki dilekçeler incelenmez.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "5",
+            "score": 0.61275136
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "6",
+            "score": 0.6106556
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "8",
+            "score": 0.6078661
+          }
+        ],
+        "retrieval_score": 0.6128
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "5",
+            "score": 0.61275136
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "6",
+            "score": 0.6106556
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "8",
+            "score": 0.6078661
+          }
+        ],
+        "retrieval_score": 0.6128
+      }
+    }
+  },
+  {
+    "id": "RAG-007",
+    "question": "TBMM'ye gönderilen dilekçelerin incelenme süresi ne kadardır?",
+    "expected_article": "Madde 8",
+    "expected_answer_summary": "TBMM'ye gönderilen dilekçelerin Dilekçe Komisyonunda incelenmesi 60 gün içinde sonuçlandırılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- altmış gün içinde sonuçlandırılır. [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 8]",
+        "evidence": [
+          {
+            "evidence": "altmış gün içinde sonuçlandırılır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "8",
+            "score": 0.7375602
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "7",
+            "score": 0.71610886
+          }
+        ],
+        "retrieval_score": 0.7376
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Türkiye Büyük Millet Meclisine gönderilen dilekçelerin, Dilekçe Komisyonunda incelenmesi ve karara bağlanması altmış gün içinde sonuçlandırılır. [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 8]",
+        "evidence": [
+          {
+            "evidence": "Türkiye Büyük Millet Meclisine gönderilen dilekçelerin, Dilekçe Komisyonunda incelenmesi ve karara bağlanması altmış gün içinde sonuçlandırılır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "8",
+            "score": 0.7375602
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "7",
+            "score": 0.71610886
+          }
+        ],
+        "retrieval_score": 0.7376
+      }
+    }
+  },
+  {
+    "id": "RAG-008",
+    "question": "Dilekçe hakkı kanununun amacı nedir?",
+    "expected_article": "Madde 1",
+    "expected_answer_summary": "Türk vatandaşlarının ve Türkiye'de ikamet eden yabancıların dilek ve şikayetleri hakkında başvurma hakkının kullanılma biçimini düzenlemektir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "2",
+            "score": 0.6327412
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "1",
+            "score": 0.5778811
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "3",
+            "score": 0.55334574
+          }
+        ],
+        "retrieval_score": 0.6327
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "2",
+            "score": 0.6327412
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "1",
+            "score": 0.5778811
+          },
+          {
+            "source_id": "K3",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "3",
+            "score": 0.55334574
+          }
+        ],
+        "retrieval_score": 0.6327
+      }
+    }
+  },
+  {
+    "id": "RAG-009",
+    "question": "Dilekçe hakkından Türkiye'de yaşayan yabancılar da yararlanabilir mi?",
+    "expected_article": "Madde 3",
+    "expected_answer_summary": "Karşılıklılık esası gözetilmek kaydıyla Türkiye'de ikamet eden yabancılar da dilekçe hakkından yararlanabilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Türkiye’de ikamet eden yabancılar karşılıklılık esası gözetilmek ve dilekçelerinin Türkçe yazılması kaydıyla bu haktan yararlanabilirler. [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 3]",
+        "evidence": [
+          {
+            "evidence": "Türkiye’de ikamet eden yabancılar karşılıklılık esası gözetilmek ve dilekçelerinin Türkçe yazılması kaydıyla bu haktan yararlanabilirler.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "3",
+            "score": 0.6956817
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "2",
+            "score": 0.6861838
+          }
+        ],
+        "retrieval_score": 0.6957
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Türkiye’de ikamet eden yabancılar karşılıklılık esası gözetilmek ve dilekçelerinin Türkçe yazılması kaydıyla bu haktan yararlanabilirler. [Dilekçe Hakkının Kullanılmasına Dair Kanun, 3071, Madde 3]",
+        "evidence": [
+          {
+            "evidence": "Türkiye’de ikamet eden yabancılar karşılıklılık esası gözetilmek ve dilekçelerinin Türkçe yazılması kaydıyla bu haktan yararlanabilirler.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "3",
+            "score": 0.6956817
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "2",
+            "score": 0.6861838
+          }
+        ],
+        "retrieval_score": 0.6957
+      }
+    }
+  },
+  {
+    "id": "RAG-010",
+    "question": "Kurumlar bilgi edinme başvurularına kaç iş günü içinde cevap vermek zorundadır?",
+    "expected_article": "Madde 11",
+    "expected_answer_summary": "Kurum ve kuruluşlar başvuruya 15 iş günü içinde cevap vermek zorundadır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kurum ve kuruluşlar, başvuru üzerine istenen bilgi veya belgeye erişimi onbeş iş günü içinde sağlarlar. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 11]",
+        "evidence": [
+          {
+            "evidence": "Kurum ve kuruluşlar, başvuru üzerine istenen bilgi veya belgeye erişimi onbeş iş günü içinde sağlarlar.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.7229594
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.71293503
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "30",
+            "score": 0.66438365
+          }
+        ],
+        "retrieval_score": 0.723
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kurum ve kuruluşlar, başvuru üzerine istenen bilgi veya belgeye erişimi onbeş iş günü içinde sağlarlar. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 11]\n- bilgi veya belgeye erişim otuz iş günü içinde sağlanır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 11]",
+        "evidence": [
+          {
+            "evidence": "Kurum ve kuruluşlar, başvuru üzerine istenen bilgi veya belgeye erişimi onbeş iş günü içinde sağlarlar.",
+            "source": "K2"
+          },
+          {
+            "evidence": "bilgi veya belgeye erişim otuz iş günü içinde sağlanır.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.7229594
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.71293503
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "30",
+            "score": 0.66438365
+          }
+        ],
+        "retrieval_score": 0.723
+      }
+    }
+  },
+  {
+    "id": "RAG-011",
+    "question": "Bilgi edinme talebi başka bir kurumu ilgilendiriyorsa ek süre ne kadar olur?",
+    "expected_article": "Madde 11",
+    "expected_answer_summary": "Bilgi veya belgenin başka bir birimden sağlanması veya başka bir kurumun görüşünün alınması gerekiyorsa süre 30 iş gününe uzayabilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.6919832
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.6430435
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "10",
+            "score": 0.62287414
+          }
+        ],
+        "retrieval_score": 0.692
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- başvuru içeriğinin birden fazla kurum ve kuruluşu ilgilendirmesi durumlarında bilgi veya belgeye erişim otuz iş günü içinde sağlanır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 11]",
+        "evidence": [
+          {
+            "evidence": "başvuru içeriğinin birden fazla kurum ve kuruluşu ilgilendirmesi durumlarında bilgi veya belgeye erişim otuz iş günü içinde sağlanır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.6919832
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.6430435
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "10",
+            "score": 0.62287414
+          }
+        ],
+        "retrieval_score": 0.692
+      }
+    }
+  },
+  {
+    "id": "RAG-012",
+    "question": "Kurum, bilgi edinme talebini reddederse itiraz süreci nasıl işler?",
+    "expected_article": "Madde 13",
+    "expected_answer_summary": "Başvurusu reddedilen kişi 15 gün içinde Bilgi Edinme Değerlendirme Kuruluna itiraz edebilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kurum ve kuruluşlar, bilgi edinme başvurularıyla ilgili cevaplarını yazılı olarak veya elektronik ortamda başvuru sahibine bildirirler. Başvurunun reddedilmesi hâlinde bu kararın gerekçesi ve buna karşı başvuru yolları belirtilir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 12]\n- Bilgi edinme istemi (…)1 reddedilen başvuru sahibi, yargı yoluna başvurmadan önce kararın tebliğinden itibaren onbeş gün içinde Kurula itiraz edebilir. Kurul, bu konudaki kararını otuz iş günü içinde verir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 13]",
+        "evidence": [
+          {
+            "evidence": "Kurum ve kuruluşlar, bilgi edinme başvurularıyla ilgili cevaplarını yazılı olarak veya elektronik ortamda başvuru sahibine bildirirler. Başvurunun reddedilmesi hâlinde bu kararın gerekçesi ve buna karşı başvuru yolları belirtilir.",
+            "source": "K2"
+          },
+          {
+            "evidence": "Bilgi edinme istemi (…)1 reddedilen başvuru sahibi, yargı yoluna başvurmadan önce kararın tebliğinden itibaren onbeş gün içinde Kurula itiraz edebilir. Kurul, bu konudaki kararını otuz iş günü içinde verir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.75006115
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "12",
+            "score": 0.74162424
+          }
+        ],
+        "retrieval_score": 0.7501
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- reddedilen başvuru sahibi, yargı yoluna başvurmadan önce kararın tebliğinden itibaren onbeş gün içinde Kurula itiraz edebilir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 13]\n- Kurul, bu konudaki kararını otuz iş günü içinde verir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 13]\n- Kurula itiraz, başvuru sahibinin idarî yargıya başvurma süresini durdurur. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 13]",
+        "evidence": [
+          {
+            "evidence": "reddedilen başvuru sahibi, yargı yoluna başvurmadan önce kararın tebliğinden itibaren onbeş gün içinde Kurula itiraz edebilir.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Kurul, bu konudaki kararını otuz iş günü içinde verir.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Kurula itiraz, başvuru sahibinin idarî yargıya başvurma süresini durdurur.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.75006115
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "12",
+            "score": 0.74162424
+          }
+        ],
+        "retrieval_score": 0.7501
+      }
+    }
+  },
+  {
+    "id": "RAG-013",
+    "question": "Özel hayatın gizliliği kapsamında olan bilgiler bilgi edinme kanunu çerçevesinde verilebilir mi?",
+    "expected_article": "Madde 21",
+    "expected_answer_summary": "Kişinin özel hayatının gizliliğini ihlal edecek nitelikteki bilgi veya belgeler bilgi edinme hakkı kapsamı dışındadır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kişinin izin verdiği hâller saklı kalmak üzere, özel hayatın gizliliği kapsamında, açıklanması hâlinde kişinin sağlık bilgileri ile özel ve aile hayatına, şeref ve haysiyetine, meslekî ve ekonomik değerlerine haksız müdahale oluşturacak bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 21]",
+        "evidence": [
+          {
+            "evidence": "Kişinin izin verdiği hâller saklı kalmak üzere, özel hayatın gizliliği kapsamında, açıklanması hâlinde kişinin sağlık bilgileri ile özel ve aile hayatına, şeref ve haysiyetine, meslekî ve ekonomik değerlerine haksız müdahale oluşturacak bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "21",
+            "score": 0.70215833
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "18",
+            "score": 0.6570343
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "15",
+            "score": 0.6386018
+          }
+        ],
+        "retrieval_score": 0.7022
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kişinin izin verdiği hâller saklı kalmak üzere, özel hayatın gizliliği kapsamında, açıklanması hâlinde kişinin sağlık bilgileri ile özel ve aile hayatına, şeref ve haysiyetine, meslekî ve ekonomik değerlerine haksız müdahale oluşturacak bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 21]",
+        "evidence": [
+          {
+            "evidence": "Kişinin izin verdiği hâller saklı kalmak üzere, özel hayatın gizliliği kapsamında, açıklanması hâlinde kişinin sağlık bilgileri ile özel ve aile hayatına, şeref ve haysiyetine, meslekî ve ekonomik değerlerine haksız müdahale oluşturacak bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "21",
+            "score": 0.70215833
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "18",
+            "score": 0.6570343
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "15",
+            "score": 0.6386018
+          }
+        ],
+        "retrieval_score": 0.7022
+      }
+    }
+  },
+  {
+    "id": "RAG-014",
+    "question": "Devlet sırrı niteliğindeki bilgi veya belgelere erişim hakkı var mıdır?",
+    "expected_article": "Madde 16",
+    "expected_answer_summary": "Açıklanması halinde Devletin güvenliğini veya dış ilişkilerini zedeleyecek Devlet sırrı niteliğindeki bilgiler kapsam dışındadır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Madde 16- Açıklanması hâlinde Devletin emniyetine, dış ilişkilerine, millî savunmasına ve millî güvenliğine açıkça zarar verecek ve niteliği itibarıyla Devlet sırrı olan gizlilik dereceli bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 16]",
+        "evidence": [
+          {
+            "evidence": "Madde 16- Açıklanması hâlinde Devletin emniyetine, dış ilişkilerine, millî savunmasına ve millî güvenliğine açıkça zarar verecek ve niteliği itibarıyla Devlet sırrı olan gizlilik dereceli bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "16",
+            "score": 0.6939544
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "15",
+            "score": 0.64098454
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "18",
+            "score": 0.6151946
+          }
+        ],
+        "retrieval_score": 0.694
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Açıklanması hâlinde Devletin emniyetine, dış ilişkilerine, millî savunmasına ve millî güvenliğine açıkça zarar verecek ve niteliği itibarıyla Devlet sırrı olan gizlilik dereceli bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 16]",
+        "evidence": [
+          {
+            "evidence": "Açıklanması hâlinde Devletin emniyetine, dış ilişkilerine, millî savunmasına ve millî güvenliğine açıkça zarar verecek ve niteliği itibarıyla Devlet sırrı olan gizlilik dereceli bilgi veya belgeler, bilgi edinme hakkı kapsamı dışındadır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "16",
+            "score": 0.6939544
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "15",
+            "score": 0.64098454
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "18",
+            "score": 0.6151946
+          }
+        ],
+        "retrieval_score": 0.694
+      }
+    }
+  },
+  {
+    "id": "RAG-015",
+    "question": "Başvuru sahibi bilgi edinme talebinden vazgeçerse süreç nasıl sonlanır?",
+    "expected_article": "Madde 11",
+    "expected_answer_summary": "Başvuru süresi, erişim ve işlem süreci hakkında kanunun temel süre sınırları uygulanır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kurul, bu konudaki kararını otuz iş günü içinde verir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 13]\n- Başvuru sahibi, yargı yoluna başvurmadan önce kararın tebliğinden itibaren onbeş gün içinde Kurula itiraz edebilir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 13]",
+        "evidence": [
+          {
+            "evidence": "Kurul, bu konudaki kararını otuz iş günü içinde verir.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Başvuru sahibi, yargı yoluna başvurmadan önce kararın tebliğinden itibaren onbeş gün içinde Kurula itiraz edebilir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.6715096
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "12",
+            "score": 0.6695322
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "7",
+            "score": 0.6392207
+          }
+        ],
+        "retrieval_score": 0.6715
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.6715096
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "12",
+            "score": 0.6695322
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "7",
+            "score": 0.6392207
+          }
+        ],
+        "retrieval_score": 0.6715
+      }
+    }
+  },
+  {
+    "id": "RAG-016",
+    "question": "Başvuru ücreti hangi durumlarda talep edilir?",
+    "expected_article": "Madde 10",
+    "expected_answer_summary": "Bilgi veya belgeye erişimin gerektirdiği kopyalama ve postalama maliyetleri başvuru sahibinden talep edilebilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.5943737
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "10",
+            "score": 0.5768044
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "5",
+            "score": 0.5582126
+          }
+        ],
+        "retrieval_score": 0.5944
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Başvurunun yapıldığı kurum ve kuruluş, erişimine olanak sağladığı bilgi veya belgeler için başvuru sahibinden erişimin gerektirdiği maliyet tutarı kadar bir ücreti bütçeye gelir kaydedilmek üzere tahsil edebilir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 10]",
+        "evidence": [
+          {
+            "evidence": "Başvurunun yapıldığı kurum ve kuruluş, erişimine olanak sağladığı bilgi veya belgeler için başvuru sahibinden erişimin gerektirdiği maliyet tutarı kadar bir ücreti bütçeye gelir kaydedilmek üzere tahsil edebilir.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.5943737
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "10",
+            "score": 0.5768044
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "5",
+            "score": 0.5582126
+          }
+        ],
+        "retrieval_score": 0.5944
+      }
+    }
+  },
+  {
+    "id": "RAG-017",
+    "question": "İstihbarata ilişkin belgeler bilgi edinme hakkından muaf mıdır?",
+    "expected_article": "Madde 18",
+    "expected_answer_summary": "Sivil ve askeri istihbarat birimlerinin görevlerine ilişkin bilgi veya belgeler bilgi edinme hakkı kapsamı dışındadır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Bu Kanun kapsamı dışındadır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 18]",
+        "evidence": [
+          {
+            "evidence": "Bu Kanun kapsamı dışındadır.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "18",
+            "score": 0.7088332
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "16",
+            "score": 0.6533551
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "17",
+            "score": 0.64901143
+          }
+        ],
+        "retrieval_score": 0.7088
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Sivil ve askerî istihbarat birimlerinin görev ve faaliyetlerine ilişkin bilgi veya belgeler, bu Kanun kapsamı dışındadır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 18]\n- Ancak, bu bilgi ve belgeler kişilerin çalışma hayatını ve meslek onurunu etkileyecek nitelikte ise, istihbarata ilişkin bilgi ve belgeler bilgi edinme hakkı kapsamı içindedir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 18]",
+        "evidence": [
+          {
+            "evidence": "Sivil ve askerî istihbarat birimlerinin görev ve faaliyetlerine ilişkin bilgi veya belgeler, bu Kanun kapsamı dışındadır.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Ancak, bu bilgi ve belgeler kişilerin çalışma hayatını ve meslek onurunu etkileyecek nitelikte ise, istihbarata ilişkin bilgi ve belgeler bilgi edinme hakkı kapsamı içindedir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "18",
+            "score": 0.7088332
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "16",
+            "score": 0.6533551
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "17",
+            "score": 0.64901143
+          }
+        ],
+        "retrieval_score": 0.7088
+      }
+    }
+  },
+  {
+    "id": "RAG-018",
+    "question": "Tüzel kişiler bilgi edinme başvurusunda bulunurken neleri belirtmek zorundadır?",
+    "expected_article": "Madde 6",
+    "expected_answer_summary": "Tüzel kişiler unvan ve adresi ile yetkili kişinin imzasını ve yetki belgesini başvuruya eklemek zorundadır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Bilgi edinme başvurusu, başvuru sahibinin adı ve soyadı, imzası, oturma yeri veya iş adresini, başvuru sahibi tüzel kişi ise tüzel kişinin unvanı ve adresi ile yetkili kişinin imzasını ve yetki belgesini içeren dilekçe ile istenen bilgi veya belgenin bulunduğu kurum veya kuruluşa yapılır. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 6]\n- Bu başvuru, kişinin kimliğinin ve imzasının veya yazının kimden neşet ettiğinin tespitine yarayacak başka bilgilerin yasal olarak belirlenebilir olması kaydıyla elektronik ortamda veya diğer iletişim araçlarıyla da yapılabilir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 6]\n- Dilekçede, istenen bilgi veya belgeler açıkça belirtilir. [Bilgi Edinme Hakkı Kanunu, 4982, Madde 6]",
+        "evidence": [
+          {
+            "evidence": "Bilgi edinme başvurusu, başvuru sahibinin adı ve soyadı, imzası, oturma yeri veya iş adresini, başvuru sahibi tüzel kişi ise tüzel kişinin unvanı ve adresi ile yetkili kişinin imzasını ve yetki belgesini içeren dilekçe ile istenen bilgi veya belgenin bulunduğu kurum veya kuruluşa yapılır.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Bu başvuru, kişinin kimliğinin ve imzasının veya yazının kimden neşet ettiğinin tespitine yarayacak başka bilgilerin yasal olarak belirlenebilir olması kaydıyla elektronik ortamda veya diğer iletişim araçlarıyla da yapılabilir.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Dilekçede, istenen bilgi veya belgeler açıkça belirtilir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "6",
+            "score": 0.73087096
+          }
+        ],
+        "retrieval_score": 0.7309
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- başvuru sahibi tüzel kişi ise tüzel kişinin unvanı ve adresi ile yetkili kişinin imzasını ve yetki belgesini içeren dilekçe [Bilgi Edinme Hakkı Kanunu, 4982, Madde 6]",
+        "evidence": [
+          {
+            "evidence": "başvuru sahibi tüzel kişi ise tüzel kişinin unvanı ve adresi ile yetkili kişinin imzasını ve yetki belgesini içeren dilekçe",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "6",
+            "score": 0.73087096
+          }
+        ],
+        "retrieval_score": 0.7309
+      }
+    }
+  },
+  {
+    "id": "RAG-019",
+    "question": "Valinin hukuki statüsü ve ildeki konumu nedir?",
+    "expected_article": "Madde 9",
+    "expected_answer_summary": "Vali, ilde Cumhurbaşkanının temsilcisi ve idari yürütme vasıtasıdır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Model yapılandırılmış mevzuat çıktısı üretemedi.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "9",
+            "score": 0.66478044
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "11",
+            "score": 0.631706
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "18",
+            "score": 0.6050123
+          }
+        ],
+        "retrieval_score": 0.6648
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Vali, il sınırları içinde bulunan genel ve özel bütün kolluk kuvvet ve teşkilatının amiridir. [İl İdaresi Kanunu, 5442, Madde 11]",
+        "evidence": [
+          {
+            "evidence": "Vali, il sınırları içinde bulunan genel ve özel bütün kolluk kuvvet ve teşkilatının amiridir.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "9",
+            "score": 0.66478044
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "11",
+            "score": 0.631706
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "18",
+            "score": 0.6050123
+          }
+        ],
+        "retrieval_score": 0.6648
+      }
+    }
+  },
+  {
+    "id": "RAG-020",
+    "question": "İlçe sınırlarında asayiş ve güvenliği sağlama görevi kime aittir?",
+    "expected_article": "Madde 32",
+    "expected_answer_summary": "Kaymakam, ilçede idarenin başı olarak asayiş ve güvenliği sağlamakla yükümlüdür.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Madde 32 – A) Kaymakam, ilçe sınırları içinde bulunan genel ve özel kolluk kuvvet ve teşkilatının amiridir; [İl İdaresi Kanunu, 5442, Madde 32]",
+        "evidence": [
+          {
+            "evidence": "Madde 32 – A) Kaymakam, ilçe sınırları içinde bulunan genel ve özel kolluk kuvvet ve teşkilatının amiridir;",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.65902925
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "11",
+            "score": 0.6308931
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.59703994
+          }
+        ],
+        "retrieval_score": 0.659
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Ç) İlçe sınırları içinde huzur ve güvenliğin, kişi dokunulmazlığının tasarrufa mütaallik emniyetin, kamu esenliğinin sağlanması ve önleyici kolluk yetkisi kaymakamın ödev ve görevlerindendir. [İl İdaresi Kanunu, 5442, Madde 32]",
+        "evidence": [
+          {
+            "evidence": "Ç) İlçe sınırları içinde huzur ve güvenliğin, kişi dokunulmazlığının tasarrufa mütaallik emniyetin, kamu esenliğinin sağlanması ve önleyici kolluk yetkisi kaymakamın ödev ve görevlerindendir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.65902925
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "11",
+            "score": 0.6308931
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.59703994
+          }
+        ],
+        "retrieval_score": 0.659
+      }
+    }
+  },
+  {
+    "id": "RAG-021",
+    "question": "Kaymakam, ilçedeki kolluk kuvvetlerine doğrudan emir verebilir mi?",
+    "expected_article": "Madde 32",
+    "expected_answer_summary": "Kaymakam, ilçe sınırları içindeki genel kolluk kuvvetlerine doğrudan emir ve talimat verebilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.72263205
+          }
+        ],
+        "retrieval_score": 0.7226
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kaymakam, ilçe sınırları içinde bulunan genel ve özel kolluk kuvvet ve teşkilatının amiridir; [İl İdaresi Kanunu, 5442, Madde 32]\n- Bu maksatla Devletin genel ve özel kolluk kuvvetlerini istihdam eder. Kanun, Cumhurbaşkanlığı kararnamesi ve diğer mevzuat ile Cumhurbaşkanınca alınmış bulunan karar ve tedbirlerin yürütülmesi için emirler verir. [İl İdaresi Kanunu, 5442, Madde 32]",
+        "evidence": [
+          {
+            "evidence": "Kaymakam, ilçe sınırları içinde bulunan genel ve özel kolluk kuvvet ve teşkilatının amiridir;",
+            "source": "K1"
+          },
+          {
+            "evidence": "Bu maksatla Devletin genel ve özel kolluk kuvvetlerini istihdam eder. Kanun, Cumhurbaşkanlığı kararnamesi ve diğer mevzuat ile Cumhurbaşkanınca alınmış bulunan karar ve tedbirlerin yürütülmesi için emirler verir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.72263205
+          }
+        ],
+        "retrieval_score": 0.7226
+      }
+    }
+  },
+  {
+    "id": "RAG-022",
+    "question": "Yeni bir il veya ilçe kurulması hangi kanuni işleme tabidir?",
+    "expected_article": "Madde 2",
+    "expected_answer_summary": "İl ve ilçelerin kurulması, kaldırılması veya merkezlerinin belirtilmesi kanunla olur.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Madde 62 – İl idare kurulları, il idare şubelerinin,kaymakamların ve ilçe idare şubeleriyle bucak müdürlerinin, bucak meclis ve komisyonlarının, köy muhtarlarının ve köy ihtiyar kurullarının yürütülmesi gerekli kararları aleyhine menfaati haleldar olanlar tarafından bu kararların esas, maksat, yetki ve şekil itibariyle kanun, Cumhurbaşkanlığı kararnamesi ve diğer mevzuata muhalefetlerinden dolayı açılan iptal davalarına birinci derecede bakarlar. [İl İdaresi Kanunu, 5442, Madde 62]",
+        "evidence": [
+          {
+            "evidence": "Madde 62 – İl idare kurulları, il idare şubelerinin,kaymakamların ve ilçe idare şubeleriyle bucak müdürlerinin, bucak meclis ve komisyonlarının, köy muhtarlarının ve köy ihtiyar kurullarının yürütülmesi gerekli kararları aleyhine menfaati haleldar olanlar tarafından bu kararların esas, maksat, yetki ve şekil itibariyle kanun, Cumhurbaşkanlığı kararnamesi ve diğer mevzuata muhalefetlerinden dolayı açılan iptal davalarına birinci derecede bakarlar.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.53148365
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "62",
+            "score": 0.5230315
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "56",
+            "score": 0.5203093
+          }
+        ],
+        "retrieval_score": 0.5315
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.53148365
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "62",
+            "score": 0.5230315
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "56",
+            "score": 0.5203093
+          }
+        ],
+        "retrieval_score": 0.5315
+      }
+    }
+  },
+  {
+    "id": "RAG-023",
+    "question": "Vali, askeri birliklerden yardım isteyebilir mi?",
+    "expected_article": "Madde 11",
+    "expected_answer_summary": "Vali, asayişin bozulması veya olağanüstü durumlarda garnizon komutanından askeri birlik yardımı isteyebilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "11",
+            "score": 0.61453867
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "9",
+            "score": 0.5616229
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "24",
+            "score": 0.5610945
+          }
+        ],
+        "retrieval_score": 0.6145
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "11",
+            "score": 0.61453867
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "9",
+            "score": 0.5616229
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "24",
+            "score": 0.5610945
+          }
+        ],
+        "retrieval_score": 0.6145
+      }
+    }
+  },
+  {
+    "id": "RAG-024",
+    "question": "Kaymakam, ilçede adli teşkilat üzerinde bir yetkiye sahip midir?",
+    "expected_article": "Madde 31",
+    "expected_answer_summary": "Kaymakam, adli ve askeri teşkilat hariç ilçedeki tüm genel idare teşkilatının başıdır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.688999
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.6791692
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "27",
+            "score": 0.6557509
+          }
+        ],
+        "retrieval_score": 0.689
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.688999
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.6791692
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "27",
+            "score": 0.6557509
+          }
+        ],
+        "retrieval_score": 0.689
+      }
+    }
+  },
+  {
+    "id": "RAG-025",
+    "question": "İl idare kurulu kimlerden oluşur?",
+    "expected_article": "Madde 57",
+    "expected_answer_summary": "İl idare kurulu, valinin başkanlığında hukuk işleri müdürü, defterdar, milli eğitim müdürü, bayındırlık müdürü, sağlık ve sosyal yardım müdürü ve tarım müdüründen oluşur.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Madde 57 – İl idare kurulu, valinin başkanlığı altında hukuk işleri müdürü, defterdar, milli egitim, bayındırlık, sağlık ve sosyal yardım, tarım ve veteriner müdürlerinden teşekkül eder. [İl İdaresi Kanunu, 5442, Madde 57]\n- Madde 58 – İlçe idare kurulu, kaymakamın başkanlığı altında tahrirat katibi, malmüdürü, Hükümet hekimi, milli eğitim memuriyle tarım memuru ve veterinerden teşekkül eder. [İl İdaresi Kanunu, 5442, Madde 58]",
+        "evidence": [
+          {
+            "evidence": "Madde 57 – İl idare kurulu, valinin başkanlığı altında hukuk işleri müdürü, defterdar, milli egitim, bayındırlık, sağlık ve sosyal yardım, tarım ve veteriner müdürlerinden teşekkül eder.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Madde 58 – İlçe idare kurulu, kaymakamın başkanlığı altında tahrirat katibi, malmüdürü, Hükümet hekimi, milli eğitim memuriyle tarım memuru ve veterinerden teşekkül eder.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "57",
+            "score": 0.68731916
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "58",
+            "score": 0.60910904
+          }
+        ],
+        "retrieval_score": 0.6873
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- İl idare kurulu, valinin başkanlığı altında hukuk işleri müdürü, defterdar, milli egitim, bayındırlık, sağlık ve sosyal yardım, tarım ve veteriner müdürlerinden teşekkül eder. [İl İdaresi Kanunu, 5442, Madde 57]",
+        "evidence": [
+          {
+            "evidence": "İl idare kurulu, valinin başkanlığı altında hukuk işleri müdürü, defterdar, milli egitim, bayındırlık, sağlık ve sosyal yardım, tarım ve veteriner müdürlerinden teşekkül eder.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "57",
+            "score": 0.68731916
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "58",
+            "score": 0.60910904
+          }
+        ],
+        "retrieval_score": 0.6873
+      }
+    }
+  },
+  {
+    "id": "RAG-026",
+    "question": "Kaymakam ilçedeki belediyelerin kararlarını denetleyebilir mi?",
+    "expected_article": "Madde 31",
+    "expected_answer_summary": "Kaymakam ilçedeki mahalli idarelerin seçilmiş organları üzerinde kanunlarla belirtilen vesayet yetkisini kullanır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.6931193
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.6721835
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "39",
+            "score": 0.6557038
+          }
+        ],
+        "retrieval_score": 0.6931
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Kaymakamlar, dördüncü maddenin son fıkrasında belirtilen daire ve müesseseler dışında kalan bütün Devlet daire ve müessese ve işletmelerini ve özel işyerlerini, özel idare, belediye ve köy idareleriyle bunlara bağlı tekmil müesseseleri denetler ve teftiş ederler. [İl İdaresi Kanunu, 5442, Madde 31]",
+        "evidence": [
+          {
+            "evidence": "Kaymakamlar, dördüncü maddenin son fıkrasında belirtilen daire ve müesseseler dışında kalan bütün Devlet daire ve müessese ve işletmelerini ve özel işyerlerini, özel idare, belediye ve köy idareleriyle bunlara bağlı tekmil müesseseleri denetler ve teftiş ederler.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "31",
+            "score": 0.6931193
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "32",
+            "score": 0.6721835
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "39",
+            "score": 0.6557038
+          }
+        ],
+        "retrieval_score": 0.6931
+      }
+    }
+  },
+  {
+    "id": "RAG-027",
+    "question": "İlçe idare kurulu kimlerden oluşur?",
+    "expected_article": "Madde 58",
+    "expected_answer_summary": "Kaymakamın başkanlığında tahrirat katibi, malmüdürü, hükümet hekimi, milli eğitim memuru ve tarım memurundan oluşur.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Madde 58 – İlçe idare kurulu, kaymakamın başkanlığı altında tahrirat katibi, malmüdürü, Hükümet hekimi, milli eğitim memuriyle tarım memuru ve veterinerden teşekkül eder. [İl İdaresi Kanunu, 5442, Madde 58]",
+        "evidence": [
+          {
+            "evidence": "Madde 58 – İlçe idare kurulu, kaymakamın başkanlığı altında tahrirat katibi, malmüdürü, Hükümet hekimi, milli eğitim memuriyle tarım memuru ve veterinerden teşekkül eder.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "58",
+            "score": 0.7145145
+          }
+        ],
+        "retrieval_score": 0.7145
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- İlçe idare kurulu, kaymakamın başkanlığı altında tahrirat katibi, malmüdürü, Hükümet hekimi, milli eğitim memuriyle tarım memuru ve veterinerden teşekkül eder. [İl İdaresi Kanunu, 5442, Madde 58]",
+        "evidence": [
+          {
+            "evidence": "İlçe idare kurulu, kaymakamın başkanlığı altında tahrirat katibi, malmüdürü, Hükümet hekimi, milli eğitim memuriyle tarım memuru ve veterinerden teşekkül eder.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "58",
+            "score": 0.7145145
+          }
+        ],
+        "retrieval_score": 0.7145
+      }
+    }
+  },
+  {
+    "id": "RAG-028",
+    "question": "Resmi yazışmalarda tarih nerede ve nasıl yer alır?",
+    "expected_article": "Madde 12",
+    "expected_answer_summary": "Tarih, evrakın sayı ile aynı hizada ve sayfa sağ boşluğuna dayalı olarak gün, ay, yıl rakamla yazılarak atılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.5408857
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.52835417
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "11,12",
+            "score": 0.52264017
+          }
+        ],
+        "retrieval_score": 0.5409
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.5408857
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.52835417
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "11,12",
+            "score": 0.52264017
+          }
+        ],
+        "retrieval_score": 0.5409
+      }
+    }
+  },
+  {
+    "id": "RAG-029",
+    "question": "Resmi yazışmalarda konu bölümünde 'hakkında' kelimesi kullanılır mı?",
+    "expected_article": "Madde 13",
+    "expected_answer_summary": "Konu kelimesinden sonra kısaca belgenin konusu yazılır ancak sonuna 'hakkında' vb. ibareler ile noktalama işareti konulmaz.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.5432832
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5267522
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "63",
+            "score": 0.5246643
+          }
+        ],
+        "retrieval_score": 0.5433
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.5432832
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5267522
+          },
+          {
+            "source_id": "K3",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "63",
+            "score": 0.5246643
+          }
+        ],
+        "retrieval_score": 0.5433
+      }
+    }
+  },
+  {
+    "id": "RAG-030",
+    "question": "İlgi bölümü hangi durumlarda kullanılır?",
+    "expected_article": "Madde 15",
+    "expected_answer_summary": "Belgenin bağlantılı olduğu, daha önce gönderilen veya alınan belgelere atıf yapmak için kullanılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.4953678
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "22",
+            "score": 0.46197227
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "15",
+            "score": 0.44573593
+          }
+        ],
+        "retrieval_score": 0.4954
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.4953678
+          },
+          {
+            "source_id": "K2",
+            "source": "İl İdaresi Kanunu",
+            "law_number": "5442",
+            "article": "22",
+            "score": 0.46197227
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "15",
+            "score": 0.44573593
+          }
+        ],
+        "retrieval_score": 0.4954
+      }
+    }
+  },
+  {
+    "id": "RAG-031",
+    "question": "Alt makama yazılan resmi yazılar hangi ifade ile bitirilmelidir?",
+    "expected_article": "Madde 16",
+    "expected_answer_summary": "Alt makamlara yazılan yazılar 'Rica ederim.' ifadesiyle bitirilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Alt makama → \"... rica ederim.\" [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 16]",
+        "evidence": [
+          {
+            "evidence": "Alt makama → \"... rica ederim.\"",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.53238463
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.53136826
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.52257013
+          }
+        ],
+        "retrieval_score": 0.5324
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Alt makama → \"... rica ederim.\" [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 16]",
+        "evidence": [
+          {
+            "evidence": "Alt makama → \"... rica ederim.\"",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.53238463
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.53136826
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.52257013
+          }
+        ],
+        "retrieval_score": 0.5324
+      }
+    }
+  },
+  {
+    "id": "RAG-032",
+    "question": "Eşiti makamlara yazılan resmi yazılar nasıl bitirilmelidir?",
+    "expected_article": "Madde 16",
+    "expected_answer_summary": "Eşiti olan kurumlara yazılan yazılar 'Arz ve rica ederim.' ifadesiyle bitirilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.5445868
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.5250382
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.5183939
+          }
+        ],
+        "retrieval_score": 0.5446
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.5445868
+          },
+          {
+            "source_id": "K2",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.5250382
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.5183939
+          }
+        ],
+        "retrieval_score": 0.5446
+      }
+    }
+  },
+  {
+    "id": "RAG-033",
+    "question": "Resmi yazışmada imza bloğu nasıl düzenlenir?",
+    "expected_article": "Madde 17",
+    "expected_answer_summary": "İmza atacak kişinin adı ilk harfi büyük diğerleri küçük, soyadı ise tamamen büyük harflerle metnin sağ altına yazılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.59237045
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.55494237
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.5363189
+          }
+        ],
+        "retrieval_score": 0.5924
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Yetki devri: İmzalayan Ad Soyad / \"[Makam] a.\" / imzalayanın unvanı. [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]\n- Vekâlet: İmzalayan Ad Soyad / \"[Makam] V.\". [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]\n- Çoklu imza: 2 kişi → üst unvan sağda; 2+ kişi → en üst solda, soldan sağa sıralı. [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]",
+        "evidence": [
+          {
+            "evidence": "Yetki devri: İmzalayan Ad Soyad / \"[Makam] a.\" / imzalayanın unvanı.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Vekâlet: İmzalayan Ad Soyad / \"[Makam] V.\".",
+            "source": "K1"
+          },
+          {
+            "evidence": "Çoklu imza: 2 kişi → üst unvan sağda; 2+ kişi → en üst solda, soldan sağa sıralı.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.59237045
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.55494237
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.5363189
+          }
+        ],
+        "retrieval_score": 0.5924
+      }
+    }
+  },
+  {
+    "id": "RAG-034",
+    "question": "Makam adına imza atılması durumunda imza bloğunda nasıl bir ibare kullanılır?",
+    "expected_article": "Madde 17",
+    "expected_answer_summary": "Yetki devri durumunda imza atacak kişinin makamının üstüne 'a.' ibaresi eklenir (örneğin Kaymakam a.).",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Yetki devri: İmzalayan Ad Soyad / \"[Makam] a.\" / imzalayanın unvanı. [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]\n- Vekâlet: İmzalayan Ad Soyad / \"[Makam] V.\". [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]\n- Çoklu imza: 2 kişi → üst unvan sağda; 2+ kişi → en üst solda,\nsoldan sağa sıralı. [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]",
+        "evidence": [
+          {
+            "evidence": "Yetki devri: İmzalayan Ad Soyad / \"[Makam] a.\" / imzalayanın unvanı.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Vekâlet: İmzalayan Ad Soyad / \"[Makam] V.\".",
+            "source": "K1"
+          },
+          {
+            "evidence": "Çoklu imza: 2 kişi → üst unvan sağda; 2+ kişi → en üst solda,\nsoldan sağa sıralı.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.6320828
+          }
+        ],
+        "retrieval_score": 0.6321
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Yetki devri: İmzalayan Ad Soyad / \"[Makam] a.\" / imzalayanın unvanı. [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]\n- Vekâlet: İmzalayan Ad Soyad / \"[Makam] V.\". [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 17]",
+        "evidence": [
+          {
+            "evidence": "Yetki devri: İmzalayan Ad Soyad / \"[Makam] a.\" / imzalayanın unvanı.",
+            "source": "K1"
+          },
+          {
+            "evidence": "Vekâlet: İmzalayan Ad Soyad / \"[Makam] V.\".",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.6320828
+          }
+        ],
+        "retrieval_score": 0.6321
+      }
+    }
+  },
+  {
+    "id": "RAG-035",
+    "question": "Sayfa numarası belgenin neresine yazılır?",
+    "expected_article": "Madde 22",
+    "expected_answer_summary": "Sayfa numarası, iletişim bilgilerinin altında sayfanın alt ortasına (örn. 1/2) şeklinde yazılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "25",
+            "score": 0.56799406
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5564738
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "11,12",
+            "score": 0.54657364
+          }
+        ],
+        "retrieval_score": 0.568
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "25",
+            "score": 0.56799406
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5564738
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "11,12",
+            "score": 0.54657364
+          }
+        ],
+        "retrieval_score": 0.568
+      }
+    }
+  },
+  {
+    "id": "RAG-036",
+    "question": "Resmi yazışmada T.C. ibaresi nereye yazılır?",
+    "expected_article": "Madde 10",
+    "expected_answer_summary": "T.C. ibaresi sayfanın üst orta kısmına, başlığın ilk satırı olarak yazılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.55294836
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.52834445
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5185011
+          }
+        ],
+        "retrieval_score": 0.5529
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Dilekçe Hakkının Kullanılmasına Dair Kanun",
+            "law_number": "3071",
+            "article": "4",
+            "score": 0.55294836
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.52834445
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5185011
+          }
+        ],
+        "retrieval_score": 0.5529
+      }
+    }
+  },
+  {
+    "id": "RAG-037",
+    "question": "Resmi Yazışma Kılavuzu'na göre e-Yazışma Paketi nedir?",
+    "expected_article": "e-Yazışma",
+    "expected_answer_summary": "Belgenin elektronik ortamda güvenli iletimini sağlayan standart paket yapısıdır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.58459806
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "28",
+            "score": 0.546545
+          }
+        ],
+        "retrieval_score": 0.5846
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.58459806
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "28",
+            "score": 0.546545
+          }
+        ],
+        "retrieval_score": 0.5846
+      }
+    }
+  },
+  {
+    "id": "RAG-038",
+    "question": "Elektronik ortamda hazırlanan belgeler hangi imza türüyle imzalanır?",
+    "expected_article": "Elektronik imza",
+    "expected_answer_summary": "Güvenli elektronik imza ile imzalanarak onaylanır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Belgenin doğrulanması esnasında; Belge doğrulaması yapılacak sunucuya ulaşılamaması [Resmî Yazışma Kılavuzu, resmi_yazisma_kilavuzu, Madde 28]",
+        "evidence": [
+          {
+            "evidence": "Belgenin doğrulanması esnasında; Belge doğrulaması yapılacak sunucuya ulaşılamaması",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "28",
+            "score": 0.59606755
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.5803008
+          }
+        ],
+        "retrieval_score": 0.5961
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Elektronik ortamda yapılan resmî yazışmalarda belgeyi oluşturan İdarenin kurumsal kimliğinin güvenilir şekilde tespit edilmesine imkân verilmesi kapsamında mülga Başbakanlığın 2017/21 sayılı Genelgesi kapsamında elektronik mühür (e-Mühür) kullanımı ile elektronik yazışmaların şifrelenerek gönderilebilmesi ve alınması için kurumsal şifreleme sertifikalarının kullanımı yönünde gerekli tanımlamalar yapılmıştır. [Resmî Yazışma Kılavuzu, resmi_yazisma_kilavuzu, Madde 27]",
+        "evidence": [
+          {
+            "evidence": "Elektronik ortamda yapılan resmî yazışmalarda belgeyi oluşturan İdarenin kurumsal kimliğinin güvenilir şekilde tespit edilmesine imkân verilmesi kapsamında mülga Başbakanlığın 2017/21 sayılı Genelgesi kapsamında elektronik mühür (e-Mühür) kullanımı ile elektronik yazışmaların şifrelenerek gönderilebilmesi ve alınması için kurumsal şifreleme sertifikalarının kullanımı yönünde gerekli tanımlamalar yapılmıştır.",
+            "source": "K2"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "28",
+            "score": 0.59606755
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "27",
+            "score": 0.5803008
+          }
+        ],
+        "retrieval_score": 0.5961
+      }
+    }
+  },
+  {
+    "id": "RAG-039",
+    "question": "Muhatap bölümünde idare adının yazım kuralı nedir?",
+    "expected_article": "Muhatap",
+    "expected_answer_summary": "Muhatap idare adı tamamen büyük harflerle yazılmalıdır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "14",
+            "score": 0.5801727
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5326026
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5213144
+          }
+        ],
+        "retrieval_score": 0.5802
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "14",
+            "score": 0.5801727
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5326026
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5213144
+          }
+        ],
+        "retrieval_score": 0.5802
+      }
+    }
+  },
+  {
+    "id": "RAG-040",
+    "question": "Dağıtım bölümünde yer alan 'Gereği' ve 'Bilgi' arasındaki fark nedir?",
+    "expected_article": "Dağıtım",
+    "expected_answer_summary": "Gereği kısmı eylemi yapacak kurumu, Bilgi kısmı ise süreçten haberdar olması gereken kurumu belirtir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- \"Gereği:\" altta; \"Bilgi:\" aynı satırda, ortaya doğru. [Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist), resmi_yazisma_yonetmeligi, Madde 19]",
+        "evidence": [
+          {
+            "evidence": "\"Gereği:\" altta; \"Bilgi:\" aynı satırda, ortaya doğru.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "19",
+            "score": 0.5614134
+          }
+        ],
+        "retrieval_score": 0.5614
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "19",
+            "score": 0.5614134
+          }
+        ],
+        "retrieval_score": 0.5614
+      }
+    }
+  },
+  {
+    "id": "RAG-041",
+    "question": "Ekler nasıl numaralandırılır ve sıralanır?",
+    "expected_article": "Ek",
+    "expected_answer_summary": "Birden fazla ek varsa numaralandırılır, isimleri yazılır, eklerin sayısı veya sayfa sayısı belirtilebilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Model yapılandırılmış mevzuat çıktısı üretemedi.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "18",
+            "score": 0.584607
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "19",
+            "score": 0.50671667
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "25",
+            "score": 0.5046251
+          }
+        ],
+        "retrieval_score": 0.5846
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "18",
+            "score": 0.584607
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "19",
+            "score": 0.50671667
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "25",
+            "score": 0.5046251
+          }
+        ],
+        "retrieval_score": 0.5846
+      }
+    }
+  },
+  {
+    "id": "RAG-042",
+    "question": "Metin içerisinde gün, ay, yıl kelimeleri harfle yazılabilir mi?",
+    "expected_article": "Tarih",
+    "expected_answer_summary": "Metin içinde geçen tarihler rakamla olduğu gibi harfle de yazılabilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.48400787
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.46663073
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "22",
+            "score": 0.46222916
+          }
+        ],
+        "retrieval_score": 0.484
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.48400787
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "Bolum_9",
+            "score": 0.46663073
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "22",
+            "score": 0.46222916
+          }
+        ],
+        "retrieval_score": 0.484
+      }
+    }
+  },
+  {
+    "id": "RAG-043",
+    "question": "Metin içindeki sayılar nasıl yazılmalıdır?",
+    "expected_article": "Metin",
+    "expected_answer_summary": "Sayılar rakamla veya harfle yazılabilir; büyük sayılarda gruplandırma yapılabilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "11,12",
+            "score": 0.54718417
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5247871
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.5128147
+          }
+        ],
+        "retrieval_score": 0.5472
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "11,12",
+            "score": 0.54718417
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5247871
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "17",
+            "score": 0.5128147
+          }
+        ],
+        "retrieval_score": 0.5472
+      }
+    }
+  },
+  {
+    "id": "RAG-044",
+    "question": "Fiziksel ortamda gizlilik dereceli belgeler nasıl iletilir?",
+    "expected_article": "Gizli",
+    "expected_answer_summary": "Çift zarf usulüyle ve silsile yoluyla teslim edilerek iletilir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Hizmete Özel gizlilik derecesine sahip belgeler ise elektronik ortamda üretilmelidir. [Resmî Yazışma Kılavuzu, resmi_yazisma_kilavuzu, Madde 22]",
+        "evidence": [
+          {
+            "evidence": "Hizmete Özel gizlilik derecesine sahip belgeler ise elektronik ortamda üretilmelidir.",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "22",
+            "score": 0.6149186
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "9",
+            "score": 0.5714718
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "21",
+            "score": 0.5712881
+          }
+        ],
+        "retrieval_score": 0.6149
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Mevzuat kaynağında soruyla ilgili şu bilgiler yer almaktadır:\n\n- Çok Gizli ve Gizli gizlilik derecesine sahip olan belgeler zorunlu hâl kapsamında fiziksel ortamda; [Resmî Yazışma Kılavuzu, resmi_yazisma_kilavuzu, Madde 22]",
+        "evidence": [
+          {
+            "evidence": "Çok Gizli ve Gizli gizlilik derecesine sahip olan belgeler zorunlu hâl kapsamında fiziksel ortamda;",
+            "source": "K1"
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "22",
+            "score": 0.6149186
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "9",
+            "score": 0.5714718
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "21",
+            "score": 0.5712881
+          }
+        ],
+        "retrieval_score": 0.6149
+      }
+    }
+  },
+  {
+    "id": "RAG-045",
+    "question": "Kılavuza göre iletişim bilgileri bölümü nasıl formatlanmalıdır?",
+    "expected_article": "İletişim",
+    "expected_answer_summary": "Sayfanın en altında tek çizgi çekilir, altına kurumu, adresi, telefonu, e-posta adresi, KEP adresi vb. sığdırılarak yazılır.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5835171
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5651191
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "25",
+            "score": 0.52230966
+          }
+        ],
+        "retrieval_score": 0.5835
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "6,7,8,9,10",
+            "score": 0.5835171
+          },
+          {
+            "source_id": "K2",
+            "source": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik (Checklist)",
+            "law_number": "resmi_yazisma_yonetmeligi",
+            "article": "16",
+            "score": 0.5651191
+          },
+          {
+            "source_id": "K3",
+            "source": "Resmî Yazışma Kılavuzu",
+            "law_number": "resmi_yazisma_kilavuzu",
+            "article": "25",
+            "score": 0.52230966
+          }
+        ],
+        "retrieval_score": 0.5835
+      }
+    }
+  },
+  {
+    "id": "EK-4982-M11",
+    "question": "4982 sayılı kanunda bilgi edinme başvurusuna kaç günde cevap verilir?",
+    "expected_article": "Madde 11",
+    "expected_answer_summary": "Kurum ve kuruluşlar başvuruya 15 iş günü içinde cevap verir.",
+    "results": {
+      "ollama": {
+        "status": "ok",
+        "provider": "ollama",
+        "model": "qwen2.5:3b-instruct",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.64265513
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.6053175
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "30",
+            "score": 0.57454956
+          }
+        ],
+        "retrieval_score": 0.6427
+      },
+      "evren": {
+        "status": "ok",
+        "provider": "evren",
+        "model": "llm-large",
+        "answer": "Sağlanan kaynaklarda soruya ilişkin doğrulanabilir bir bilgi çıkarılamadı.",
+        "evidence": [],
+        "sources": [
+          {
+            "source_id": "K1",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "13",
+            "score": 0.64265513
+          },
+          {
+            "source_id": "K2",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "11",
+            "score": 0.6053175
+          },
+          {
+            "source_id": "K3",
+            "source": "Bilgi Edinme Hakkı Kanunu",
+            "law_number": "4982",
+            "article": "30",
+            "score": 0.57454956
+          }
+        ],
+        "retrieval_score": 0.6427
+      }
+    }
+  }
+]

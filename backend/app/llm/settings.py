@@ -10,8 +10,35 @@ class LLMSettings:
 
     PROVIDER = os.getenv(
         "LLM_PROVIDER",
-        "ollama",
+        "evren",
     ).lower()
+
+    EVREN_BASE_URL = os.getenv(
+        "EVREN_BASE_URL",
+        "",
+    )
+
+    EVREN_API_KEY = os.getenv(
+        "EVREN_API_KEY",
+        "",
+    )
+
+    EVREN_MODEL_FAST = os.getenv(
+        "EVREN_MODEL_FAST",
+        "llm-fast",
+    )
+
+    EVREN_MODEL_LARGE = os.getenv(
+        "EVREN_MODEL_LARGE",
+        "llm-large",
+    )
+
+    EVREN_TIMEOUT_SECONDS = float(
+        os.getenv(
+            "EVREN_TIMEOUT_SECONDS",
+            "60",
+        )
+    )
 
     OLLAMA_URL = os.getenv(
         "OLLAMA_URL",
@@ -22,3 +49,12 @@ class LLMSettings:
         "OLLAMA_MODEL",
         "qwen2.5:3b-instruct",
     )
+
+    @classmethod
+    def get_provider(cls) -> str:
+        """Çalışma anındaki provider seçimini döndürür."""
+
+        return os.getenv(
+            "LLM_PROVIDER",
+            cls.PROVIDER,
+        ).strip().lower()
