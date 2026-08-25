@@ -5,9 +5,15 @@ interface InputPanelProps {
   onAnalyzeText: (text: string) => void;
   onUploadFile: (file: File) => void;
   isLoading: boolean;
+  uploadLabel?: string;
 }
 
-export const InputPanel: React.FC<InputPanelProps> = ({ onAnalyzeText, onUploadFile, isLoading }) => {
+export const InputPanel: React.FC<InputPanelProps> = ({
+  onAnalyzeText,
+  onUploadFile,
+  isLoading,
+  uploadLabel = "Belge Girişi",
+}) => {
   const [text, setText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -57,7 +63,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({ onAnalyzeText, onUploadF
     <div className="card mb-6">
       <div className="card-header">
         <FileText size={20} className="text-primary" />
-        Belge Girişi
+        {uploadLabel}
       </div>
       <div className="card-body">
         <div className="dashboard-grid" style={{ marginTop: 0 }}>

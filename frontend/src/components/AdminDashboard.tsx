@@ -1,0 +1,130 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, Clock3, FilePenLine, Files, RefreshCw, UserCheck, XCircle } from "lucide-react";
+import {
+  api,
+  type AnalysisListItem,
+  type PendingReviewItem,
+  type RoiSummary,
+} from "../services/api";
+
+interface Props {
+  onOpenAnalysis: (analysisId: string) => void | Promise<void>;
+}
+
+export const AdminDashboard: React.FC<Props> = ({ onOpenAnalysis }) => {
+  const [roi, setRoi] = useState<RoiSummary | null>(null);
+  const [analyses, setAnalyses] = useState<AnalysisListItem[]>([]);
+  const [pending, setPending] = useState<PendingReviewItem[]>([]);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [roiResult, analysesResult, pendingResult] = await Promise.all([
+        api.getRoiSummary(),
+        api.getAnalyses(20),
+        api.getPendingReviews(20),
+      ]);
+      setRoi(roiResult);
+      setAnalyses(analysesResult.items);
+      setPending(pendingResult.items);
+      setPendingTotal(pendingResult.total);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Yönetici verileri yüklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="admin-dashboard">
+      <div className="page-intro admin-intro">
+        <div>
+          <span className="section-kicker">Gerçek sistem verileri</span>
+          <h2>Operasyon Özeti</h2>
+          <p>İşlenen evraklar, personel incelemeleri ve mevcut AI işlem metrikleri.</p>
+        </div>
+        <button type="button" className="btn btn-secondary" onClick={() => void load()} disabled={loading}>
+          <RefreshCw size={16} /> Yenile
+        </button>
+      </div>
+
+      {error && <div className="inline-error" role="alert">{error}</div>}
+
+      <div className="metric-grid" aria-busy={loading}>
+        <Metric icon={<Files />} label="Toplam işlenen evrak" value={roi ? String(roi.processed_documents) : "—"} />
+        <Metric icon={<Clock3 />} label="Ortalama AI işlem süresi" value={roi ? `${roi.average_processing_seconds.toFixed(2)} sn` : "—"} />
+        <Metric icon={<UserCheck />} label="Human review oranı" value={roi ? `%${(roi.human_review_required_rate * 100).toFixed(1)}` : "—"} />
+        <Metric icon={<CheckCircle2 />} label="Onaylanan" value={roi ? String(roi.approved_count) : "—"} />
+        <Metric icon={<FilePenLine />} label="Düzenlenen" value={roi ? String(roi.edited_count) : "—"} />
+        <Metric icon={<XCircle />} label="Reddedilen" value={roi ? String(roi.rejected_count) : "—"} />
+        <Metric icon={<UserCheck />} label="İnceleme bekleyen" value={loading ? "—" : String(pendingTotal)} accent />
+      </div>
+
+      <section className="admin-table-card">
+        <div className="table-card-header"><div><span className="section-kicker">Kayıtlar</span><h3>Son Evraklar</h3></div><span>{analyses.length} kayıt gösteriliyor</span></div>
+        <div className="table-scroll">
+          <table className="admin-table">
+            <thead><tr><th>Belge</th><th>Tür / Konu</th><th>Önerilen birim</th><th>İnceleme durumu</th><th>Oluşturulma</th></tr></thead>
+            <tbody>
+              {analyses.length === 0 ? <EmptyRow columns={5} text={loading ? "Yükleniyor…" : "Henüz analiz kaydı bulunmuyor."} /> : analyses.map((item) => (
+                <tr key={item.analysis_id} className="clickable-row" onClick={() => void onOpenAnalysis(item.analysis_id)}>
+                  <td><strong>{item.document_id || shortId(item.analysis_id)}</strong><span>{shortId(item.analysis_id)}</span></td>
+                  <td><strong>{humanize(item.document_type || "Belirsiz")}</strong><span>{item.subject || humanize(item.process_intent || "Konu bulunmuyor")}</span></td>
+                  <td>{item.recommended_unit || "—"}</td>
+                  <td><StatusBadge status={item.human_review_status} /></td>
+                  <td>{formatDate(item.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="admin-table-card">
+        <div className="table-card-header"><div><span className="section-kicker">Personel kuyruğu</span><h3>İnceleme Bekleyenler</h3></div><span>{pendingTotal} bekleyen</span></div>
+        <div className="table-scroll">
+          <table className="admin-table">
+            <thead><tr><th>Analiz</th><th>Evrak</th><th>Önerilen birim</th><th>İnceleme nedeni</th><th>Oluşturulma</th></tr></thead>
+            <tbody>
+              {pending.length === 0 ? <EmptyRow columns={5} text={loading ? "Yükleniyor…" : "İnceleme bekleyen evrak bulunmuyor."} /> : pending.map((item) => (
+                <tr key={item.analysis_id} className="clickable-row" onClick={() => void onOpenAnalysis(item.analysis_id)}>
+                  <td><strong>{shortId(item.analysis_id)}</strong></td>
+                  <td>{humanize(item.document_type || "Belirsiz")}</td>
+                  <td>{item.recommended_unit || "—"}</td>
+                  <td>{item.review_reasons?.join(" ") || "Personel incelemesi gerekli."}</td>
+                  <td>{formatDate(item.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const Metric: React.FC<{ icon: React.ReactNode; label: string; value: string; accent?: boolean }> = ({ icon, label, value, accent }) => (
+  <div className={`metric-card ${accent ? "accent" : ""}`}><div className="metric-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong></div></div>
+);
+
+const EmptyRow: React.FC<{ columns: number; text: string }> = ({ columns, text }) => <tr><td colSpan={columns} className="empty-table">{text}</td></tr>;
+
+const StatusBadge: React.FC<{ status?: string }> = ({ status }) => {
+  const normalized = status || "bilinmiyor";
+  const className = normalized === "approved" || normalized === "approved_auto" ? "success" : normalized === "rejected" ? "danger" : normalized === "pending_review" ? "warning" : "neutral";
+  return <span className={`table-status ${className}`}>{humanize(normalized)}</span>;
+};
+
+function shortId(value: string): string { return value.length > 12 ? `${value.slice(0, 8)}…` : value; }
+function humanize(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
+function formatDate(value?: string): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("tr-TR", { dateStyle: "short", timeStyle: "short" }).format(date);
+}

@@ -45,7 +45,66 @@ export interface RoutingInfo {
 export interface DraftInfo {
   draft_type?: string;
   draft_text?: string;
-  official_render?: string;
+  rendered_text?: string;
+  official_rendered_text?: string;
+  draft?: {
+    subject?: string;
+    body?: string;
+    [key: string]: any;
+  };
+  edited_draft?: {
+    subject?: string;
+    body?: string;
+  };
+  mod_c_validated_context?: OfficialWritingContext;
+  official_render?: string | {
+    attempted?: boolean;
+    success?: boolean;
+    context?: OfficialWritingContext;
+    missing_fields?: string[];
+    warnings?: string[];
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+export interface OfficialWritingContext {
+  tc_baslik?: {
+    idare_adi?: string;
+    birim_adi?: string;
+  };
+  sayi?: string;
+  tarih?: string;
+  konu?: string;
+  muhatap?: {
+    tur?: string;
+    isim?: string;
+  } | string;
+  ilgi?: Array<{
+    tarih?: string;
+    sayi?: string;
+    aciklama?: string;
+  }>;
+  metin_paragraflari?: string[];
+  kapalis_ifadesi?: string;
+  imza?: {
+    ad_soyad?: string;
+    unvan?: string;
+    yetki_turu?: string;
+  };
+  ekler?: Array<{
+    ad?: string;
+    bilgi?: string;
+  }>;
+  dagitim?: {
+    geregi?: string[];
+    bilgi?: string[];
+  } | null;
+  iletisim?: {
+    adres?: string;
+    irtibat?: string;
+    telefon?: string;
+  };
   [key: string]: any;
 }
 
@@ -72,7 +131,7 @@ export interface HumanReview {
 export interface AuditEvent {
   event: string;
   timestamp: string;
-  message: string;
+  message?: string;
 }
 
 export interface DocumentState {
@@ -91,7 +150,7 @@ export interface DocumentState {
   human_review: HumanReview;
   
   warnings: string[];
-  node_timings: Record<string, number>;
+  node_timings: Record<string, number | { duration_ms?: number; status?: string }>;
   audit_history?: AuditEvent[];
   
   // allow legacy fields just in case

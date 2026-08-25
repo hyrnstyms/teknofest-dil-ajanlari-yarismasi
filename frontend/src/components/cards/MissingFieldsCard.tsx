@@ -11,8 +11,8 @@ export const MissingFieldsCard: React.FC<Props> = ({ missingFields }) => {
   
   if (fields.length === 0) {
     return (
-      <div className="card mb-4" style={{ borderColor: "var(--success-color)" }}>
-        <div className="card-header" style={{ backgroundColor: "#ecfdf5", color: "#065f46" }}>
+      <div className="card mb-4 missing-fields-state missing-fields-success">
+        <div className="card-header">
           <CheckCircle size={18}/> Eksik Bilgi Kontrolü
         </div>
         <div className="card-body">
@@ -23,8 +23,8 @@ export const MissingFieldsCard: React.FC<Props> = ({ missingFields }) => {
   }
 
   return (
-    <div className="card mb-4" style={{ borderColor: "var(--error-color)" }}>
-      <div className="card-header" style={{ backgroundColor: "#fef2f2", color: "#991b1b" }}>
+    <div className="card mb-4 missing-fields-state missing-fields-danger">
+      <div className="card-header">
         <AlertCircle size={18}/> Eksik Bilgiler
       </div>
       <div className="card-body">
