@@ -2,6 +2,19 @@ import { DocumentState } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+export interface InstitutionUiConfig {
+  title?: string;
+  description?: string;
+  upload_label?: string;
+  institution_display_name?: string;
+}
+
+export interface InstitutionOption {
+  id: string;
+  label: string;
+  ui_config: InstitutionUiConfig;
+}
+
 export const api = {
   async checkSystemReady(): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/ready`);
@@ -11,13 +24,23 @@ export const api = {
     return response.json();
   },
 
-  async analyzeText(text: string): Promise<DocumentState> {
+  async listInstitutionOptions(): Promise<InstitutionOption[]> {
+    const response = await fetch(`${API_BASE_URL}/api/institutions`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.institution_options;
+  },
+
+  async analyzeText(text: string, institution: string): Promise<DocumentState> {
     const response = await fetch(`${API_BASE_URL}/api/documents/analyze-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, institution }),
     });
 
     if (!response.ok) {
@@ -28,9 +51,10 @@ export const api = {
     return response.json();
   },
 
-  async uploadDocument(file: File): Promise<DocumentState> {
+  async uploadDocument(file: File, institution: string): Promise<DocumentState> {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("institution", institution);
 
     const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
       method: "POST",

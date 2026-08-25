@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Response
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
@@ -53,12 +53,9 @@ TASLAK_BAGLAMI_GEREKLI_MESAJI = (
 )
 
 # Lazy initialization for workflow and other services
-workflow = None
-def get_workflow():
-    global workflow
-    if workflow is None:
-        workflow = KamuaiWorkflow()
-    return workflow
+@lru_cache(maxsize=None)
+def get_workflow(institution: str = "kaymakamlik"):
+    return KamuaiWorkflow(institution=institution)
 
 
 @lru_cache(maxsize=1)
@@ -87,6 +84,7 @@ def get_ocr_service():
 class AnalyzeRequest(BaseModel):
     text: str
     document_id: Optional[str] = None
+    institution: Optional[str] = None
 
 class RejectRequest(BaseModel):
     reason: Optional[str] = None
@@ -178,7 +176,11 @@ def readiness_check():
 def analyze_text(req: AnalyzeRequest):
     try:
         doc_id = req.document_id or str(uuid.uuid4())
-        wf = get_workflow()
+        wf = (
+            get_workflow(req.institution)
+            if req.institution
+            else get_workflow()
+        )
         
         final_state = wf.run(req.text, document_id=doc_id)
         
@@ -204,7 +206,10 @@ def analyze_text(req: AnalyzeRequest):
 
 
 @app.post("/api/documents/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    institution: Optional[str] = Form(None),
+):
     file_path = None
     try:
         temp_dir = Path("temp_uploads")
@@ -259,7 +264,11 @@ async def upload_document(file: UploadFile = File(...)):
             os.remove(file_path)
         
         # Run analysis
-        req = AnalyzeRequest(text=raw_text, document_id=file.filename)
+        req = AnalyzeRequest(
+            text=raw_text,
+            document_id=file.filename,
+            institution=institution,
+        )
         return analyze_text(req)
         
     except HTTPException:
@@ -760,8 +769,21 @@ def list_institutions():
     """
     try:
         profiles = list_available_profiles()
+        institution_options = []
+        for profile_id in profiles:
+            profile = load_institution_profile(profile_id)
+            ui_config = profile.raw.get("ui_config", {})
+            if not isinstance(ui_config, dict):
+                ui_config = {}
+            display_name = ui_config.get("institution_display_name")
+            institution_options.append({
+                "id": profile_id,
+                "label": display_name or profile_id.replace("_", " ").title(),
+                "ui_config": ui_config,
+            })
         return {
             "institutions": profiles,
+            "institution_options": institution_options,
             "count": len(profiles),
         }
     except Exception as e:

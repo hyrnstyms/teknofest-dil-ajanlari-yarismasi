@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { InputPanel } from './components/InputPanel';
+import { InstitutionSelector } from './components/InstitutionSelector';
 import { ProcessingTimeline } from './components/ProcessingTimeline';
 import { Dashboard } from './components/Dashboard';
-import { api } from './services/api';
+import { api, type InstitutionOption } from './services/api';
 import { DocumentState } from './types';
 import './index.css';
 import { AlertCircle } from 'lucide-react';
@@ -13,12 +14,17 @@ function App() {
   const [appState, setAppState] = useState<DocumentState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [institution, setInstitution] = useState<InstitutionOption | null>(null);
 
   const handleAnalyzeText = async (text: string) => {
     resetState();
+    if (!institution) {
+      setError("Analize başlamadan önce bir kurum seçin.");
+      return;
+    }
     setIsLoading(true);
     try {
-      const result = await api.analyzeText(text);
+      const result = await api.analyzeText(text, institution.id);
       setAppState(result);
     } catch (err: any) {
       setError(err.message || "Analiz sırasında bir hata oluştu.");
@@ -29,9 +35,13 @@ function App() {
 
   const handleUploadFile = async (file: File) => {
     resetState();
+    if (!institution) {
+      setError("Analize başlamadan önce bir kurum seçin.");
+      return;
+    }
     setIsLoading(true);
     try {
-      const result = await api.uploadDocument(file);
+      const result = await api.uploadDocument(file, institution.id);
       setAppState(result);
     } catch (err: any) {
       setError(err.message || "Dosya yüklenirken bir hata oluştu.");
@@ -66,11 +76,21 @@ function App() {
   return (
     <div className="container">
       <Header />
+
+      <InstitutionSelector
+        value={institution?.id ?? ""}
+        onChange={(selectedInstitution) => {
+          setInstitution(selectedInstitution);
+          setError(null);
+        }}
+        disabled={isLoading}
+      />
       
       <InputPanel 
         onAnalyzeText={handleAnalyzeText} 
         onUploadFile={handleUploadFile} 
         isLoading={isLoading} 
+        uploadLabel={institution?.ui_config.upload_label}
       />
 
       {error && (

@@ -21,6 +21,12 @@ kurum:
   ust_makam: "Belediye Başkanı"
   yasal_dayanak: "5393 sayılı Belediye Kanunu"
 
+ui_config:
+  title: "Belediye Evrak İşlemleri"
+  description: "Belediye için evrak analizi ve resmî yazışma desteği."
+  upload_label: "Belediye Evrakı Yükle"
+  institution_display_name: "Belediye"
+
 # ---------------------------------------------------------------------------
 # 2. BİRİMLER
 # ---------------------------------------------------------------------------

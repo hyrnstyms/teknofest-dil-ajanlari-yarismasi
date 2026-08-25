@@ -20,6 +20,12 @@ kurum:
   ust_makam: "Kaymakam"
   yasal_dayanak: "5442 sayılı İl İdaresi Kanunu"
 
+ui_config:
+  title: "Kaymakamlık Evrak İşlemleri"
+  description: "Kaymakamlık için evrak analizi ve resmî yazışma desteği."
+  upload_label: "Kaymakamlık Evrakı Yükle"
+  institution_display_name: "Kaymakamlık"
+
 # ---------------------------------------------------------------------------
 # 2. BİRİMLER
 # ---------------------------------------------------------------------------
