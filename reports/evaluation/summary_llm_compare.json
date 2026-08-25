@@ -1,0 +1,328 @@
+{
+  "seed": 20260825,
+  "sample_size": 10,
+  "automatic_score": null,
+  "manual_review_required": true,
+  "comparisons": [
+    {
+      "id": "SENT-0018",
+      "document_type": "dilekce",
+      "difficulty": "kolay",
+      "expected_subject": "Bebek Aşı Takvimi Hakkında Bilgi Talebi",
+      "expected_request": "Bebek aşı takvimi ve ücretsiz aşılar hakkında bilgi almak istiyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nBAŞVURAN: Yasemin Belgin ERCAN\nAdres: Kiraz Mah. Dere Boylu Sok. No:20 Örenli\nT.C. Kimlik No: 77889900112\n\nKONU: Bebek Aşı Takvimi Hakkında Bilgi Talebi\n\nACIKLAMALAR:\n1. 3 aylık bebeğimin aşı takvimi konusunda hangi birimlere başvurmam gerektiği ve hangi aşıların ücretsiz uygulanacağı hakkında bilgi almak istiyorum.\n2. Gereğini arz ederim.\n\nEkler: —\n\nTarih: 08.08.2026\nİmza: Yasemin Belgin ERCAN",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Yasemin Belgin ERCAN, 3 aylık bebeğinin aşı takvimi konusunda ücretsiz uygulanacak aşıların hangi birimlere başvurulması gerektiği hakkında bilgi almak istiyor. Başvuru tarihi: 08.08.2026.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Yasemin Belgin ERCAN, 3 aylık bebeği için ücretsiz uygulanan aşılar ve başvurulacak birimler hakkında bilgi talep etmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0070",
+      "document_type": "sosyal_yardim_basvuru",
+      "difficulty": "zor",
+      "expected_subject": "Eş Vefatı Sonrası Çoklu Sosyal Destek Talebi",
+      "expected_request": "Kira, gıda, eğitim/kıyafet yardımı ve nakdi destek talep ediyorum; kira arabuluculuğu da istiyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\nSosyal Yardımlaşma ve Dayanışma Vakfı'na\n\nBAŞVURAN: Perihan Kezban TOPAL\nAdres: Çaybaşı Mah. Su Değirmeni Sok. No:21 Örenli\nT.C. Kimlik No: 45678321098\n\nYardım Talebinin Sebepleri:\nEşim 3 ay önce vefat etti. Beş çocuğum var; ikisi ilkokul, üçü ortaokul öğrencisi. Evimiz kiralık; kira birikti. Eşimin cenaze masrafları ve defin giderleri için borçlandım. Çocukların okul ihtiyaçları var. Gelirim sıfır. Yakın akrabalarım da geçim sıkıntısı içinde.\n\nTalep Edilen Yardım Türü:\nKira yardımı, gıda kolisi, çocukların eğitim kırtasiye ve kıyafet yardımı ile mümkünse kısa vadeli nakdi destek talep ediyorum. Kira konusunda ev sahibiyle görüşülmesi için de arabuluculuk yapılmasını istiyorum.\n\nGereğini arz ederim.\n\nEkler:\n1. Ölüm belgesi\n2. Nüfus cüzdanları (aile)\n3. Kira sözleşmesi\n4. Gelir beyan formu\n5. Çocuklara ait öğrenci belgeleri\n\nTarih: 10.08.2026\nİmza: Perihan Kezban TOPAL",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Perihan Kezban Topal, eşinin vefatından dolayı kira masrafları ve çocuklara ait eğitim ihtiyaçları için yardım talebi sunuyor. Gelir sıfır olan kişinin kira konusunda ev sahibiyle görüşülmesi ve kısa vadeli nakdi destek talep ediliyor.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Perihan Kezban Topal, eşinin vefatı, sıfır geliri ve çocuklarının ihtiyaçları nedeniyle kira, gıda, eğitim ve nakdi destek talebinde bulunmaktadır.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0047",
+      "document_type": "kurumlar_arasi_yazi",
+      "difficulty": "kolay",
+      "expected_subject": "Hazine Taşınmazlarına Ait Güncel Bilgi Talebi",
+      "expected_request": "Hazine taşınmazları güncel listesinin iletilmesi talep edilmektedir.",
+      "document_text": "T.C.\nÖRENLİ İLÇE KAYMAKAMLIĞI\nYazı İşleri Müdürlüğü\n\nSayı: E-12345678-900.17-017\nTarih: 09.08.2026\n\nKonu: Hazine Taşınmazlarına Ait Güncel Bilgi Talebi\n\nÖRENLİ TAPU MÜDÜRLÜĞÜNE\n\nMilli Emlak Genel Müdürlüğü'nün talebi doğrultusunda, ilçemiz sınırları içindeki Hazineye ait taşınmazların ada, parsel, yüzölçümü ve nitelik bilgilerini içeren güncel listenin 15.08.2026 tarihine kadar Kaymakamlığımıza iletilmesini talep ederim.\n\nKaymakam\nAdı SOYADI\nKaymakam",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "T.C. Örenli İlçe Kaymakamlığı, Hazine taşınmazlarının ada, parsel, yüzölçümü ve nitelik bilgilerini içeren güncel listesinin 15.08.2026 tarihine kadar Milli Emlak Genel Müdürlüğü'ne iletilmesini talep etti.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Örenli Kaymakamlığı, Milli Emlak Genel Müdürlüğü'nün talebi doğrultusunda, ilçedeki Hazine taşınmazlarına ait güncel bilgilerin 15.08.2026 tarihine kadar iletilmesini Örenli Tapu Müdürlüğü'nden talep etmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0087",
+      "document_type": "bilgi_edinme",
+      "difficulty": "kolay",
+      "expected_subject": "Bilgi Edinme Başvurusu",
+      "expected_request": "Mahalleler bazında Temmuz 2026 nüfus sayımı verilerini talep ediyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nAd Soyad: Betül Suna YAMAN\nAdres: Nüfus Mah. Kayıt Sok. No:11 Örenli\nT.C. Kimlik No: 77889900116\n\n4982 sayılı Bilgi Edinme Hakkı Kanunu gereğince istediğim bilgi veya belgeler aşağıda belirtilmiştir. Gereğini arz ederim.\n\nİSTENEN BİLGİ VEYA BELGELER:\nİlçenin mahalleler bazında 2026 yılı Temmuz ayı sonu nüfus sayımı verileri.\n\nTarih: 07.08.2026\nİmza: Betül Suna YAMAN",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Betül Suna YAMAN, Örenli ilçesinin 2026 yılı Temmuz ayı sonu nüfus sayım verilerini isteyeceği konusunda talep ettiği belgeleri arz etmektedir. İmza: Betül Suna YAMAN",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Betül Suna Yaman, 4982 sayılı Kanun kapsamında Örenli İlçe Kaymakamlığı'ndan 2026 yılı Temmuz ayı sonu itibarıyla ilçenin mahalle bazlı nüfus sayımı verilerini talep etmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0110",
+      "document_type": "bilgi_edinme",
+      "difficulty": "kolay",
+      "expected_subject": "Bilgi Edinme Başvurusu",
+      "expected_request": "2025 yılı organik tarım destekleme programı istatistiklerini talep ediyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nAd Soyad: Gültekin Münir SAHIN\nAdres: Tarım Mah. Çiftçi Cad. No:5 Örenli\nT.C. Kimlik No: 32333435363\n\n4982 sayılı Bilgi Edinme Hakkı Kanunu gereğince istediğim bilgi veya belgeler aşağıda belirtilmiştir. Gereğini arz ederim.\n\nİSTENEN BİLGİ VEYA BELGELER:\nİlçe sınırları içinde 2025 yılında uygulanan organik tarım destekleme programlarına katılan çiftçi sayısı ve ödenen destek miktarı.\n\nTarih: 01.08.2026\nİmza: Gültekin Münir SAHIN",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Gültekin Münir SAHIN, Örenli ilçesindeki çiftçilerin 2025 yılında uygulanmış organik tarım destekleme programlarına katılması ve ödenen tutarı istemiştir. İmza tarihi: 01.08.2026.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Gültekin Münir Şahin, 4982 sayılı Kanun kapsamında Örenli İlçe Kaymakamlığı'ndan 2025 yılında organik tarım destekleme programına katılan çiftçi sayısı ve ödenen destek miktarı bilgilerini talep etmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0020",
+      "document_type": "dilekce",
+      "difficulty": "kolay",
+      "expected_subject": "Vergi Borcu Yapılandırma Başvurusu",
+      "expected_request": "Vergi borcumun taksitlendirilmesini talep ediyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nBAŞVURAN: Hatice Ülkü BAŞKAYA\nAdres: Karaoğlan Mah. Çifte Kuyu Sok. No:2 Örenli\nT.C. Kimlik No: 99001122334\n\nKONU: Vergi Borcu Yapılandırma Başvurusu\n\nACIKLAMALAR:\n1. Tarafıma tebliğ edilen vergi borcu bildirimini aldım.\n2. Mevcut ekonomik koşullar nedeniyle tek seferde ödeme imkânım bulunmamaktadır.\n3. 6183 sayılı Amme Alacaklarının Tahsil Usulü Hakkında Kanun kapsamında borcun taksitlendirilmesi için başvuruda bulunuyorum.\n\nEkler: —\n\nTarih: 07.08.2026\nİmza: Hatice Ülkü BAŞKAYA",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Hatice Ülkü Başkaya, 6183 sayılı Kanun kapsamında vergi borcu taksitlendirilmesi için başvurudur. Borcun mevcut ekonomik koşullar nedeniyle tek seferde ödeme imkânı bulunmamaktadır.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Hatice Ülkü Başkaya, ekonomik koşullar nedeniyle tek seferde ödeme yapamadığını belirterek 6183 sayılı Kanun kapsamında vergi borcunun taksitlendirilmesini talep etmektedir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0002",
+      "document_type": "dilekce",
+      "difficulty": "kolay",
+      "expected_subject": "Mahalle Parkı Bakım ve Onarım Talebi",
+      "expected_request": "Parkın bakım ve onarımının yapılmasını talep ediyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nBAŞVURAN: Fatma Nur KILIÇ\nAdres: Bağcılar Mah. Çınar Cad. No:7 Örenli\nT.C. Kimlik No: 23456789012\nTelefon: 0542 333 44 55\n\nKONU: Mahalle Parkı Bakım ve Onarım Talebi\n\nACIKLAMALAR:\n1. Bağcılar Mahallesi'ndeki çocuk parkının oyun grupları ağır hasar görmüş olup kullanılamaz durumdadır.\n2. Tahterevalli ve kaydırak ekipmanlarının bazı parçaları kırılmıştır; bu durum çocuklar için ciddi yaralanma riski oluşturmaktadır.\n3. 5393 sayılı Belediye Kanunu çerçevesinde yetkili merciin müdahale etmesini talep ediyorum.\n4. Gereğini saygılarımla arz ederim.\n\nEkler:\n1. Hasarlı ekipmanlara ait fotoğraflar (3 adet)\n\nTarih: 07.08.2026\nİmza: Fatma Nur KILIÇ",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Fatma Nur KILIÇ, Bağcılar Mahallesi çocuk parkının oyun grupları ve tahterevalli ekipmanlarının ağır hasar görmüş olabileceğini iddia ederek, yetkili merciye müdahale talebi yapmıştır. Hasarlı ekipmanlara ait fotoğraflar eklenmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Fatma Nur KILIÇ, Bağcılar Mahallesi'ndeki çocuk parkındaki ağır hasarlı ve yaralanma riski taşıyan ekipmanların onarımı için Örenli İlçe Kaymakamlığı'na başvurmuştur.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0050",
+      "document_type": "ihale_itirazi",
+      "difficulty": "orta",
+      "expected_subject": "Temizlik Hizmetleri İhalesinde Teknik Şartname İtirazı",
+      "expected_request": "Şartnamedeki rekabeti engelleyen hükmün düzeltilmesini ve ihalenin ertelenmesini talep ediyoruz.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nBAŞVURAN: Güneş Temizlik Hizmetleri A.Ş.\nVergi No: 9876543210\nAdres: OSB Mah. Fabrika Sok. No:3 Örenli\nYetkilisi: Canan Nilüfer KÖKSAL\n\nKONU: Temizlik Hizmetleri İhalesinde Teknik Şartname İtirazı\n\nACIKLAMALAR:\n1. Kaymakamlık hizmet binalarının temizliğine ilişkin olarak 02.08.2026 tarihinde açılan ihaleye ait teknik şartnamede, mevcut piyasa koşullarıyla bağdaşmayan ve küçük firmaları piyasa dışı bırakan asgari personel sayısı şartı yer almaktadır.\n2. 4734 sayılı Kanun'un 12. maddesi kapsamında şartnamenin teknik kriterler yönünden rekabeti engelleyen hükmünün düzeltilmesini ve ihalenin ertelenmesini talep ediyoruz.\n\nEkler:\n1. Teknik şartnameye ilişkin piyasa analizi\n\nTarih: 04.08.2026\nİmza: Canan Nilüfer KÖKSAL",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Güneş Temizlik Hizmetleri A.Ş., Örenli ilçesinin temizliği konusunda açılan ihaleye ait teknik şartname, küçük firmaları piyasa dışı bırakan asgari personel sayısı şartını içeriyor. Şartname, 4734 sayılı Kanun'un 12. maddesi kapsamında rekabeti engelleyen hükmü düzeltilecek ve ihale ertelenmesi talep ediliyor.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Güneş Temizlik Hizmetleri A.Ş., Örenli İlçe Kaymakamlığına sunduğu itirazda, 02.08.2026 tarihli temizlik ihalesi teknik şartnamesindeki asgari personel şartının rekabeti engellediğini belirterek şartnamenin düzeltilmesini ve ihaleyi ertelenmesini talep etmektedir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0072",
+      "document_type": "tapu_kadastro_basvuru",
+      "difficulty": "kolay",
+      "expected_subject": "Miras Yoluyla İntikal Tapu Tescil Talebi",
+      "expected_request": "Miras kalan taşınmazın adıma tescil edilmesini talep ediyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nBAŞVURAN: Gülizar Ceylan TOPRAK\nAdres: Bostancı Mah. Balık Gölü Yolu No:6 Örenli\nT.C. Kimlik No: 22334466778\n\nMEVKİİ/TAŞINMAZ: Bostancı Mahallesi 310 Ada 22 Parsel\n\nKONU: Miras Yoluyla İntikal — Tapu Tescil Talebi\n\nACIKLAMALAR:\n1. Annem 2025 yılında vefat etmiş; 310 ada 22 parsel sayılı tarla taşınmazı miras yoluyla tarafıma kalmaktadır.\n2. Veraset ilamını aldım; taşınmazın adıma tescil edilmesini talep ediyorum.\n3. Gerekli belgeleri ekte sunmaktayım.\n\nEkler:\n1. Veraset ilamı\n2. Ölüm belgesi\n3. Tapu senedi (anne adına)\n\nTarih: 04.08.2026\nİmza: Gülizar Ceylan TOPRAK",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Gülizar Ceylan TOPRAK, annesinin ölümüyle birlikte taşınmazının miras yoluyla taşınmazı tescil etmesi talebi üzerine başvurmuştur. Taşınmazın adıma tescil edilmesi istenmektedir ve gerekli belgeler eklenmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Gülizar Ceylan TOPRAK, annesinden miras yoluyla intikal eden Bostancı Mahallesi 310 Ada 22 Parsel sayılı taşınmazın tapu tescilini talep etmektedir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    },
+    {
+      "id": "SENT-0082",
+      "document_type": "bilgi_edinme",
+      "difficulty": "kolay",
+      "expected_subject": "Bilgi Edinme Başvurusu",
+      "expected_request": "2024-2025 kamu ihale süreçleri ve sonuçlarını talep ediyorum.",
+      "document_text": "ÖRENLI İLÇE KAYMAKAMLIĞINA\n\nAd Soyad: Reyhan Filiz ÇOBAN\nAdres: Dere Mah. Meyva Bahçesi Sok. No:7 Örenli\nT.C. Kimlik No: 22334455661\n\n4982 sayılı Bilgi Edinme Hakkı Kanunu gereğince istediğim bilgi veya belgeler aşağıda belirtilmiştir. Gereğini arz ederim.\n\nİSTENEN BİLGİ VEYA BELGELER:\nKaymakamlık bünyesinde 2024-2025 yıllarında gerçekleştirilen kamu ihale süreçleri; ihale konuları, tutarları ve üstlenen firmalar.\n\nTarih: 02.08.2026\nİmza: Reyhan Filiz ÇOBAN",
+      "results": {
+        "ollama": {
+          "status": "ok",
+          "provider": "ollama",
+          "model": "qwen2.5:3b-instruct",
+          "summary": "Örenli ilçekaymakamlığına ait bir talep metnindendir. Talep edilen bilgiler, 2024-2025 yıllarında gerçekleştirilen kamu ihale süreçlerinin ihale konuları, tutarı ve üstlenen firmalarıdır.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        },
+        "evren": {
+          "status": "ok",
+          "provider": "evren",
+          "model": "llm-fast",
+          "summary": "Reyhan Filiz ÇOBAN, 4982 sayılı Kanun kapsamında Örenli İlçe Kaymakamlığı'ndan 2024-2025 yıllarına ait kamu ihale süreçlerine ilişkin bilgi talep etmiştir.",
+          "summary_mode": "llm_grounded",
+          "llm_status": "success",
+          "warnings": [
+            "Özet LLM tarafından üretildi, manuel kontrol önerilir."
+          ]
+        }
+      }
+    }
+  ]
+}
