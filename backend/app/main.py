@@ -22,6 +22,12 @@ from backend.app.agents.chat_agent import (
     handle_chat_message,
     resolve_chat_mode,
 )
+from backend.app.institutions.profile_loader import (
+    list_available_profiles,
+    load_institution_profile,
+)
+from backend.app.agents.transfer_agent import TransferAgent
+
 
 # Initialize FastAPI app
 app = FastAPI(title="KAMUAI MVP API")
@@ -732,3 +738,90 @@ def ebys_status():
     from backend.app.integrations.ebys import MockEBYSAdapter
     adapter = MockEBYSAdapter()
     return adapter.get_status()
+
+
+# ---------------------------------------------------------------------------
+# Track 3 — Çoklu Kurum Endpoint'leri
+# ---------------------------------------------------------------------------
+
+class TransferRequest(BaseModel):
+    kaynak_kurum: str
+    hedef_kurum: str
+    konu: str
+    evrak_ozeti: str
+    process_intent: Optional[str] = "iletim"
+
+
+@app.get("/api/institutions")
+def list_institutions():
+    """
+    Sistemde tanımlı tüm kurum profillerini listeler.
+    data/institutions/ altında YAML'u olan kurumları döndürür.
+    """
+    try:
+        profiles = list_available_profiles()
+        return {
+            "institutions": profiles,
+            "count": len(profiles),
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "institutions_error", "message": str(e)}
+        )
+
+
+@app.get("/api/institutions/{kurum_id}/profile")
+def get_institution_profile(kurum_id: str):
+    """
+    Belirtilen kurumun profil detaylını döndürür.
+    """
+    try:
+        profile = load_institution_profile(kurum_id)
+        return {
+            "kurum_id": kurum_id,
+            "kurum_adi": profile.kurum_adi,
+            "kurum_turu": profile.kurum_turu,
+            "birimler": profile.birimler,
+            "evrak_turleri": profile.evrak_turleri,
+            "yazi_turleri": profile.yazi_turleri,
+        }
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "institution_not_found",
+                "message": f"Kurum profili bulunamadı: '{kurum_id}'"
+            }
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "profile_parse_error", "message": str(e)}
+        )
+
+
+@app.post("/api/institutions/transfer")
+def institution_transfer(req: TransferRequest):
+    """
+    Kurumlar arası evrak transfer kararı üretir.
+
+    Örnek: Kaymakamılıktan Belediye'ye yapı ruhsatı ile
+    ilgili resmî yazı transferi.
+    """
+    try:
+        agent = TransferAgent()
+        result = agent.transfer(
+            kaynak_kurum=req.kaynak_kurum,
+            hedef_kurum=req.hedef_kurum,
+            konu=req.konu,
+            evrak_ozeti=req.evrak_ozeti,
+            process_intent=req.process_intent or "iletim",
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "transfer_error", "message": str(e)}
+        )
+

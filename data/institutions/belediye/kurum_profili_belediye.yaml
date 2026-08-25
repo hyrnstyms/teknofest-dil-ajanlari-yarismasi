@@ -1,0 +1,268 @@
+# =============================================================================
+# Kurum Profili: Örenli Belediyesi
+# =============================================================================
+# Kaynak  : 5393 sayılı Belediye Kanunu; Belediye ve Bağlı Kuruluşları ile
+#           Mahalli İdare Birlikleri Norm Kadro İlke ve Standartlarına Dair
+#           Yönetmelik
+# Tarih   : 2026-08-24
+# Branch  : track3-coklu-kurum
+#
+# NOT: Bu KURGUSAL bir kurumdur. Gerçek herhangi bir belediyeyi temsil
+# etmemektedir. TEKNOFEST 2026 Yapay Zeka Dil Ajanları Yarışması
+# (Track 3 — Çoklu Kurum) demo/test amacıyla tasarlanmıştır.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# 1. KURUM BİLGİLERİ
+# ---------------------------------------------------------------------------
+kurum:
+  ad: "Örenli Belediyesi"
+  tur: "belediye"
+  ust_makam: "Belediye Başkanı"
+  yasal_dayanak: "5393 sayılı Belediye Kanunu"
+
+# ---------------------------------------------------------------------------
+# 2. BİRİMLER
+# ---------------------------------------------------------------------------
+birimler:
+
+  # --- Evrensel birimler (Kaymakamlık ile aynı id'ler) ---
+  - id: yazi_isleri
+    ad: "Yazı İşleri Müdürlüğü"
+    aciklama: "Evrak kayıt, genel idare yazışmaları, meclis kararları, hukuk işleri"
+    anahtar_kelimeler:
+      - "dilekçe"
+      - "genel başvuru"
+      - "hukuk"
+      - "meclis kararı"
+      - "evrak kayıt"
+      - "bilgi edinme"
+    supported_intents:
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "basvuru"
+      - "sikayet"
+      - "itiraz"
+      - "izin_talebi"
+      - "bildirim"
+      - "cevap"
+      - "iletim"
+      - "diger"
+
+  - id: hukuk_isleri
+    ad: "Hukuk İşleri Müdürlüğü"
+    aciklama: "Belediye davalarının takibi, hukuki görüş, itiraz süreçleri"
+    anahtar_kelimeler:
+      - "dava"
+      - "hukuki görüş"
+      - "itiraz"
+      - "sözleşme"
+      - "ihtar"
+    supported_intents:
+      - "itiraz"
+      - "bilgi_talebi"
+      - "cevap"
+      - "bildirim"
+
+  - id: mali_hizmetler
+    ad: "Mali Hizmetler Müdürlüğü"
+    aciklama: "Vergi, harç, belediye gelirleri, bütçe, ihale"
+    anahtar_kelimeler:
+      - "vergi"
+      - "harç"
+      - "su faturası"
+      - "bütçe"
+      - "ihale"
+      - "ödeme"
+      - "borç"
+    supported_intents:
+      - "itiraz"
+      - "bilgi_talebi"
+      - "belge_talebi"
+      - "basvuru"
+      - "cevap"
+
+  # --- Belediye'ye özgü birimler ---
+  - id: imar_sehircilik
+    ad: "İmar ve Şehircilik Müdürlüğü"
+    aciklama: "İmar planları, yapı ruhsatı, iskan, yıkım kararları"
+    anahtar_kelimeler:
+      - "imar"
+      - "yapı ruhsatı"
+      - "iskan"
+      - "yıkım"
+      - "inşaat izni"
+      - "parsel"
+      - "imar planı"
+      - "plan tadilatı"
+    supported_intents:
+      - "basvuru"
+      - "izin_talebi"
+      - "belge_talebi"
+      - "itiraz"
+      - "bilgi_talebi"
+
+  - id: zabita
+    ad: "Zabıta Müdürlüğü"
+    aciklama: "İşyeri ruhsatı, denetim, gürültü, işgal, seyyar satıcı"
+    anahtar_kelimeler:
+      - "ruhsat"
+      - "işyeri"
+      - "denetim"
+      - "gürültü"
+      - "işgal"
+      - "seyyar satıcı"
+      - "kaçak yapı"
+      - "encümen"
+    supported_intents:
+      - "sikayet"
+      - "bildirim"
+      - "basvuru"
+      - "izin_talebi"
+      - "bilgi_talebi"
+
+  - id: fen_isleri
+    ad: "Fen İşleri Müdürlüğü"
+    aciklama: "Yol, kaldırım, alt yapı, onarım, asfalt"
+    anahtar_kelimeler:
+      - "yol"
+      - "kaldırım"
+      - "asfalt"
+      - "altyapı"
+      - "onarım"
+      - "çukur"
+      - "bozuk yol"
+      - "su borusu"
+    supported_intents:
+      - "sikayet"
+      - "bildirim"
+      - "basvuru"
+      - "bilgi_talebi"
+
+  - id: temizlik_isleri
+    ad: "Temizlik İşleri Müdürlüğü"
+    aciklama: "Çöp toplama, cadde temizliği, atık yönetimi"
+    anahtar_kelimeler:
+      - "çöp"
+      - "temizlik"
+      - "atık"
+      - "geri dönüşüm"
+      - "cadde"
+      - "koku"
+      - "moloz"
+    supported_intents:
+      - "sikayet"
+      - "bildirim"
+      - "basvuru"
+
+  - id: park_bahce
+    ad: "Park ve Bahçeler Müdürlüğü"
+    aciklama: "Yeşil alan, ağaç kesimi, park bakımı, peyzaj"
+    anahtar_kelimeler:
+      - "park"
+      - "yeşil alan"
+      - "ağaç"
+      - "peyzaj"
+      - "çiçek"
+      - "bahçe"
+    supported_intents:
+      - "sikayet"
+      - "basvuru"
+      - "izin_talebi"
+      - "bilgi_talebi"
+
+  - id: su_kanal
+    ad: "Su ve Kanalizasyon İşleri Müdürlüğü"
+    aciklama: "Su aboneliği, su kesintisi, kanal tıkanıklığı, su sayacı"
+    anahtar_kelimeler:
+      - "su"
+      - "abonelik"
+      - "su kesintisi"
+      - "kanal"
+      - "sayaç"
+      - "taşkın"
+      - "su faturası"
+    supported_intents:
+      - "basvuru"
+      - "sikayet"
+      - "bilgi_talebi"
+      - "itiraz"
+      - "bildirim"
+
+# ---------------------------------------------------------------------------
+# 3. EVRAK TÜRLERİ
+# ---------------------------------------------------------------------------
+evrak_turleri:
+  - id: dilekce
+    ad: "Vatandaş Dilekçesi"
+    aciklama: "3071 sayılı Kanun kapsamında genel talep/şikayet dilekçesi"
+    yasal_dayanak: "3071 sayılı Dilekçe Hakkının Kullanılmasına Dair Kanun"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+      - "zabita"
+      - "fen_isleri"
+
+  - id: bilgi_edinme
+    ad: "Bilgi Edinme Başvurusu"
+    aciklama: "4982 sayılı Kanun kapsamında bilgi/belge talebi"
+    yasal_dayanak: "4982 sayılı Bilgi Edinme Hakkı Kanunu"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+
+  - id: ruhsat_basvurusu
+    ad: "İşyeri Açma ve Çalışma Ruhsatı Başvurusu"
+    aciklama: "Belediye sınırları içinde işyeri açmak için gerekli ruhsat"
+    yasal_dayanak: "İşyeri Açma ve Çalışma Ruhsatlarına İlişkin Yönetmelik"
+    tipik_hedef_birim:
+      - "zabita"
+      - "mali_hizmetler"
+
+  - id: imar_talebi
+    ad: "İmar Durumu / Yapı Ruhsatı Talebi"
+    aciklama: "Parsel bazlı imar durumu belgesi veya yapı ruhsatı başvurusu"
+    yasal_dayanak: "3194 sayılı İmar Kanunu"
+    tipik_hedef_birim:
+      - "imar_sehircilik"
+
+  - id: sikayet
+    ad: "Şikayet Bildirimi"
+    aciklama: "Belediye hizmetlerine yönelik şikayet bildirimi"
+    yasal_dayanak: "5393 sayılı Belediye Kanunu Md. 77"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+      - "zabita"
+      - "fen_isleri"
+      - "temizlik_isleri"
+
+  - id: kurumlar_arasi_yazi
+    ad: "Kurumlar Arası Resmî Yazışma"
+    aciklama: "Başka bir kamu kurumundan gelen üst yazı/talep (ör. Kaymakamlık)"
+    yasal_dayanak: "Resmî Yazışma Yönetmeliği"
+    tipik_hedef_birim:
+      - "yazi_isleri"
+      - "imar_sehircilik"
+      - "fen_isleri"
+
+# ---------------------------------------------------------------------------
+# 4. YAZI TÜRLERİ — Şablon Eşleştirmesi (aynı şablonlar kullanılır)
+# ---------------------------------------------------------------------------
+yazi_turleri:
+  - id: ust_yazi
+    ad: "Üst Yazı"
+    kullanim_durumu: "Başka bir kuruma resmi talep/bilgi iletimi gerektiğinde"
+    sablon: "templates/ust_yazi.jinja2"
+
+  - id: cevap_yazisi
+    ad: "Cevap Yazısı"
+    kullanim_durumu: "Gelen bir dilekçe/talebe yanıt verilmesi gerektiğinde"
+    sablon: "templates/cevap_yazisi.jinja2"
+
+  - id: bilgilendirme_yazisi
+    ad: "Bilgilendirme Yazısı"
+    kullanim_durumu: "Süreç hakkında ilgili tarafa ara bilgi verilmesi gerektiğinde"
+    sablon: "templates/ust_yazi.jinja2"
+
+  - id: tekit_yazisi
+    ad: "Tekit Yazısı"
+    kullanim_durumu: "Önceki yazıya yanıt gelmediğinde hatırlatma amaçlı"
+    sablon: "templates/tekit_yazisi.jinja2"

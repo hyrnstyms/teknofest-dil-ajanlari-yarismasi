@@ -19,6 +19,7 @@ class DocumentState(BaseModel):
     missing_fields: Dict[str, Any] = Field(default_factory=dict)
     summary: Dict[str, Any] = Field(default_factory=dict)
     routing: Dict[str, Any] = Field(default_factory=dict)
+    transfer_routing: Dict[str, Any] = Field(default_factory=dict)  # Track 3: kurumlar arası transfer
     draft: Dict[str, Any] = Field(default_factory=dict)
     quality: Dict[str, Any] = Field(default_factory=dict)
     human_review: Dict[str, Any] = Field(default_factory=dict)
