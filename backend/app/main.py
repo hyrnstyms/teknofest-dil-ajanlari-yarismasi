@@ -110,27 +110,60 @@ def health_check():
 
 @app.get("/ready")
 def readiness_check():
-    # Check services (Ollama, Qdrant, Embedding) safely
+    # Check services (selected LLM, Qdrant, Embedding) safely
+    from backend.app.llm.settings import LLMSettings
+    import requests
+
     ready = True
+    provider = LLMSettings.get_provider()
     services = {
+        "llm": {
+            "provider": provider,
+            "status": "unknown",
+        },
+        # Frontend geriye uyumluluğu: Header bu alanı genel LLM durumu
+        # olarak okuyor. Gerçek sağlayıcı services.llm.provider alanındadır.
         "ollama": {"status": "unknown"},
         "qdrant": {"status": "unknown"},
         "embedding": {"status": "unknown"}
     }
     
-    # Try Ollama (just a ping or check settings)
+    # Check only the selected provider. EVREN check lists models and never
+    # creates an inference request.
     try:
-        from backend.app.llm.settings import LLMSettings
-        import requests
-        resp = requests.get(LLMSettings.OLLAMA_URL)
-        if resp.status_code == 200:
-            services["ollama"]["status"] = "ok"
+        if provider == "evren":
+            if not LLMSettings.EVREN_BASE_URL or not LLMSettings.EVREN_API_KEY:
+                raise RuntimeError("EVREN bağlantı ayarları eksik.")
+            resp = requests.get(
+                f"{LLMSettings.EVREN_BASE_URL.rstrip('/')}/models",
+                headers={
+                    "Authorization": (
+                        f"Bearer {LLMSettings.EVREN_API_KEY}"
+                    ),
+                },
+                timeout=5,
+            )
+        elif provider == "ollama":
+            resp = requests.get(
+                LLMSettings.OLLAMA_URL,
+                timeout=5,
+            )
         else:
-            services["ollama"]["status"] = "error"
+            raise ValueError(
+                f"Desteklenmeyen LLM provider: {provider}"
+            )
+
+        if resp.status_code == 200:
+            llm_status = "ok"
+        else:
+            llm_status = "error"
             ready = False
     except Exception:
-        services["ollama"]["status"] = "unreachable"
+        llm_status = "unreachable"
         ready = False
+
+    services["llm"]["status"] = llm_status
+    services["ollama"]["status"] = llm_status
         
     # Try Qdrant and Embedding via RAG system
     try:
@@ -571,6 +604,19 @@ def chat_message(req: ChatMessageRequest):
 @app.get("/api/system/status")
 def system_status():
     from backend.app.llm.settings import LLMSettings
+
+    provider = LLMSettings.get_provider()
+    if provider == "evren":
+        llm_model = LLMSettings.EVREN_MODEL_FAST
+        llm_models = {
+            "fast": LLMSettings.EVREN_MODEL_FAST,
+            "legal": LLMSettings.EVREN_MODEL_LARGE,
+        }
+    else:
+        llm_model = LLMSettings.OLLAMA_MODEL
+        llm_models = {
+            "default": LLMSettings.OLLAMA_MODEL,
+        }
     
     # Default values
     qdrant_total = 0
@@ -600,8 +646,10 @@ def system_status():
     
     return {
         "api": "online",
+        "llm_provider": provider,
         "ollama": LLMSettings.OLLAMA_URL,
-        "llm_model": LLMSettings.OLLAMA_MODEL,
+        "llm_model": llm_model,
+        "llm_models": llm_models,
         "embedding_model": "BAAI/bge-m3",
         "embedding_dimension": 1024,
         "qdrant": {

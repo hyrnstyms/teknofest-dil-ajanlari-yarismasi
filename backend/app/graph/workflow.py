@@ -24,10 +24,15 @@ class KamuaiWorkflow:
                          başka kurumlar da desteklenir (Track 3).
         """
         self.institution = institution
-        self.llm = create_llm_client()
+        self.llm = create_llm_client(
+            "document_agent"
+        )
+        self.legal_llm = create_llm_client(
+            "legal_agent"
+        )
         self.doc_agent = DocumentAgent(llm=self.llm)
         self.extract_agent = ExtractionAgent(llm=self.llm)
-        self.legal_agent = LegalAgent(llm=self.llm)
+        self.legal_agent = LegalAgent(llm=self.legal_llm)
         self.missing_field_agent = MissingFieldAgent()
         self.summary_agent = SummaryAgent(llm=self.llm)
         self.routing_agent = RoutingAgent(institution=institution)
