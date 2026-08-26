@@ -87,9 +87,9 @@ jobs:
           python -m pytest backend/tests/test_db_repository.py
           -k turkish_unicode_round_trip -vv
 
-  windows-docker-probe:
-    name: Windows hosted runner Docker probe
-    runs-on: windows-latest
+  docker-probe:
+    name: Linux service containers probe
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

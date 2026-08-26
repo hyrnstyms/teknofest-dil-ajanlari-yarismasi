@@ -3,6 +3,19 @@ from pathlib import Path
 from backend.app.agents.writing_agent import WritingAgent
 from backend.app.evaluation.schemas import EvaluationReport, CoverageInfo
 
+
+def find_forbidden_claims(text: str, claims: list[str]) -> list[str]:
+    def normalize(value: str) -> str:
+        value = str(value or "").translate(str.maketrans("Iİ", "ıi"))
+        return " ".join(value.casefold().split()).rstrip(".")
+
+    normalized = normalize(text)
+    return [
+        claim
+        for claim in claims
+        if normalize(claim) in normalized
+    ]
+
 def evaluate_writing() -> EvaluationReport:
     gold_path = Path("data/evaluation/writing/gold_taslaklar.jsonl")
     evraklar_path = Path("data/evaluation/synthetic/evraklar.jsonl")
@@ -34,6 +47,7 @@ def evaluate_writing() -> EvaluationReport:
     draft_type_acc = 0.0
     val_pass = 0.0
     req_sections_acc = 0.0
+    forbidden_claim_free = 0.0
     
     with open(gold_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -69,6 +83,20 @@ def evaluate_writing() -> EvaluationReport:
                         
                 from backend.app.official_writing.format_validator import format_validator
                 rendered_text = result.get("official_render", {}).get("rendered_text", "")
+                if not rendered_text:
+                    rendered_text = result.get("rendered_text", "") or ""
+                violations = find_forbidden_claims(
+                    rendered_text,
+                    gold.get("kullanilmasi_yasak_iddialar", []),
+                )
+                if not violations:
+                    forbidden_claim_free += 1.0
+                elif len(report.failure_examples) < 10:
+                    report.failure_examples.append({
+                        "step": "forbidden_claim",
+                        "id": source_id,
+                        "violations": violations,
+                    })
                 validator_res = format_validator.validate_official_writing(rendered_text) if rendered_text else None
                 
                 if validator_res and validator_res.is_valid:
@@ -102,6 +130,7 @@ def evaluate_writing() -> EvaluationReport:
         report.metrics["validator_pass_rate"] = val_pass / evaluable
         report.metrics["required_section_coverage"] = req_sections_acc / evaluable
         report.metrics["invalid_blocked_rate"] = 1.0 - (val_pass / evaluable)
+        report.metrics["forbidden_claim_free_rate"] = forbidden_claim_free / evaluable
         
     return report
 
