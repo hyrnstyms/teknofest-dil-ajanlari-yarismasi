@@ -14,7 +14,6 @@ Calıştırma:
     .venv\Scripts\python scripts/evaluation/index_test_pdfs.py
 """
 import sys
-import uuid
 import re
 
 sys.path.insert(0, ".")
@@ -23,6 +22,7 @@ import fitz  # pymupdf
 
 from backend.app.rag.embedding_service import EmbeddingService
 from backend.app.rag.qdrant_store import QdrantStore, LEGAL_COLLECTION
+from backend.app.rag.point_ids import deterministic_point_id
 
 # ─── Kaynak Mapping ──────────────────────────────────────────────────────────
 
@@ -151,13 +151,6 @@ def extract_articles_from_md(md_path: str) -> list[dict]:
     return articles
 
 
-def point_id(source_id: str, madde_no: str) -> str:
-    return str(uuid.uuid5(
-        uuid.NAMESPACE_URL,
-        f"kamuai_eval:{source_id}:{madde_no}",
-    ))
-
-
 # ─── Ana Indexleme ───────────────────────────────────────────────────────────
 
 def main():
@@ -189,8 +182,20 @@ def main():
             print("Madde bulunamadı, atlanıyor.")
             continue
 
+        articles = [
+            {**article, "chunk_index": index}
+            for index, article in enumerate(articles)
+        ]
         texts = [a["text"] for a in articles]
-        ids = [point_id(src["source_id"], a["madde_no"]) for a in articles]
+        ids = [
+            deterministic_point_id(
+                src["source_id"],
+                article["madde_no"],
+                article["chunk_index"],
+                article["text"],
+            )
+            for article in articles
+        ]
 
         existing = set()
         try:
@@ -225,6 +230,7 @@ def main():
                 "law_number": src["law_number"],
                 "rag_domain": src["rag_domain"],
                 "madde_no": a["madde_no"],
+                "chunk_index": a["chunk_index"],
                 "text": a["text"],
                 "trusted_source": True,
                 "corpus_type": "legal_knowledge",
@@ -233,6 +239,7 @@ def main():
                     "law_number": src["law_number"],
                     "rag_domain": src["rag_domain"],
                     "madde_no": a["madde_no"],
+                    "chunk_index": a["chunk_index"],
                     "source": src["source_id"],
                     "title": src["title"],
                     "trusted_source": True,
