@@ -95,8 +95,10 @@ export const IncomingDocumentsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) =
 export const DraftsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
   const { items, loading, error, load } = useDetailedAnalyses();
   const drafts = items.filter((item) => hasDraft(item.detail));
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const download = async (analysisId: string) => {
+    setDownloadError(null);
     const blob = await api.downloadDocx(analysisId);
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -109,7 +111,7 @@ export const DraftsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
   return (
     <div className="records-page no-print">
       <PageHeader icon={<FileText />} eyebrow="Resmî yazılar" title="Taslaklarım" description="Gerçek analiz kayıtlarında resmî yazı taslağı bulunan çalışmalar." onRefresh={load} loading={loading} />
-      {error && <div className="inline-error" role="alert">{error}</div>}
+      {(error || downloadError) && <div className="inline-error" role="alert">{error || downloadError}</div>}
       <div className="draft-grid">
         {drafts.length === 0 ? <div className="records-empty">{loading ? "Taslaklar yükleniyor…" : "Henüz oluşturulmuş resmî yazı taslağı bulunmuyor."}</div> : drafts.map((item) => (
           <article className="draft-card" key={item.analysis_id}>
@@ -120,7 +122,7 @@ export const DraftsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
             <Status value={item.human_review_status} />
             <div className="draft-actions">
               <button type="button" onClick={() => void onOpenAnalysis(item.analysis_id)}>A4 önizlemeyi aç</button>
-              <button type="button" onClick={() => void download(item.analysis_id)}><Download size={14} /> DOCX</button>
+              <button type="button" disabled={item.human_review_status !== "approved"} title={item.human_review_status === "approved" ? "Onaylı taslağı indir" : "DOCX için personel onayı gerekir"} onClick={() => void download(item.analysis_id).catch((downloadFailure) => setDownloadError(downloadFailure instanceof Error ? downloadFailure.message : "DOCX indirilemedi."))}><Download size={14} /> DOCX</button>
             </div>
           </article>
         ))}

@@ -335,3 +335,6 @@
 }
 .chat-quick-actions button:hover:not(:disabled) { background: #dcedf8; }
 .chat-quick-actions button:disabled { cursor: not-allowed; opacity: .55; }
+.chat-retry-button {
+  align-self: center; padding: 0.45rem 0.8rem; border: 1px solid var(--primary-color); border-radius: 999px; background: white; color: var(--primary-color); cursor: pointer;
+}

@@ -8,6 +8,31 @@ import type {
 import type { ROISummaryResponse } from "../types/metrics";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+function requestTimeout(input: RequestInfo | URL): number {
+  const target = String(input);
+  if (target.includes("/api/documents/")) return 180_000;
+  if (target.endsWith("/ready")) return 90_000;
+  return 30_000;
+}
+
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), requestTimeout(input));
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new ApiRequestError(
+        "analysis_timeout",
+        "İstek zaman aşımına uğradı. Lütfen tekrar deneyin.",
+        408,
+      );
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
 
 export interface InstitutionUiConfig {
   title?: string;
@@ -57,7 +82,7 @@ async function throwApiError(response: Response): Promise<never> {
 
 export const api = {
   async checkSystemReady(): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/ready`);
+    const response = await apiFetch(`${API_BASE_URL}/ready`);
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }
@@ -65,7 +90,7 @@ export const api = {
   },
 
   async listInstitutionOptions(): Promise<InstitutionOption[]> {
-    const response = await fetch(`${API_BASE_URL}/api/institutions`);
+    const response = await apiFetch(`${API_BASE_URL}/api/institutions`);
     if (!response.ok) {
       return throwApiError(response);
     }
@@ -74,7 +99,7 @@ export const api = {
   },
 
   async analyzeText(text: string, institution?: string): Promise<DocumentState> {
-    const response = await fetch(`${API_BASE_URL}/api/documents/analyze-text`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/documents/analyze-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -94,7 +119,7 @@ export const api = {
     formData.append("file", file);
     if (institution) formData.append("institution", institution);
 
-    const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/documents/upload`, {
       method: "POST",
       body: formData,
     });
@@ -107,7 +132,7 @@ export const api = {
   },
 
   async approveAnalysis(analysisId: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/approve`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/analysis/${analysisId}/approve`, {
       method: "POST",
     });
 
@@ -120,7 +145,7 @@ export const api = {
   },
 
   async rejectAnalysis(analysisId: string, reason: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/reject`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/analysis/${analysisId}/reject`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -143,7 +168,7 @@ export const api = {
     if (params?.offset) searchParams.set('offset', String(params.offset));
     if (params?.status) searchParams.set('status', params.status);
 
-    const response = await fetch(`${API_BASE_URL}/api/analyses?${searchParams}`);
+    const response = await apiFetch(`${API_BASE_URL}/api/analyses?${searchParams}`);
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }
@@ -151,7 +176,7 @@ export const api = {
   },
 
   async getAnalysis(analysisId: string): Promise<DocumentState> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}`);
+    const response = await apiFetch(`${API_BASE_URL}/api/analysis/${analysisId}`);
     if (!response.ok) {
       return throwApiError(response);
     }
@@ -159,7 +184,7 @@ export const api = {
   },
 
   async getRoiSummary(): Promise<ROISummaryResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/roi/summary`);
+    const response = await apiFetch(`${API_BASE_URL}/api/roi/summary`);
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }
@@ -167,7 +192,7 @@ export const api = {
   },
 
   async getInstitutions(): Promise<{ institutions: string[]; count: number }> {
-    const response = await fetch(`${API_BASE_URL}/api/institutions`);
+    const response = await apiFetch(`${API_BASE_URL}/api/institutions`);
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }
@@ -175,7 +200,7 @@ export const api = {
   },
 
   async editAnalysis(analysisId: string, subject: string, body: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/edit`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/analysis/${analysisId}/edit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -196,7 +221,7 @@ export const api = {
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.offset) searchParams.set('offset', String(params.offset));
 
-    const response = await fetch(`${API_BASE_URL}/api/reviews/pending?${searchParams}`);
+    const response = await apiFetch(`${API_BASE_URL}/api/reviews/pending?${searchParams}`);
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }
@@ -208,7 +233,7 @@ export const api = {
   },
 
   async downloadDocx(analysisId: string): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/export/docx`);
+    const response = await apiFetch(`${API_BASE_URL}/api/analysis/${analysisId}/export/docx`);
     if (!response.ok) {
       return throwApiError(response);
     }

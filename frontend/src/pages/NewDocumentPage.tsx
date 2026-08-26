@@ -205,7 +205,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
       )}
 
       {/* Error Display */}
-      {error ? <ErrorDisplay error={error} /> : null}
+      {error ? <ErrorDisplay error={error} onRetry={() => void handleSubmit()} /> : null}
     </div>
   );
 };

@@ -42,6 +42,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
   const [error, setError] = useState<unknown>(null);
   const [downloading, setDownloading] = useState(false);
   const [activeTab, setActiveTab] = useState<'official' | 'raw'>('official');
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -51,21 +52,24 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     const fetchAnalysis = async () => {
       setLoading(true);
       setError(null);
       try {
         const data = await api.getAnalysis(id);
+        if (cancelled) return;
         setState(data);
         onAnalysisLoaded?.(data);
       } catch (requestError: unknown) {
-        setError(requestError);
+        if (!cancelled) setError(requestError);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchAnalysis();
-  }, [id, onAnalysisLoaded]);
+    void fetchAnalysis();
+    return () => { cancelled = true; };
+  }, [id, onAnalysisLoaded, reloadKey]);
 
   useEffect(() => {
     if (!externallyUpdatedDraft) return;
@@ -74,25 +78,19 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
     );
   }, [externallyUpdatedDraft]);
 
-  const handleUpdate = () => {
-    if (id) {
-      api.getAnalysis(id)
-        .then((data) => {
-          setState(data);
-          onAnalysisLoaded?.(data);
-        })
-        .catch((requestError: unknown) => setError(requestError));
-    }
+  const handleUpdate = async () => {
+    if (!id) return;
+    setError(null);
+    const data = await api.getAnalysis(id);
+    setState(data);
+    onAnalysisLoaded?.(data);
   };
 
   const handleDownloadDocx = async () => {
     if (!id) return;
     setDownloading(true);
     try {
-      const url = api.getDocxUrl(id);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('DOCX indirme hatası');
-      const blob = await response.blob();
+      const blob = await api.downloadDocx(id);
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -136,7 +134,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
     try {
       await api.editAnalysis(id, editSubject, editBody);
       setIsEditing(false);
-      handleUpdate();
+      await handleUpdate();
     } catch (requestError: unknown) {
       alert(requestError instanceof Error ? requestError.message : 'Düzenleme kaydedilemedi.');
     } finally {
@@ -162,6 +160,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
         <ErrorDisplay
           error={error || new Error('Bu analiz kaydı mevcut değil veya silinmiş olabilir.')}
           title="Analiz Bulunamadı"
+          onRetry={() => setReloadKey((value) => value + 1)}
         />
       </div>
     );
@@ -202,8 +201,8 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
           <button
             className="btn btn-primary"
             onClick={handleDownloadDocx}
-            disabled={downloading}
-            title="DOCX olarak indir"
+            disabled={downloading || state.human_review?.status !== 'approved'}
+            title={state.human_review?.status === 'approved' ? 'Onaylı taslağı DOCX olarak indir' : 'DOCX indirmek için önce personel onayı gerekir'}
           >
             <Download size={16} />
             {downloading ? 'İndiriliyor...' : 'DOCX İndir'}

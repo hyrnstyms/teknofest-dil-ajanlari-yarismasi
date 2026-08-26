@@ -40,6 +40,7 @@ export const ChatWidget: React.FC<Props> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const isOpenRef = useRef(isOpen);
   const [messages, setMessages] = useState<ChatUiMessage[]>([
     welcomeMessage(Boolean(analysisId)),
@@ -52,9 +53,11 @@ export const ChatWidget: React.FC<Props> = ({
   useEffect(() => {
     setMessages([welcomeMessage(Boolean(analysisId))]);
     setUnreadCount(analysisId && !isOpenRef.current ? 1 : 0);
+    setFailedMessage(null);
   }, [analysisId]);
 
   const handleSend = async (text: string) => {
+    setFailedMessage(null);
     setMessages((previous) => [
       ...previous,
       { id: messageId(), role: "user", text },
@@ -79,6 +82,7 @@ export const ChatWidget: React.FC<Props> = ({
         onDraftUpdated(result.updated_draft);
       }
     } catch (error) {
+      setFailedMessage(text);
       setMessages((previous) => [
         ...previous,
         {
@@ -115,6 +119,7 @@ export const ChatWidget: React.FC<Props> = ({
           hasDraft={Boolean(currentDraft)}
           institutionLabel={institutionLabel}
           onSend={handleSend}
+          onRetry={failedMessage ? () => handleSend(failedMessage) : undefined}
           onClose={() => setIsOpen(false)}
         />
       )}
