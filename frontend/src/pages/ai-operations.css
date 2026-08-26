@@ -565,3 +565,37 @@
   .aiops-bar-row { grid-template-columns: 82px 1fr 48px; gap: .35rem; }
   .aiops-bar-row span, .aiops-bar-row strong { font-size: .65rem; }
 }
+/* EVRAG AI showcase surface */
+.aiops-hero {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 20%, rgba(47,192,198,.22), transparent 18rem),
+    linear-gradient(125deg,#081c2d,#123d58 65%,#0b5960);
+  border-color: rgba(102,205,218,.25);
+}
+.aiops-hero::after {
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.16;
+  background-image:radial-gradient(circle,#c8f5f7 1px,transparent 1px); background-size:22px 22px;
+  mask-image:linear-gradient(90deg,transparent 38%,#000);
+}
+.aiops-hero > * { position:relative; z-index:1; }
+.aiops-tabs { padding:.28rem; background:#eaf1f4; border:1px solid #d7e3e8; border-radius:11px; width:max-content; max-width:100%; }
+.aiops-tab { border:0; border-radius:8px; }
+.aiops-tab.active { color:#fff; background:linear-gradient(135deg,#1d6dae,#0f8f91); box-shadow:0 5px 14px rgba(22,112,139,.2); }
+.aiops-status-card { position:relative; overflow:hidden; }
+.aiops-status-card::after { content:""; position:absolute; inset:auto 0 0; height:2px; background:linear-gradient(90deg,transparent,#32a8b5,transparent); opacity:.55; }
+.aiops-status-icon.ok { background:linear-gradient(145deg,#e7faf3,#dff5f4); }
+.aiops-panel { border-color:rgba(130,164,181,.33); box-shadow:0 9px 28px rgba(14,42,62,.07); }
+.aiops-primary-grid > .aiops-panel:first-child { background:linear-gradient(145deg,#fff,#f3f9fa); border-color:#c9e1e5; }
+.aiops-node { overflow:hidden; background:linear-gradient(145deg,#fff,#f3f7f9); }
+.aiops-node.complete::after { content:""; position:absolute; inset:auto 0 0; height:2px; background:linear-gradient(90deg,#18a26b,#27a8b4); opacity:.7; }
+.aiops-node:hover { transform:translateY(-2px); border-color:#77bdca; box-shadow:0 7px 18px rgba(21,98,122,.1); }
+.aiops-bar-row i { background:linear-gradient(90deg,#2469c9,#0f9a91); }
+.aiops-agent-card { overflow:hidden; transition:transform .18s ease,box-shadow .18s ease; }
+.aiops-agent-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(14,42,62,.1); }
+.aiops-evidence article { background:linear-gradient(145deg,#f8fcfd,#edf7f7); border-left-color:#0f9a91; box-shadow:0 7px 18px rgba(14,86,94,.07); }
+.aiops-tech-grid > div { position:relative; background:linear-gradient(145deg,#fbfdfe,#f0f6f8); }
+.aiops-tech-grid > div::before { content:""; position:absolute; left:.75rem; top:.65rem; width:5px; height:5px; border-radius:50%; background:#2499a5; box-shadow:0 0 0 4px rgba(36,153,165,.1); }
+.aiops-tech-grid > div small,.aiops-tech-grid > div strong { padding-left:.7rem; }
+.aiops-architecture { background:linear-gradient(120deg,#091d2f,#12455d,#0d6668); border:1px solid rgba(115,216,223,.2); }
+@media (prefers-reduced-motion:reduce){.aiops-node,.aiops-agent-card{transition:none}}

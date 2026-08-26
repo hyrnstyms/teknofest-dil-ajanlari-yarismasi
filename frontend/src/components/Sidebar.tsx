@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { BookOpen, Bot, FilePlus, FileText, Home, Inbox, Settings, ShieldCheck, UserCheck, LayoutDashboard } from "lucide-react";
+import { BookOpen, Bot, FilePlus, FileText, Home, Inbox, Settings, UserCheck, LayoutDashboard } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Ana Sayfa" },
@@ -17,11 +17,11 @@ export const Sidebar: React.FC = () => (
   <aside className="sidebar no-print">
     <div className="sidebar-brand">
       <div className="sidebar-logo">
-        <ShieldCheck size={28} className="text-primary" />
+        <span aria-hidden="true">E</span>
       </div>
       <div className="sidebar-brand-text">
-        <span className="sidebar-brand-title">EVRAG / KAMUAI</span>
-        <span className="sidebar-brand-subtitle">Akıllı Evrak ve Karar Destek</span>
+        <span className="sidebar-brand-title">EVRAG</span>
+        <span className="sidebar-brand-subtitle">Akıllı Kamu Evrak Sistemi</span>
       </div>
     </div>
     <nav className="sidebar-nav">

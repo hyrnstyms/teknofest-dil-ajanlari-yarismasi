@@ -65,17 +65,28 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
       {/* Üst Aksiyonlar */}
       <div className="home-hero">
         <div>
-          <h2 style={{ marginBottom: '0.5rem' }}>KAMUAI Evrak Masası</h2>
-          <p className="text-secondary">Kamu Evrak ve Yazışma Süreçleri için Akıllı Agent Destek Sistemi</p>
+          <span className="home-ai-kicker">EVRAG · YAPAY ZEKÂ DESTEKLİ</span>
+          <h2 style={{ marginBottom: '0.5rem' }}>Akıllı Evrak ve Karar Destek Sistemi</h2>
+          <p className="text-secondary">Kurumsal evrakları anlayan, mevzuatla ilişkilendiren ve doğru birime yönlendiren yapay zekâ destekli çalışma alanı.</p>
           <span className="selected-context institution-profile-badge">Kurum Profili: <strong>{institution?.label || "Seçilmedi"}</strong></span>
         </div>
-        <button
-          className="btn btn-primary"
-          style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
-          onClick={() => navigate('/yeni-evrak')}
-        >
-          <FilePlus size={20} /> Yeni Evrak Analiz Et
-        </button>
+        <div className="home-hero-product">
+          <div className="home-hero-actions">
+            <button className="btn btn-primary" onClick={() => navigate('/yeni-evrak')}>
+              <FilePlus size={18} /> Yeni Evrak Analizi
+            </button>
+            <button className="btn home-ai-button" onClick={() => navigate('/ai-operasyon')}>
+              <Activity size={17} /> AI Operasyon Merkezi
+            </button>
+          </div>
+          <div className="home-ai-flow" aria-label="EVRAG yapay zekâ işlem mimarisi">
+            {["Evrak", "Analiz", "Mevzuat", "Yönlendirme", "Taslak"].map((stage, index) => (
+              <React.Fragment key={stage}>
+                <span>{stage}</span>{index < 4 && <ArrowRight size={13} />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* İstatistik Kartları */}
