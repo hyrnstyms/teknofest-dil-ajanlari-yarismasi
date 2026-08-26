@@ -30,7 +30,6 @@ PDF Yapı Analizi (önceden doğrulandı):
 """
 
 import sys
-import uuid
 import re
 import argparse
 from pathlib import Path
@@ -38,6 +37,8 @@ from pathlib import Path
 sys.path.insert(0, ".")
 
 import pymupdf
+
+from backend.app.rag.point_ids import deterministic_point_id
 
 # ─── Kaynak Tanımları ────────────────────────────────────────────────────────
 
@@ -75,46 +76,12 @@ MADDE_PATTERN = re.compile(
 # ─── Metin Çıkarma ───────────────────────────────────────────────────────────
 
 def extract_text_with_ocr(pdf_path: str) -> str:
-    """
-    Taranmış PDF'den pytesseract + pdf2image ile metin çıkarır.
-    (backend/app/ocr/ocr_service.py'ye BAĞIMSIZ — Track C'ye dokunmaz)
+    """PDF text layer + PaddleOCR fallback via the production OCR service."""
+    from backend.app.ocr.ocr_service import OCRService
 
-    Bağımlılıklar (bu script'e özgü):
-        pip install pytesseract pdf2image
-        brew install tesseract tesseract-lang poppler
-    """
-    try:
-        import pytesseract
-        from pdf2image import convert_from_path
-    except ImportError as e:
-        print(f"  HATA: Eksik bağımlılık: {e}")
-        print("  Çözüm: pip install pytesseract pdf2image && brew install poppler")
-        return ""
-
-    try:
-        print("  PDF sayfalara dönüştürülüyor (dpi=200)...")
-        pages = convert_from_path(pdf_path, dpi=200)
-        print(f"  Toplam sayfa: {len(pages)}")
-    except Exception as e:
-        print(f"  HATA: PDF→görüntü dönüştürme başarısız: {e}")
-        return ""
-
-    all_text = []
-    for i, page in enumerate(pages):
-        try:
-            text = pytesseract.image_to_string(page, lang="tur")
-            if text.strip():
-                all_text.append(text.strip())
-                if i < 2:  # İlk 2 sayfa için önizleme
-                    print(f"  [Sayfa {i+1} önizleme]: {text.strip()[:120].replace(chr(10), ' ')}")
-        except Exception as e:
-            print(f"  [Sayfa {i+1}] OCR hatası: {e}")
-
-    result = "\n\n".join(all_text)
-    if result.strip():
-        print(f"  OCR başarılı: {len(result)} karakter çıkarıldı ({len(pages)} sayfa)")
-    else:
-        print("  OCR sonuç boş.")
+    result = OCRService().extract_text_from_pdf(pdf_path)
+    if not result or not result.strip():
+        raise RuntimeError("OCRService PDF'den metin çıkaramadı.")
     return result
 
 
@@ -167,14 +134,6 @@ def chunk_by_article(full_text: str, force_fallback: bool = False) -> list[dict]
 
 
 # ─── Point ID ────────────────────────────────────────────────────────────────
-
-def point_id(source_id: str, madde_no: str) -> str:
-    """index_test_pdfs.py ile aynı uuid5 deterministik ID üretimi."""
-    return str(uuid.uuid5(
-        uuid.NAMESPACE_URL,
-        f"kamuai_eval:{source_id}:{madde_no}",
-    ))
-
 
 # ─── Ana Fonksiyon ───────────────────────────────────────────────────────────
 
@@ -261,8 +220,21 @@ def main():
             print("  Chunk üretilemedi, atlanıyor.")
             continue
 
+        articles = [
+            {**article, "chunk_index": index}
+            for index, article in enumerate(articles)
+        ]
+
         # ID'ler
-        ids = [point_id(src["source_id"], a["madde_no"]) for a in articles]
+        ids = [
+            deterministic_point_id(
+                src["source_id"],
+                article["madde_no"],
+                article["chunk_index"],
+                article["text"],
+            )
+            for article in articles
+        ]
 
         if args.dry_run:
             # Dry-run: sadece chunk özetini göster
@@ -316,6 +288,7 @@ def main():
                 "law_number": src["law_number"],
                 "rag_domain": src["rag_domain"],
                 "madde_no": a["madde_no"],
+                "chunk_index": a["chunk_index"],
                 "text": a["text"],
                 "trusted_source": True,
                 "corpus_type": "legal_knowledge",
@@ -324,6 +297,7 @@ def main():
                     "law_number": src["law_number"],
                     "rag_domain": src["rag_domain"],
                     "madde_no": a["madde_no"],
+                    "chunk_index": a["chunk_index"],
                     "source": src["source_id"],
                     "title": src["title"],
                     "trusted_source": True,
