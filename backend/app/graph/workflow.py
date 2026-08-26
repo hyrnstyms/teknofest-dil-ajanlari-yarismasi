@@ -207,7 +207,6 @@ class KamuaiWorkflow:
                 sub,
                 req,
                 ext,
-                retrieved_documents=retrieved_documents,
             )
             if retrieval_warning:
                 res.setdefault("warnings", []).append(retrieval_warning)
