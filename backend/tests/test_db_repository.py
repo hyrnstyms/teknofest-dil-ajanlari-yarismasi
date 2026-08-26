@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 from sqlalchemy import create_engine, select, text
+from sqlalchemy.exc import IntegrityError
 
 from backend.app.db.models import Analysis
 from backend.app.db.repository import AnalysisRepository
@@ -107,6 +108,25 @@ def test_review_event_is_recorded_with_state_update(repository):
     assert events[0]["action"] == "approve"
     assert events[0]["payload"] == {"source": "review-endpoint"}
     assert repository.get_analysis("analysis-1")["human_review"]["status"] == "approved"
+
+
+def test_state_update_rolls_back_when_review_event_insert_fails(repository):
+    state = _state()
+    repository.save_analysis("analysis-1", state)
+    state["human_review"]["status"] = "approved"
+
+    with pytest.raises(IntegrityError):
+        repository.update_analysis_with_event(
+            "analysis-1",
+            state,
+            None,  # type: ignore[arg-type] -- deliberately violates NOT NULL
+            {},
+        )
+
+    stored = repository.get_analysis("analysis-1")
+    assert stored is not None
+    assert stored["human_review"]["status"] == "pending_review"
+    assert repository.list_review_events("analysis-1") == []
 
 
 def test_restart_simulation_reads_from_second_engine(tmp_path):
