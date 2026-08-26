@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FileSignature, Download } from "lucide-react";
 import { DraftInfo } from "../../types";
+import { api } from "../../services/api";
 
 interface Props {
   draft: DraftInfo;
@@ -25,7 +26,7 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
     if (!analysisId) return;
     setDownloading(true);
     try {
-      const response = await fetch(`/api/analysis/${analysisId}/export/docx`);
+      const response = await fetch(api.getDocxUrl(analysisId));
       if (!response.ok) {
         throw new Error("DOCX indirme hatası");
       }
@@ -48,7 +49,7 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
   if (!officialText && !rawDraftText) {
     return (
       <div className="card mb-4">
-        <div className="card-header"><FileSignature size={18}/> Resmî Yazı Taslağı</div>
+        <div className="card-header"><FileSignature size={18}/> Resmî Cevap Taslağı</div>
         <div className="card-body">
           <p className="text-secondary">Taslak oluşturulamadı.</p>
         </div>
@@ -60,7 +61,7 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
     <div className="card mb-4">
       <div className="card-header flex justify-between items-center w-full">
         <div className="flex items-center gap-2">
-          <FileSignature size={18}/> Resmî Yazı Taslağı
+          <FileSignature size={18}/> Resmî Cevap Taslağı
         </div>
         <div className="flex items-center gap-2">
           {draft.draft_type && (

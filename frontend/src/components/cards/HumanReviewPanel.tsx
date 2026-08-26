@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { UserCheck, Check, X } from "lucide-react";
+import { UserCheck, Check, Edit3, X } from "lucide-react";
 import { HumanReview } from "../../types";
 import { api } from "../../services/api";
 
@@ -7,23 +7,20 @@ interface Props {
   review: HumanReview;
   analysisId: string;
   onUpdate: () => void;
+  onEdit?: () => void;
 }
 
-export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate }) => {
+export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate, onEdit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
-
-  if (!review?.required) {
-    return null;
-  }
 
   const handleApprove = async () => {
     setIsSubmitting(true);
     try {
       await api.approveAnalysis(analysisId);
       onUpdate();
-    } catch (e) {
+    } catch {
       alert("Onaylanırken hata oluştu.");
     } finally {
       setIsSubmitting(false);
@@ -39,7 +36,7 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
     try {
       await api.rejectAnalysis(analysisId, rejectReason);
       onUpdate();
-    } catch (e) {
+    } catch {
       alert("Reddedilirken hata oluştu.");
     } finally {
       setIsSubmitting(false);
@@ -74,7 +71,8 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
   return (
     <div className="card mb-4 border-2" style={{ borderColor: "var(--warning-color)" }}>
       <div className="card-header bg-yellow-50" style={{ color: "#92400e" }}>
-        <UserCheck size={18} /> Personel Onayı Gerekiyor
+        <UserCheck size={18} />
+        {review?.required ? "Personel Onayı Gerekiyor" : "Personel Kararı"}
       </div>
       <div className="card-body">
         {showRejectForm ? (
@@ -105,6 +103,15 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
           </div>
         ) : (
           <div className="flex justify-center gap-4">
+            {onEdit && (
+              <button
+                className="btn btn-secondary"
+                onClick={onEdit}
+                disabled={isSubmitting}
+              >
+                <Edit3 size={18}/> Düzenle
+              </button>
+            )}
             <button 
               className="btn btn-success" 
               onClick={handleApprove}

@@ -10,7 +10,7 @@ export const Header: React.FC = () => {
       try {
         const data = await api.checkSystemReady();
         setStatus(data);
-      } catch (err) {
+      } catch {
         setStatus({ ready: false, services: {} });
       }
     };

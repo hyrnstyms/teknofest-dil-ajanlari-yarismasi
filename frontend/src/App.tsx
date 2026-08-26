@@ -1,107 +1,80 @@
-import React, { useState } from 'react';
-import { Header } from './components/Header';
-import { InputPanel } from './components/InputPanel';
-import { ProcessingTimeline } from './components/ProcessingTimeline';
-import { Dashboard } from './components/Dashboard';
-import { api } from './services/api';
+import React, { useCallback, useState } from 'react';
+import { BrowserRouter, Routes, Route, useMatch } from 'react-router-dom';
+import { Sidebar } from './components/Sidebar';
+import { HomePage } from './pages/HomePage';
+import { NewDocumentPage } from './pages/NewDocumentPage';
+import { DocumentWorkspacePage } from './pages/DocumentWorkspacePage';
+import { InboxPage } from './pages/InboxPage';
+import { AdminPage } from './pages/AdminPage';
+import { ChatWidget } from './components/chat/ChatWidget';
 import { DocumentState } from './types';
 import './index.css';
-import { AlertCircle } from 'lucide-react';
-import { ChatWidget } from './components/chat/ChatWidget';
 
 function App() {
-  const [appState, setAppState] = useState<DocumentState | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  );
+}
 
-  const handleAnalyzeText = async (text: string) => {
-    resetState();
-    setIsLoading(true);
-    try {
-      const result = await api.analyzeText(text);
-      setAppState(result);
-    } catch (err: any) {
-      setError(err.message || "Analiz sırasında bir hata oluştu.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+function AppShell() {
+  // ChatWidget state — lives at App level, outside routes
+  const [activeAnalysisId, setActiveAnalysisId] = useState<string | undefined>(undefined);
+  const [activeDraft, setActiveDraft] = useState<DocumentState["draft"] | undefined>(undefined);
+  const workspaceMatch = useMatch('/evrak/:id');
 
-  const handleUploadFile = async (file: File) => {
-    resetState();
-    setIsLoading(true);
-    try {
-      const result = await api.uploadDocument(file);
-      setAppState(result);
-    } catch (err: any) {
-      setError(err.message || "Dosya yüklenirken bir hata oluştu.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleAnalysisLoaded = useCallback((state: DocumentState) => {
+    setActiveAnalysisId(state.analysis_id);
+    setActiveDraft(state.draft);
+  }, []);
 
-  const resetState = () => {
-    setAppState(null);
-    setError(null);
-  };
+  const handleChatDraftUpdated = useCallback((updatedDraft: DocumentState["draft"]) => {
+    setActiveDraft(updatedDraft);
+  }, []);
 
-  // Mock a refresh action for the HumanReviewPanel if needed
-  // In a real app we might fetch the specific analysis ID again
-  const handleUpdate = () => {
-    // A simple hack to force re-render, assuming local state mutation in API was handled 
-    // or we can just update the state locally since we know it succeeded
-    if (appState) {
-      // For MVP, just refreshing the page or leaving it as is might be enough, 
-      // but let's just create a new object reference to force render
-      setAppState({ ...appState });
-    }
-  };
-
-  const handleChatDraftUpdated = (updatedDraft: DocumentState["draft"]) => {
-    setAppState((previous) =>
-      previous ? { ...previous, draft: updatedDraft } : previous
-    );
-  };
+  const chatAnalysisId = workspaceMatch?.params.id === activeAnalysisId
+    ? activeAnalysisId
+    : undefined;
+  const chatDraft = chatAnalysisId ? activeDraft : undefined;
 
   return (
-    <div className="container">
-      <Header />
-      
-      <InputPanel 
-        onAnalyzeText={handleAnalyzeText} 
-        onUploadFile={handleUploadFile} 
-        isLoading={isLoading} 
-      />
+    <>
+      <div className="app-layout">
+        <Sidebar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/yeni-evrak"
+              element={
+                <NewDocumentPage
+                  onAnalysisLoaded={handleAnalysisLoaded}
+                />
+              }
+            />
+            <Route
+              path="/evrak/:id"
+              element={
+                <DocumentWorkspacePage
+                  onAnalysisLoaded={handleAnalysisLoaded}
+                  externallyUpdatedDraft={chatDraft}
+                />
+              }
+            />
+            <Route path="/gelen-evraklar" element={<InboxPage />} />
+            <Route path="/yonetici" element={<AdminPage />} />
+          </Routes>
+        </main>
+      </div>
 
-      {error && (
-        <div className="card mb-6" style={{ borderColor: 'var(--error-color)' }}>
-          <div className="card-body bg-red-50 flex items-center gap-3 text-error">
-            <AlertCircle />
-            <div>
-              <p className="font-medium">İşlem Başarısız</p>
-              <p className="text-sm">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {(isLoading || appState) && (
-        <ProcessingTimeline 
-          nodeTimings={appState?.node_timings || {}} 
-          isLoading={isLoading} 
-        />
-      )}
-
-      {appState && (
-        <Dashboard state={appState} onUpdate={handleUpdate} />
-      )}
-
+      {/* Route içeriklerinin dışında; bütün sayfalarda görünür. */}
       <ChatWidget
-        analysisId={appState?.analysis_id}
-        currentDraft={appState?.draft}
+        analysisId={chatAnalysisId}
+        currentDraft={chatDraft}
         onDraftUpdated={handleChatDraftUpdated}
       />
-    </div>
+    </>
   );
 }
 
