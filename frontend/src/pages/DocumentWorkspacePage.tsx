@@ -8,6 +8,8 @@ import {
   Edit3,
   FileSignature,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { DocumentState, DraftInfo } from '../types';
@@ -22,9 +24,7 @@ import { LegalCard } from '../components/cards/LegalCard';
 import { RoutingCard } from '../components/cards/RoutingCard';
 import { QualityFormatCard } from '../components/cards/QualityFormatCard';
 import { HumanReviewPanel } from '../components/cards/HumanReviewPanel';
-import { ProcessingTimeline } from '../components/ProcessingTimeline';
-import { DecisionSummary } from '../components/DecisionSummary';
-import { AIProcessPanel } from '../components/AIProcessPanel';
+import { formatDate, formatDisplayName, formatInstitution, formatPriority, formatReviewStatus } from '../utils/presentation';
 
 interface Props {
   onAnalysisLoaded?: (state: DocumentState) => void;
@@ -42,6 +42,10 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
   const [error, setError] = useState<unknown>(null);
   const [downloading, setDownloading] = useState(false);
   const [activeTab, setActiveTab] = useState<'official' | 'raw'>('official');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'document' | 'legal' | 'draft'>('overview');
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [showDocument, setShowDocument] = useState(false);
 
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -51,21 +55,24 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     const fetchAnalysis = async () => {
       setLoading(true);
       setError(null);
       try {
         const data = await api.getAnalysis(id);
+        if (cancelled) return;
         setState(data);
         onAnalysisLoaded?.(data);
       } catch (requestError: unknown) {
-        setError(requestError);
+        if (!cancelled) setError(requestError);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchAnalysis();
-  }, [id, onAnalysisLoaded]);
+    void fetchAnalysis();
+    return () => { cancelled = true; };
+  }, [id, onAnalysisLoaded, reloadKey]);
 
   useEffect(() => {
     if (!externallyUpdatedDraft) return;
@@ -74,25 +81,19 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
     );
   }, [externallyUpdatedDraft]);
 
-  const handleUpdate = () => {
-    if (id) {
-      api.getAnalysis(id)
-        .then((data) => {
-          setState(data);
-          onAnalysisLoaded?.(data);
-        })
-        .catch((requestError: unknown) => setError(requestError));
-    }
+  const handleUpdate = async () => {
+    if (!id) return;
+    setError(null);
+    const data = await api.getAnalysis(id);
+    setState(data);
+    onAnalysisLoaded?.(data);
   };
 
   const handleDownloadDocx = async () => {
     if (!id) return;
     setDownloading(true);
     try {
-      const url = api.getDocxUrl(id);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('DOCX indirme hatası');
-      const blob = await response.blob();
+      const blob = await api.downloadDocx(id);
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -136,7 +137,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
     try {
       await api.editAnalysis(id, editSubject, editBody);
       setIsEditing(false);
-      handleUpdate();
+      await handleUpdate();
     } catch (requestError: unknown) {
       alert(requestError instanceof Error ? requestError.message : 'Düzenleme kaydedilemedi.');
     } finally {
@@ -162,6 +163,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
         <ErrorDisplay
           error={error || new Error('Bu analiz kaydı mevcut değil veya silinmiş olabilir.')}
           title="Analiz Bulunamadı"
+          onRetry={() => setReloadKey((value) => value + 1)}
         />
       </div>
     );
@@ -184,185 +186,120 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
       ? state.draft.rendered_text
       : state.draft?.draft_text || state.draft?.draft?.body || '');
 
+  const title = state.draft?.edited_draft?.subject || state.draft?.draft?.subject || state.document?.subject_excerpt || "Evrak Detayı";
+  const evidenceCount = Array.isArray(state.legal_analysis?.evidence) ? state.legal_analysis.evidence.length : 0;
+  const missingCount = (state.missing_fields?.missing_fields || []).length + (state.missing_fields?.uncertain_fields || []).length;
+  const compactStages = [
+    ["document_agent", "Belge"],
+    ["extraction_agent", "Analiz"],
+    ["legal_agent", "Mevzuat"],
+    ["routing_agent", "Yönlendirme"],
+    ["writing_agent", "Taslak"],
+    ["human_review_agent", "İnsan İncelemesi"],
+  ];
+
   return (
-    <div className="page-container">
-      {/* Top bar */}
-      <div className="workspace-topbar">
-        <button className="btn btn-secondary" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} /> Geri
-        </button>
-        <div className="flex gap-2">
-          <button
-            className="btn btn-secondary"
-            onClick={handlePrint}
-            title="Yazdır / PDF olarak kaydet"
-          >
-            <Printer size={16} /> Yazdır
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={handleDownloadDocx}
-            disabled={downloading}
-            title="DOCX olarak indir"
-          >
-            <Download size={16} />
-            {downloading ? 'İndiriliyor...' : 'DOCX İndir'}
-          </button>
-        </div>
-      </div>
-
-      <DecisionSummary state={state} />
-      <AIProcessPanel state={state} />
-
-      {/* Processing Timeline */}
-      {state.node_timings && Object.keys(state.node_timings).length > 0 && (
-        <ProcessingTimeline nodeTimings={state.node_timings} isLoading={false} />
-      )}
-
-      {/* Workspace Grid: Left = A4 Preview, Right = AI Cards */}
-      <div className="workspace-grid">
-        {/* Left: A4 Document Preview */}
-        <div className="workspace-left">
-          <div className="card">
-            <div className="card-header flex justify-between items-center w-full">
-              <div className="flex items-center gap-2">
-                <FileSignature size={18} /> Resmî Cevap Taslağı
-              </div>
-              <div className="flex items-center gap-2">
-                {state.draft?.draft_type && (
-                  <span className="badge badge-info" style={{ fontSize: '0.75rem' }}>
-                    {formatDraftType(state.draft.draft_type)}
-                  </span>
-                )}
-                {!isEditing && (
-                  <button
-                    className="btn btn-secondary"
-                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
-                    onClick={startEdit}
-                    title="Taslağı düzenle"
-                  >
-                    <Edit3 size={14} /> Düzenle
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="card-body" style={{ backgroundColor: '#f8fafc' }}>
-              {/* Tabs */}
-              {!isEditing && (
-                <div className="tabs">
-                  <div
-                    className={`tab ${activeTab === 'official' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('official')}
-                  >
-                    Resmî Görünüm
-                  </div>
-                  <div
-                    className={`tab ${activeTab === 'raw' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('raw')}
-                  >
-                    Ham Taslak
-                  </div>
-                </div>
-              )}
-
-              {isEditing ? (
-                <div className="flex-col gap-4">
-                  {/* Format validator warning */}
-                  <div
-                    className="flex items-center gap-2"
-                    style={{
-                      padding: '0.6rem 0.8rem',
-                      backgroundColor: '#fef3c7',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      color: '#92400e',
-                    }}
-                  >
-                    <AlertTriangle size={16} />
-                    <span>
-                      Manuel düzenlemeler resmî yazışma format kontrolünden
-                      otomatik olarak geçirilmez. Lütfen format kurallarına
-                      uygunluğu kendiniz doğrulayın.
-                    </span>
-                  </div>
-                  <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Konu:</label>
-                  <input
-                    type="text"
-                    value={editSubject}
-                    onChange={(e) => setEditSubject(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--border-radius)',
-                    }}
-                    disabled={editSaving}
-                  />
-                  <label style={{ fontWeight: 500, fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                    İçerik:
-                  </label>
-                  <textarea
-                    value={editBody}
-                    onChange={(e) => setEditBody(e.target.value)}
-                    style={{ minHeight: '400px' }}
-                    disabled={editSaving}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => setIsEditing(false)}
-                      disabled={editSaving}
-                    >
-                      İptal
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleSaveEdit}
-                      disabled={editSaving}
-                    >
-                      {editSaving ? 'Kaydediliyor...' : 'Kaydet'}
-                    </button>
-                  </div>
-                </div>
-              ) : activeTab === 'official' ? (
-                <div className="official-document print-area">
-                  {officialText || (
-                    <p className="text-center text-secondary" style={{ marginTop: '4rem' }}>
-                      Resmî görünüm mevcut değil.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <textarea
-                  readOnly
-                  value={rawDraftText || 'Ham taslak mevcut değil.'}
-                  style={{ minHeight: '400px', backgroundColor: '#fff' }}
-                />
-              )}
-            </div>
+    <div className="page-container product-workspace">
+      <header className="workspace-product-header">
+        <div>
+          <button className="workspace-breadcrumb" type="button" onClick={() => navigate('/gelen-evraklar')}>Gelen Evraklar / Evrak Detayı</button>
+          <h1>{title}</h1>
+          <div className="workspace-meta">
+            <span>{formatInstitution(state.kurum_profili_id)}</span><i>•</i>
+            <span>{formatDisplayName(state.document?.document_type)}</span><i>•</i>
+            <span>{formatDate(state.created_at)}</span><i>•</i>
+            <span className={"record-status " + statusTone(state.human_review?.status)}>{formatReviewStatus(state.human_review?.status)}</span>
           </div>
         </div>
+        <div className="workspace-header-actions">
+          <button className="btn btn-secondary" type="button" aria-pressed={showDocument} onClick={() => setShowDocument((visible) => !visible)}>
+            {showDocument ? <EyeOff size={17}/> : <Eye size={17}/>}{showDocument ? 'Belgeyi Gizle' : 'Belgeyi Göster'}
+          </button>
+          {state.human_review?.status === 'approved' ? (
+            <button className="btn btn-primary" type="button" onClick={handleDownloadDocx} disabled={downloading}><Download size={17}/>{downloading ? 'İndiriliyor' : 'DOCX İndir'}</button>
+          ) : (
+            <button className="btn btn-primary" type="button" onClick={() => { setWorkspaceTab('draft'); setReviewOpen(true); }}>İncelemeyi Tamamla</button>
+          )}
+        </div>
+      </header>
 
-        {/* Right: AI Analysis Cards */}
-        <div className="workspace-right">
-          <AnalysisCard document={state.document} documentId={state.document_id} />
+      <div className={`workspace-view-shell ${showDocument ? 'document-visible' : ''}`}>
+        {showDocument && <aside className="original-document-viewer" aria-label="Orijinal belge önizlemesi">
+          <header><div><span>Orijinal Belge</span><strong>Çıkarılmış metin önizlemesi</strong></div><button type="button" onClick={() => setShowDocument(false)} aria-label="Belge önizlemesini kapat"><EyeOff size={17}/></button></header>
+          <div className="document-preview-canvas">
+            <article className="a4-original-paper">
+              {state.raw_text?.trim() ? <pre>{state.raw_text}</pre> : <div className="document-preview-unavailable"><FileSignature size={28}/><strong>Belge önizlemesi kullanılamıyor</strong><p>Bu kayıt için kaynak dosya veya çıkarılmış metin bulunmuyor.</p></div>}
+            </article>
+          </div>
+        </aside>}
+        <div className="workspace-main-pane">
+
+      <section className="workspace-decision-hero">
+        <div className="workspace-decision-main">
+          <span>AI Karar Özeti</span>
+          <small>Önerilen Birim</small>
+          <h2>{state.routing?.recommended_unit || "Personel değerlendirmesi gerekli"}</h2>
+          {state.routing?.reason && <p>{state.routing.reason}</p>}
+        </div>
+        <div className="workspace-decision-facts">
+          <Fact label="Evrak Türü" value={formatDisplayName(state.document?.document_type)} />
+          <Fact label="İşlem" value={formatDisplayName(state.document?.process_intent)} />
+          <Fact label="Öncelik" value={formatPriority(state.document?.priority || state.priority)} />
+        </div>
+      </section>
+
+      <nav className="workspace-tabs" aria-label="Evrak çalışma alanı">
+        {([
+          ['overview', 'Genel Bakış'],
+          ['document', 'Belge Bilgileri'],
+          ['legal', 'Mevzuat'],
+          ['draft', 'Taslak'],
+        ] as const).map(([key, label]) => <button key={key} type="button" className={workspaceTab === key ? 'active' : ''} onClick={() => setWorkspaceTab(key)}>{label}{key === 'legal' && evidenceCount > 0 ? <span>{evidenceCount}</span> : null}</button>)}
+      </nav>
+
+      {workspaceTab === 'overview' && <div className="workspace-overview-grid">
+        <section className="workspace-section">
+          <h2>Özet</h2>
           <SummaryCard summary={state.summary} />
-          <ExtractionCard extraction={state.extraction} />
-          <MissingFieldsCard missingFields={state.missing_fields} />
-          <LegalCard legalAnalysis={state.legal_analysis} />
-          <RoutingCard routing={state.routing} />
-          <QualityFormatCard quality={state.quality} />
-          <HumanReviewPanel
-            review={state.human_review}
-            analysisId={state.analysis_id || state.document_id}
-            onUpdate={handleUpdate}
-            onEdit={startEdit}
-          />
+        </section>
+        <section className="workspace-glance">
+          <div><strong>{missingCount}</strong><span>Eksik veya belirsiz bilgi</span><button type="button" onClick={() => setWorkspaceTab('document')}>Detayları Gör</button></div>
+          <div><strong>{evidenceCount}</strong><span>Doğrulanmış mevzuat kaynağı</span><button type="button" onClick={() => setWorkspaceTab('legal')}>Kaynakları Gör</button></div>
+          <div><strong>{formatReviewStatus(state.human_review?.status)}</strong><span>Personel incelemesi</span><button type="button" onClick={() => setWorkspaceTab('draft')}>Taslağı Gör</button></div>
+        </section>
+        <section className="workspace-process-compact">
+          <div><h2>AI İşlem Akışı</h2><p>Yalnız tamamlanmış backend aşamaları gösterilir.</p></div>
+          <div className="workspace-process-steps">{compactStages.map(([key, label]) => <div className={state.node_timings?.[key] ? 'complete' : ''} key={key}><span>{state.node_timings?.[key] ? '✓' : '○'}</span><strong>{label}</strong></div>)}</div>
+        </section>
+      </div>}
+
+      {workspaceTab === 'document' && <div className="workspace-detail-grid">
+        <div><AnalysisCard document={state.document} /><ExtractionCard extraction={state.extraction} /></div>
+        <MissingFieldsCard missingFields={state.missing_fields} />
+      </div>}
+
+      {workspaceTab === 'legal' && <section className="workspace-legal"><LegalCard legalAnalysis={state.legal_analysis} /></section>}
+
+      {workspaceTab === 'draft' && <div className="workspace-draft-layout">
+        <section className="workspace-document-paper">
+          <header><div><span>Resmî Cevap Taslağı</span><strong>{formatDraftType(state.draft?.draft_type || '')}</strong></div>{!isEditing && <button type="button" className="btn btn-secondary" onClick={startEdit}><Edit3 size={15}/>Düzenle</button>}</header>
+          {isEditing ? <div className="draft-edit-form">
+            <div className="review-disclaimer"><AlertTriangle size={16}/>Manuel düzenlemeleri resmî işlem öncesinde kontrol edin.</div>
+            <label>Konu<input value={editSubject} onChange={(event) => setEditSubject(event.target.value)} disabled={editSaving}/></label>
+            <label>İçerik<textarea value={editBody} onChange={(event) => setEditBody(event.target.value)} disabled={editSaving}/></label>
+            <div className="flex gap-2 justify-end"><button className="btn btn-secondary" type="button" onClick={() => setIsEditing(false)}>İptal</button><button className="btn btn-primary" type="button" onClick={handleSaveEdit} disabled={editSaving}>{editSaving ? 'Kaydediliyor' : 'Kaydet'}</button></div>
+          </div> : <div className="official-document">{officialText || rawDraftText || <p className="workspace-empty">Henüz resmî taslak oluşturulmadı.</p>}</div>}
+        </section>
+        <aside className="workspace-draft-side"><RoutingCard routing={state.routing}/><QualityFormatCard quality={state.quality}/>{!reviewOpen && state.human_review?.status !== 'approved' && <button className="btn btn-primary" type="button" onClick={() => setReviewOpen(true)}>İncelemeyi Tamamla</button>}{reviewOpen && <div className="review-sheet"><header><h2>Personel İncelemesi</h2><button type="button" onClick={() => setReviewOpen(false)}>×</button></header><HumanReviewPanel review={state.human_review} analysisId={state.analysis_id || state.document_id} onUpdate={async () => { await handleUpdate(); setReviewOpen(false); }} onEdit={() => { startEdit(); setReviewOpen(false); }}/></div>}</aside>
+      </div>}
         </div>
       </div>
     </div>
   );
 };
+
+const Fact: React.FC<{ label: string; value: string }> = ({ label, value }) => <div><span>{label}</span><strong>{value}</strong></div>;
+function statusTone(value?: string): string { return value?.includes('approved') ? 'success' : value === 'pending_review' ? 'warning' : value === 'rejected' ? 'danger' : 'neutral'; }
 
 function formatDraftType(type: string): string {
   switch (type) {

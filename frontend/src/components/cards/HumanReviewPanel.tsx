@@ -6,7 +6,7 @@ import { api } from "../../services/api";
 interface Props {
   review: HumanReview;
   analysisId: string;
-  onUpdate: () => void;
+  onUpdate: () => void | Promise<void>;
   onEdit?: () => void;
 }
 
@@ -19,7 +19,7 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
     setIsSubmitting(true);
     try {
       await api.approveAnalysis(analysisId);
-      onUpdate();
+      await onUpdate();
     } catch {
       alert("Onaylanırken hata oluştu.");
     } finally {
@@ -35,7 +35,7 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
     setIsSubmitting(true);
     try {
       await api.rejectAnalysis(analysisId, rejectReason);
-      onUpdate();
+      await onUpdate();
     } catch {
       alert("Reddedilirken hata oluştu.");
     } finally {

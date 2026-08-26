@@ -1,0 +1,601 @@
+.aiops-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: var(--text-primary);
+}
+
+.aiops-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  color: #f8fafc;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.aiops-hero .section-kicker {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #38bdf8;
+  margin-bottom: 0.5rem;
+}
+
+.aiops-hero h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #ffffff;
+}
+
+.aiops-hero p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.aiops-hero .btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.aiops-hero .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.aiops-tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0;
+  margin-bottom: 0.5rem;
+}
+
+.aiops-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aiops-tab:hover {
+  color: var(--text-primary);
+}
+
+.aiops-tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Status Grid */
+.aiops-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.aiops-status-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  align-items: center;
+}
+
+.aiops-status-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.aiops-status-icon.ok { background: #ecfdf5; color: #10b981; }
+.aiops-status-icon.warn { background: #fffbeb; color: #f59e0b; }
+
+.aiops-status-card div {
+  min-width: 0;
+}
+.aiops-status-card small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.aiops-status-card strong {
+  display: block;
+  font-size: 1.1rem;
+  margin: 0.2rem 0;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aiops-status-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Panels */
+.aiops-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.aiops-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.aiops-section-title span {
+  color: var(--primary-color);
+}
+
+.aiops-section-title h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+.aiops-section-title small {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 0.1rem;
+}
+
+/* Pipeline / Flow */
+.aiops-pipeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.aiops-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.aiops-node {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  min-width: 220px;
+  position: relative;
+}
+.aiops-node.complete {
+  border-left: 4px solid #10b981;
+}
+
+.aiops-node-index {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.aiops-node.complete .aiops-node-index {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.aiops-node-content {
+  flex: 1;
+}
+.aiops-node-content strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.aiops-node-content small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.aiops-node-time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.aiops-flow-arrow {
+  color: #cbd5e1;
+}
+
+/* Primary Grid (Pipeline + Summary) */
+.aiops-primary-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+/* Report DL */
+.aiops-report dl {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem 0;
+}
+.aiops-report dl > div {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.aiops-report dt {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.aiops-report dd {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin: 0;
+  text-align: right;
+}
+
+/* Performance Bars */
+.aiops-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.aiops-bar-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 80px;
+  align-items: center;
+  gap: 1rem;
+}
+.aiops-bar-row span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: right;
+}
+.aiops-bar-row > div {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.aiops-bar-row i {
+  display: block;
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+.aiops-bar-row strong {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+/* Secondary Grids */
+.aiops-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Agents */
+.aiops-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.aiops-agent-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+}
+.aiops-agent-dot {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 4px #ecfdf5;
+}
+.aiops-agent-card h3 {
+  font-size: 1.05rem;
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+}
+.aiops-agent-card small {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+.aiops-agent-card p {
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.5rem 0;
+  color: var(--text-secondary);
+  min-height: 2.5rem;
+}
+.aiops-agent-card strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.aiops-agent-card time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Evidence */
+.aiops-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.aiops-evidence article {
+  background: #f8fafc;
+  border-left: 4px solid var(--primary-color);
+  padding: 1rem;
+  border-radius: 0 8px 8px 0;
+}
+.aiops-evidence strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+.aiops-evidence span, .aiops-evidence small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+.aiops-evidence p {
+  font-size: 0.9rem;
+  margin: 0.75rem 0;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Tech Stack & Telemetry */
+.aiops-tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.aiops-tech-grid > div {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.aiops-tech-grid small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.aiops-tech-grid strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-top: 0.25rem;
+}
+.aiops-architecture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  flex-wrap: wrap;
+}
+.aiops-architecture b {
+  color: #38bdf8;
+}
+
+.aiops-telemetry {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.aiops-telemetry > div {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  border-radius: 8px;
+}
+.aiops-telemetry span {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+.aiops-telemetry span.available { background: #dcfce7; color: #166534; }
+.aiops-telemetry span.missing { background: #f1f5f9; color: #64748b; }
+.aiops-telemetry strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+.aiops-telemetry p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.aiops-empty, .aiops-inline-empty {
+  text-align: center;
+  padding: 3rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+.aiops-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .aiops-primary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .aiops-hero {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .aiops-flow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .aiops-flow-arrow {
+    transform: rotate(90deg);
+    text-align: center;
+  }
+  .aiops-tabs {
+    overflow-x: auto;
+  }
+}
+/* Final demo-density gate: keep status, workflow and summary visible at laptop widths. */
+@media (min-width: 1100px) {
+  .aiops-page {
+    max-width: 1600px;
+    padding: .75rem 1rem 1rem;
+    gap: .7rem;
+  }
+  .aiops-hero {
+    padding: .75rem 1rem;
+    align-items: center;
+  }
+  .aiops-hero .section-kicker { margin-bottom: .2rem; font-size: .65rem; }
+  .aiops-hero h1 { margin-bottom: .2rem; font-size: 1.35rem; }
+  .aiops-hero p { font-size: .8rem; }
+  .aiops-tabs { gap: .35rem; margin: 0; }
+  .aiops-tab { padding: .5rem .75rem; font-size: .78rem; }
+  .aiops-status-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .55rem;
+  }
+  .aiops-status-card { gap: .55rem; padding: .65rem; border-radius: 9px; }
+  .aiops-status-icon { width: 32px; height: 32px; border-radius: 8px; }
+  .aiops-status-icon svg { width: 17px; }
+  .aiops-status-card small { font-size: .62rem; }
+  .aiops-status-card strong { font-size: .82rem; margin: .08rem 0; }
+  .aiops-status-card p { font-size: .65rem; }
+  .aiops-primary-grid { grid-template-columns: minmax(0, 2.1fr) minmax(285px, .9fr); gap: .7rem; }
+  .aiops-panel { padding: .75rem; border-radius: 9px; }
+  .aiops-section-title { gap: .5rem; margin-bottom: .65rem; }
+  .aiops-section-title h2 { font-size: .92rem; }
+  .aiops-section-title small { font-size: .62rem; }
+  .aiops-flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .4rem;
+  }
+  .aiops-flow-arrow { display: none; }
+  .aiops-node { min-width: 0; gap: .4rem; padding: .45rem .5rem; }
+  .aiops-node-index { width: 20px; height: 20px; }
+  .aiops-node-content strong { font-size: .72rem; }
+  .aiops-node-content small { display: none; }
+  .aiops-node-time { font-size: .66rem; }
+  .aiops-report dl { gap: .2rem; margin-bottom: .55rem; }
+  .aiops-report dl > div { padding-bottom: .22rem; }
+  .aiops-report dt, .aiops-report dd { font-size: .68rem; }
+  .aiops-bars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem .7rem; }
+  .aiops-bar-row { grid-template-columns: 82px 1fr 48px; gap: .35rem; }
+  .aiops-bar-row span, .aiops-bar-row strong { font-size: .65rem; }
+}
+/* EVRAG AI showcase surface */
+.aiops-hero {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 20%, rgba(47,192,198,.22), transparent 18rem),
+    linear-gradient(125deg,#081c2d,#123d58 65%,#0b5960);
+  border-color: rgba(102,205,218,.25);
+}
+.aiops-hero::after {
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.16;
+  background-image:radial-gradient(circle,#c8f5f7 1px,transparent 1px); background-size:22px 22px;
+  mask-image:linear-gradient(90deg,transparent 38%,#000);
+}
+.aiops-hero > * { position:relative; z-index:1; }
+.aiops-tabs { padding:.28rem; background:#eaf1f4; border:1px solid #d7e3e8; border-radius:11px; width:max-content; max-width:100%; }
+.aiops-tab { border:0; border-radius:8px; }
+.aiops-tab.active { color:#fff; background:linear-gradient(135deg,#1d6dae,#0f8f91); box-shadow:0 5px 14px rgba(22,112,139,.2); }
+.aiops-status-card { position:relative; overflow:hidden; }
+.aiops-status-card::after { content:""; position:absolute; inset:auto 0 0; height:2px; background:linear-gradient(90deg,transparent,#32a8b5,transparent); opacity:.55; }
+.aiops-status-icon.ok { background:linear-gradient(145deg,#e7faf3,#dff5f4); }
+.aiops-panel { border-color:rgba(130,164,181,.33); box-shadow:0 9px 28px rgba(14,42,62,.07); }
+.aiops-primary-grid > .aiops-panel:first-child { background:linear-gradient(145deg,#fff,#f3f9fa); border-color:#c9e1e5; }
+.aiops-node { overflow:hidden; background:linear-gradient(145deg,#fff,#f3f7f9); }
+.aiops-node.complete::after { content:""; position:absolute; inset:auto 0 0; height:2px; background:linear-gradient(90deg,#18a26b,#27a8b4); opacity:.7; }
+.aiops-node:hover { transform:translateY(-2px); border-color:#77bdca; box-shadow:0 7px 18px rgba(21,98,122,.1); }
+.aiops-bar-row i { background:linear-gradient(90deg,#2469c9,#0f9a91); }
+.aiops-agent-card { overflow:hidden; transition:transform .18s ease,box-shadow .18s ease; }
+.aiops-agent-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(14,42,62,.1); }
+.aiops-evidence article { background:linear-gradient(145deg,#f8fcfd,#edf7f7); border-left-color:#0f9a91; box-shadow:0 7px 18px rgba(14,86,94,.07); }
+.aiops-tech-grid > div { position:relative; background:linear-gradient(145deg,#fbfdfe,#f0f6f8); }
+.aiops-tech-grid > div::before { content:""; position:absolute; left:.75rem; top:.65rem; width:5px; height:5px; border-radius:50%; background:#2499a5; box-shadow:0 0 0 4px rgba(36,153,165,.1); }
+.aiops-tech-grid > div small,.aiops-tech-grid > div strong { padding-left:.7rem; }
+.aiops-architecture { background:linear-gradient(120deg,#091d2f,#12455d,#0d6668); border:1px solid rgba(115,216,223,.2); }
+@media (prefers-reduced-motion:reduce){.aiops-node,.aiops-agent-card{transition:none}}
