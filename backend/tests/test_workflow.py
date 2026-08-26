@@ -151,3 +151,42 @@ def test_node_legal_keeps_explicit_document_law_reference():
     assert result["node_timings"]["legal_agent"]["status"] == "completed"
     assert "4734 sayılı Kanun" in captured["query"]
     assert captured["strict_explicit_law"] is True
+
+
+def test_node_routing_calls_agent_with_supported_contract():
+    captured = {}
+
+    class CapturingRoutingAgent:
+        def route(
+            self,
+            document_type,
+            process_intent,
+            subject,
+            request_text,
+            extracted_fields,
+        ):
+            captured.update({
+                "document_type": document_type,
+                "process_intent": process_intent,
+                "subject": subject,
+                "request_text": request_text,
+                "extracted_fields": extracted_fields,
+            })
+            return {"recommended_unit": "Temizlik İşleri Müdürlüğü"}
+
+    workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
+    workflow.routing_agent = CapturingRoutingAgent()
+    result = workflow.node_routing(DocumentState(
+        document={
+            "document_type": "sikayet",
+            "process_intent": "sikayet",
+            "subject_excerpt": "Çöp toplama şikayeti",
+            "request_excerpt": "Biriken çöplerin temizlenmesini talep ediyorum.",
+        },
+        extraction={"fields": {"subject": {"value": "Çöp toplama şikayeti"}}},
+    ))
+
+    assert result["node_timings"]["routing_agent"]["status"] == "completed"
+    assert result["routing"]["recommended_unit"] == "Temizlik İşleri Müdürlüğü"
+    assert captured["document_type"] == "sikayet"
+    assert captured["process_intent"] == "sikayet"
