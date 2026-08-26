@@ -2,7 +2,7 @@ import React from "react";
 import { CheckCircle2, CircleDashed, Loader2 } from "lucide-react";
 
 interface Props {
-  nodeTimings: Record<string, number>;
+  nodeTimings: Record<string, number | { duration_ms?: number; status?: string }>;
   isLoading: boolean;
 }
 
@@ -27,7 +27,13 @@ export const ProcessingTimeline: React.FC<Props> = ({ nodeTimings, isLoading }) 
       <div className="card-body p-4 bg-gray-50 flex items-center justify-between" style={{ overflowX: 'auto', padding: '1.5rem' }}>
         <div className="flex items-center gap-2" style={{ minWidth: 'max-content' }}>
           {steps.map((step, idx) => {
-            const timeTaken = nodeTimings ? nodeTimings[step.id] : undefined;
+            const timingKey = step.id.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+            const rawTiming = nodeTimings ? nodeTimings[step.id] ?? nodeTimings[timingKey] : undefined;
+            const timeTaken = typeof rawTiming === "number"
+              ? rawTiming
+              : rawTiming?.duration_ms !== undefined
+                ? rawTiming.duration_ms / 1000
+                : undefined;
             const isCompleted = timeTaken !== undefined;
             // Since we don't have real SSE progress for this MVP, 
             // if it's loading, we just show a generic loading state for the whole pipeline,

@@ -3,7 +3,14 @@ from qdrant_client import models
 
 import os
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+QDRANT_TIMEOUT_SECONDS = int(os.getenv("QDRANT_TIMEOUT_SECONDS", "60"))
 
 VECTOR_SIZE = 1024
 
@@ -16,9 +23,15 @@ class QdrantStore:
     def __init__(
         self,
         url: str = QDRANT_URL,
+        api_key: str | None = QDRANT_API_KEY,
+        timeout: int = QDRANT_TIMEOUT_SECONDS,
     ):
         self.client = QdrantClient(
-            url=url
+            url=url,
+            port=None,
+            api_key=api_key or None,
+            prefer_grpc=False,
+            timeout=timeout,
         )
 
     def health_check(

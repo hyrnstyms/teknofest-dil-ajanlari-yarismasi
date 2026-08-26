@@ -1,5 +1,3 @@
-import { ApiError } from "./api";
-
 export interface SystemStatusResponse {
   api: string;
   ollama: string;

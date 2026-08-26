@@ -10,7 +10,7 @@ export const ExtractionCard: React.FC<Props> = ({ extraction }) => {
   if (!extraction?.fields || Object.keys(extraction.fields).length === 0) {
     return (
       <div className="card mb-4">
-        <div className="card-header"><List size={18}/> Çıkarılan Bilgiler</div>
+        <div className="card-header"><List size={18}/> Önemli Bilgiler</div>
         <div className="card-body">
           <p className="text-secondary">Çıkarılan bilgi bulunamadı.</p>
         </div>
@@ -20,7 +20,7 @@ export const ExtractionCard: React.FC<Props> = ({ extraction }) => {
 
   return (
     <div className="card mb-4">
-      <div className="card-header"><List size={18}/> Çıkarılan Bilgiler</div>
+      <div className="card-header"><List size={18}/> Önemli Bilgiler</div>
       <div className="card-body p-0">
         <table className="data-table">
           <tbody>
