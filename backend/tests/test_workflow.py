@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from backend.app.graph.workflow import KamuaiWorkflow
+from backend.app.graph.state import DocumentState
 from backend.app.llm.base import LLMClient
 
 @pytest.fixture
@@ -95,3 +96,58 @@ def test_workflow_mehmet_kaya_end_to_end(mock_workflow):
     assert "raw_text" in res
     assert "quality" in res
     assert "human_review" in res
+
+
+def test_node_writing_uses_applicant_and_verified_legal_context():
+    captured = {}
+
+    class CapturingWritingAgent:
+        def draft(self, **kwargs):
+            captured.update(kwargs)
+            return {"draft": {"body": "İnceleme değerlendirilecektir."}}
+
+    workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
+    workflow.writing_agent = CapturingWritingAgent()
+    result = workflow.node_writing(DocumentState(
+        document={"process_intent": "cevap"},
+        extraction={"fields": {
+            "person_name": {"value": "Polat Madencilik adına Pelin Sönmez"},
+            "recipient": {"value": "Örenli İlçe Kaymakamlığı"},
+        }},
+        legal_analysis={
+            "evidence": [{"evidence": "İhale işlemleri bu Kanuna tabidir.", "source": "K1"}],
+            "sources": [{"law_number": "4734", "madde_no": "2", "title": "Kamu İhale Kanunu"}],
+        },
+        missing_fields={"missing_fields": []},
+        summary={"short_summary": "Akaryakıt ihalesine ilişkin itiraz."},
+        routing={"recommended_unit": "Yazı İşleri Müdürlüğü"},
+    ))
+
+    assert result["node_timings"]["writing_agent"]["status"] == "completed"
+    assert captured["recipient"] == "Polat Madencilik adına Pelin Sönmez"
+    assert "4734 sayılı Kanun" in captured["legal_context"]
+    assert captured["state"]["legal_analysis"]["evidence"]
+    assert "4734 sayılı Kanun" in captured["state"]["legal_context"]
+
+def test_node_legal_keeps_explicit_document_law_reference():
+    captured = {}
+
+    class CapturingLegalAgent:
+        def analyze(self, **kwargs):
+            captured.update(kwargs)
+            return {"evidence": [], "sources": []}
+
+    workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
+    workflow.legal_agent = CapturingLegalAgent()
+    result = workflow.node_legal(DocumentState(
+        raw_text="4734 sayılı Kamu İhale Kanunu uyarınca inceleme talep ediyorum.",
+        document={
+            "process_intent": "basvuru",
+            "subject_excerpt": "Akaryakıt ihalesi itirazı",
+            "request_excerpt": "İnceleme talep ediyorum",
+        },
+    ))
+
+    assert result["node_timings"]["legal_agent"]["status"] == "completed"
+    assert "4734 sayılı Kanun" in captured["query"]
+    assert captured["strict_explicit_law"] is True

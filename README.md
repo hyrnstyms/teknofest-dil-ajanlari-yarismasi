@@ -31,7 +31,7 @@ Human Review
 > Bu katman ekip arkadaşımız tarafından geliştirilmiştir.
 
 ## Temel Teknolojiler
-- Python 3.11
+- Python 3.12
 - FastAPI
 - LangGraph
 - Ollama
@@ -42,33 +42,91 @@ Human Review
 - TypeScript
 - Vite
 
-## İlk Kurulum
+## Kurulum
 
-Windows / PowerShell için gerekli kurulum adımları:
+Python 3.12 önerilir. Aynı `requirements.txt` ve `docker-compose.yml` macOS ile
+Windows'ta kullanılır.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+### Ortak adımlar (Docker: Postgres + Qdrant)
+
+Docker Desktop'ı Linux container desteğiyle başlatın ve depo kökünde çalıştırın:
+
+```text
+docker compose up -d postgres qdrant
+docker compose ps
 ```
 
-Çevresel değişkenleri yapılandırmak için örnek dosyayı kopyalayın:
-```powershell
-Copy-Item .env.example .env
-```
+Ortam dosyasını `.env.example` üzerinden oluşturun. Varsayılan geliştirme
+bağlantıları PostgreSQL için `localhost:5432`, Qdrant için `localhost:6333`
+adreslerini kullanır. Ollama modelini bir kez indirin:
 
-Yapay zekâ modelini Ollama ile indirin:
-```powershell
+```text
 ollama pull qwen2.5:3b-instruct
 ```
 
-> **Not:** Sistem vektör veritabanı olarak Qdrant'ı kullanır. Qdrant'ın arka planda `localhost:6333` üzerinden erişilebilir durumda çalıştığından emin olun.
+### macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+python -m uvicorn backend.app.main:app --reload
+```
+
+Normal Python kurulumlarında locale ayarı gerekmez. Yalnız bazı Conda Python
+3.13 kurulumlarında macOS'un tanımadığı `LANG=C.UTF-8` değeri `readline`
+yüklenirken interpreter çökmesine yol açabilir. `python -c "import readline"`
+komutu aynı şekilde çökerse bu host ortamı için geçerli bir locale seçin:
+
+```bash
+export LANG=C
+export LC_ALL=C
+```
+
+Bu ayar KAMUAI'nin veya testlerin gereksinimi değildir ve Windows'ta
+kullanılmaz.
+
+### Windows
+
+Docker Desktop'ın Linux containers modunda çalıştığını doğrulayın. PowerShell:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python -m uvicorn backend.app.main:app --reload
+```
+
+Aktivasyon kurum politikasıyla engellenirse execution policy değiştirmek
+zorunlu değildir; sanal ortam Python'ı doğrudan kullanılabilir:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload
+```
+
+Paketler desteklenen Python sürümlerinde wheel olarak kurulur; Visual C++ Build
+Tools normal kurulum için gerekli değildir.
+
+### Test çalıştırma
+
+Aktif sanal ortamda her iki platformda da aynı komut kullanılır:
+
+```text
+python -m pytest backend/tests -q
+```
+
+Yukarıdaki macOS locale notu yalnız belirtilen bozuk host/Conda birleşimine
+özgüdür; standart macOS Python ve Windows ortamlarında ek env-var gerekmez.
 
 ## Backend Çalıştırma
 
 Backend API sunucusunu başlatmak için:
-```powershell
+```text
 python -m uvicorn backend.app.main:app --reload
 ```
 URL: `http://localhost:8000`
@@ -87,10 +145,8 @@ URL: `http://localhost:5173`
 
 ## Testler
 
-Backend (Mevcut baseline: 59 passed):
-```powershell
-python -m pytest backend/tests -q
-```
+Backend test komutu yukarıdaki “Test çalıştırma” bölümünde macOS ve Windows
+için ortaktır.
 
 Frontend Derleme Testi:
 ```powershell

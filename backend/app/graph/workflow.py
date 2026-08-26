@@ -33,6 +33,7 @@ class KamuaiWorkflow:
         self.doc_agent = DocumentAgent(llm=self.llm)
         self.extract_agent = ExtractionAgent(llm=self.llm)
         self.legal_agent = LegalAgent(llm=self.legal_llm)
+        self.document_retriever = self.legal_agent.retriever
         self.missing_field_agent = MissingFieldAgent()
         self.summary_agent = SummaryAgent(llm=self.llm)
         self.routing_agent = RoutingAgent(institution=institution)
@@ -119,14 +120,28 @@ class KamuaiWorkflow:
             intent = doc_ctx.get("process_intent", "")
             subject = doc_ctx.get("subject_excerpt", "")
             req = doc_ctx.get("request_excerpt", "")
-            
-            query = f"{intent} {subject} {req}".strip()
+
+            document_legal_references = self._extract_document_legal_references(
+                s.raw_text
+            )
+            query = " ".join(
+                part
+                for part in (
+                    intent,
+                    subject,
+                    req,
+                    *document_legal_references,
+                )
+                if part
+            )
             if not query:
                 query = s.raw_text[:500]
                 
             try:
-                # Assuming top_k parameter can be passed
-                res = self.legal_agent.analyze(query=query)
+                res = self.legal_agent.analyze(
+                    query=query,
+                    strict_explicit_law=bool(document_legal_references),
+                )
                 return {"legal_analysis": res}
             except Exception as e:
                 # If legal retrieval fails, we do not crash
@@ -170,8 +185,32 @@ class KamuaiWorkflow:
             sub = doc_ctx.get("subject_excerpt", "")
             req = doc_ctx.get("request_excerpt", "")
             ext = s.extraction.get("fields", {})
-            
-            res = self.routing_agent.route(dtype, intent, sub, req, ext)
+
+            query = f"{dtype} {intent} {sub} {req}".strip()
+            retrieved_documents = []
+            retrieval_warning = None
+            if query:
+                try:
+                    retrieved_documents = self.document_retriever.search_documents(
+                        query=query,
+                        limit=8,
+                    )
+                except Exception as exc:
+                    retrieval_warning = (
+                        "Belge bilgi tabanı araması tamamlanamadı: "
+                        f"{exc}"
+                    )
+
+            res = self.routing_agent.route(
+                dtype,
+                intent,
+                sub,
+                req,
+                ext,
+                retrieved_documents=retrieved_documents,
+            )
+            if retrieval_warning:
+                res.setdefault("warnings", []).append(retrieval_warning)
             return {"routing": res}
         return self._measure_time(_run, state, "routing_agent")
 
@@ -189,29 +228,42 @@ class KamuaiWorkflow:
             mf = s.missing_fields.get("missing_fields", [])
             ext = s.extraction.get("fields", {})
             
-            # Extract sender and recipient if available
+            # Cevap yazısının muhatabı, evrakın hitap ettiği kurum değil,
+            # başvuru sahibidir. Kurum muhatabı yalnızca başvuru sahibi
+            # çıkarılamayan durumlar için fallback olarak kalır.
             sender = s.routing.get("recommended_unit", None)
             recipient = (
-                ext.get("recipient", {}).get("value")
+                ext.get("person_name", {}).get("value")
+                or ext.get("sender_unit", {}).get("value")
+                or ext.get("recipient", {}).get("value")
                 or ext.get("institution", {}).get("value")
-                or ext.get("person_name", {}).get("value")
             )
             
             # Gather verified facts
             facts = []
             if req_act:
                 facts.append(f"İşlem Türü: {req_act}")
+
+            legal_context = self._build_legal_context(s.legal_analysis)
+            document_legal_references = self._extract_document_legal_references(
+                s.raw_text
+            )
             
             res = self.writing_agent.draft(
                 document_summary=summ or "Özet bulunamadı",
                 requested_action=requested_action,
                 missing_fields=mf,
                 verified_facts=facts,
+                legal_context=legal_context,
+                document_legal_references=document_legal_references,
                 recipient=recipient,
                 sender_unit=sender,
                 state={
                     "extraction": s.extraction,
                     "routing": s.routing,
+                    "legal_analysis": s.legal_analysis,
+                    "legal_context": legal_context,
+                    "document_legal_references": document_legal_references,
                     "kurum_profili_id": s.kurum_profili_id,
                     "muhatap": s.muhatap,
                     "muhatap_turu": s.muhatap_turu,
@@ -219,6 +271,46 @@ class KamuaiWorkflow:
             )
             return {"draft": res}
         return self._measure_time(_run, state, "writing_agent")
+
+    @staticmethod
+    def _build_legal_context(legal_analysis: Dict[str, Any]) -> str:
+        """Format only source-verified legal evidence for the writing prompt."""
+
+        analysis = legal_analysis if isinstance(legal_analysis, dict) else {}
+        sources = analysis.get("sources") or []
+        source_map = {
+            f"K{index}": source
+            for index, source in enumerate(sources, start=1)
+            if isinstance(source, dict)
+        }
+        context = []
+        for item in analysis.get("evidence") or []:
+            if not isinstance(item, dict):
+                continue
+            evidence = str(item.get("evidence") or "").strip()
+            source = source_map.get(str(item.get("source") or ""), {})
+            if not evidence or not source:
+                continue
+            citation = []
+            if source.get("law_number"):
+                citation.append(f"{source['law_number']} sayılı Kanun")
+            if source.get("madde_no"):
+                citation.append(f"Madde {source['madde_no']}")
+            if not citation:
+                citation.append(str(source.get("title") or source.get("source") or "Mevzuat kaynağı"))
+            context.append(f"- {evidence} [{' — '.join(citation)}]")
+        return "\n".join(context) if context else "Doğrulanmış hukuki kanıt bulunamadı."
+
+    @staticmethod
+    def _extract_document_legal_references(raw_text: str) -> list[str]:
+        """Return only statute references explicitly written in the document."""
+
+        return [
+            f"{law_number} sayılı Kanun"
+            for law_number in dict.fromkeys(
+                __import__("re").findall(r"\b(\d{3,6})\s+sayılı\b", raw_text, __import__("re").IGNORECASE)
+            )
+        ]
 
     def node_quality(self, state: DocumentState):
         def _run(s: DocumentState):

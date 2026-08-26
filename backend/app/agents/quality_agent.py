@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from typing import Dict, Any
 
 # Official writing format validator — opsiyonel entegrasyon.
@@ -15,6 +17,27 @@ from backend.app.institutions.profile_loader import (
 
 # Yarışma demosunda aktif kurum — RoutingAgent ile aynı
 _DEFAULT_INSTITUTION = "kaymakamlik"
+_UNVERIFIED_OUTCOME_PATTERNS = (
+    r"\bkabul\s+edilmiştir\b",
+    r"\bonaylanmıştır\b",
+    r"\b(?:başvurunuz\s+)?işleme\s+alınmıştır\b",
+    r"\bverilmiştir\b",
+    r"\btamamlanmıştır\b",
+)
+
+
+def _normalize_claim_text(value: Any) -> str:
+    text = str(value or "").replace("I", "ı").replace("İ", "i")
+    return unicodedata.normalize("NFKC", text.casefold()).replace("i\u0307", "i")
+
+
+def find_unverified_outcome_claims(value: Any) -> list[str]:
+    text = _normalize_claim_text(value)
+    return [
+        pattern
+        for pattern in _UNVERIFIED_OUTCOME_PATTERNS
+        if re.search(pattern, text)
+    ]
 
 
 class QualityAgent:
@@ -161,6 +184,18 @@ class QualityAgent:
                 add_check("draft", "warning", "Taslak metin personel onayı gerektiriyor.")
             else:
                 add_check("draft", "pass", "Taslak metin üretildi.")
+
+            draft_payload = draft.get("draft") if isinstance(draft.get("draft"), dict) else draft
+            outcome_claims = find_unverified_outcome_claims(
+                draft_payload.get("body", "") if isinstance(draft_payload, dict) else ""
+            )
+            if outcome_claims:
+                add_check(
+                    "unverified_outcome_claim",
+                    "warning",
+                    "Olası doğrulanmamış sonuç iddiası bulundu; taslak insan incelemesine işaretlendi.",
+                )
+                result["requires_human_review"] = True
                 
             # Official Writing check
             off = draft.get("official_render", {})
