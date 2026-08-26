@@ -23,6 +23,22 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - name: Create and activate venv (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          python --version
+          echo "$PWD/venv/bin" >> "$GITHUB_PATH"
+      - name: Create and activate venv (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m venv venv
+          .\venv\Scripts\Activate.ps1
+          python --version
+          (Resolve-Path .\venv\Scripts).Path | Out-File -Append $env:GITHUB_PATH
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
