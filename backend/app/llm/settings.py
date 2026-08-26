@@ -10,7 +10,7 @@ class LLMSettings:
 
     PROVIDER = os.getenv(
         "LLM_PROVIDER",
-        "evren",
+        "ollama",
     ).lower()
 
     EVREN_BASE_URL = os.getenv(
