@@ -28,7 +28,6 @@ index_official_writing.py'nin işledikleri (bu scriptte YOKTUR):
 """
 
 import sys
-import uuid
 import re
 import argparse
 from pathlib import Path
@@ -36,6 +35,8 @@ from pathlib import Path
 sys.path.insert(0, ".")
 
 import pymupdf
+
+from backend.app.rag.point_ids import deterministic_point_id
 
 # ─── Kaynak Listesi ──────────────────────────────────────────────────────────
 # index_test_pdfs.py'de işlenenler ÇIKARILDI, çakışma yok.
@@ -202,14 +203,6 @@ def extract_articles_from_pdf(pdf_path: str) -> list[dict]:
     return articles
 
 
-def point_id(source_id: str, madde_no: str) -> str:
-    """index_test_pdfs.py ile aynı uuid5 deterministik ID üretimi."""
-    return str(uuid.uuid5(
-        uuid.NAMESPACE_URL,
-        f"kamuai_eval:{source_id}:{madde_no}",
-    ))
-
-
 # ─── Ana Fonksiyon ───────────────────────────────────────────────────────────
 
 def main():
@@ -276,7 +269,19 @@ def main():
             print(f"  HATA: PDF okunamadı: {e} — atlanıyor.")
             continue
 
-        ids = [point_id(src["source_id"], a["madde_no"]) for a in articles]
+        articles = [
+            {**article, "chunk_index": index}
+            for index, article in enumerate(articles)
+        ]
+        ids = [
+            deterministic_point_id(
+                src["source_id"],
+                article["madde_no"],
+                article["chunk_index"],
+                article["text"],
+            )
+            for article in articles
+        ]
         print(f"  Chunk sayısı: {len(articles)}")
 
         if args.dry_run:
@@ -326,6 +331,7 @@ def main():
                 "law_number": src["law_number"],
                 "rag_domain": src["rag_domain"],
                 "madde_no": a["madde_no"],
+                "chunk_index": a["chunk_index"],
                 "text": a["text"],
                 "trusted_source": True,
                 "corpus_type": "legal_knowledge",
@@ -334,6 +340,7 @@ def main():
                     "law_number": src["law_number"],
                     "rag_domain": src["rag_domain"],
                     "madde_no": a["madde_no"],
+                    "chunk_index": a["chunk_index"],
                     "source": src["source_id"],
                     "title": src["title"],
                     "trusted_source": True,

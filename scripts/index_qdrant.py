@@ -1,7 +1,6 @@
 import argparse
 import json
 import sys
-import uuid
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +17,7 @@ from backend.app.rag.qdrant_store import (
     LEGAL_COLLECTION,
     DOCUMENT_COLLECTION,
 )
+from backend.app.rag.point_ids import deterministic_point_id
 
 
 DEFAULT_CHUNKS_FILE = Path(
@@ -60,18 +60,27 @@ def load_chunks(chunks_file: Path = DEFAULT_CHUNKS_FILE) -> list[dict[str, Any]]
     return chunks
 
 
-def deterministic_point_id(
-    chunk_id: str,
-) -> str:
-    """
-    Aynı chunk her çalıştırmada
-    aynı UUID'yi alır.
-    """
-    return str(
-        uuid.uuid5(
-            uuid.NAMESPACE_URL,
-            f"kamuai:{chunk_id}",
-        )
+def point_id_for_chunk(chunk: dict[str, Any]) -> str:
+    metadata = chunk.get("metadata", {}) or {}
+    source_id = (
+        chunk.get("source")
+        or metadata.get("source")
+        or chunk.get("document_id")
+        or chunk.get("id")
+        or "unknown"
+    )
+    madde_no = (
+        metadata.get("madde_no")
+        or metadata.get("article")
+        or chunk.get("id")
+        or "chunk"
+    )
+    chunk_index = chunk.get("chunk_index", chunk.get("id", 0))
+    return deterministic_point_id(
+        str(source_id),
+        str(madde_no),
+        chunk_index,
+        str(chunk.get("text", "")),
     )
 
 
@@ -236,9 +245,7 @@ def index_collection(
         batch = chunks[start:end]
 
         batch_ids = [
-            deterministic_point_id(
-                str(chunk["id"])
-            )
+            point_id_for_chunk(chunk)
             for chunk in batch
         ]
 
