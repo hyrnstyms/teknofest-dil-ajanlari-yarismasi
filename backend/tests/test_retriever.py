@@ -40,3 +40,30 @@ def test_result_mapping_falls_back_to_legacy_payload_metadata():
     assert result["document_id"] == "4982"
     assert result["source"] == "Bilgi Edinme Kanunu"
     assert result["article"] == "11"
+
+
+def test_retrievers_share_default_process_services(monkeypatch):
+    import backend.app.rag.retriever as retriever_module
+
+    embeddings = []
+    stores = []
+    monkeypatch.setattr(
+        "backend.app.rag.embedding_service.EmbeddingService",
+        lambda: embeddings.append(object()) or embeddings[-1],
+    )
+    monkeypatch.setattr(
+        "backend.app.rag.qdrant_store.QdrantStore",
+        lambda: stores.append(object()) or stores[-1],
+    )
+    retriever_module.get_shared_embedding_service.cache_clear()
+    retriever_module.get_shared_qdrant_store.cache_clear()
+    try:
+        first = Retriever()
+        second = Retriever()
+        assert first.embedding_service is second.embedding_service
+        assert first.store is second.store
+        assert len(embeddings) == 1
+        assert len(stores) == 1
+    finally:
+        retriever_module.get_shared_embedding_service.cache_clear()
+        retriever_module.get_shared_qdrant_store.cache_clear()

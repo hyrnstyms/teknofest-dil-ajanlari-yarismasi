@@ -180,6 +180,12 @@ class KamuaiWorkflow:
             summ = s.summary.get("short_summary", "")
             doc_ctx = s.document
             req_act = doc_ctx.get("process_intent", "")
+            requested_action = {
+                "cevap": "başvuru sahibine cevap verilmesi",
+                "iletim": "ilgili birime iletilmesi",
+                "bildirim": "bilgi verilmesi",
+                "bilgi_talebi": "bilgi verilmesi",
+            }.get(req_act, req_act)
             mf = s.missing_fields.get("missing_fields", [])
             ext = s.extraction.get("fields", {})
             
@@ -198,7 +204,7 @@ class KamuaiWorkflow:
             
             res = self.writing_agent.draft(
                 document_summary=summ or "Özet bulunamadı",
-                requested_action=req_act,
+                requested_action=requested_action,
                 missing_fields=mf,
                 verified_facts=facts,
                 recipient=recipient,

@@ -87,9 +87,13 @@ def extract_text_with_ocr(pdf_path: str) -> str:
         import pytesseract
         from pdf2image import convert_from_path
     except ImportError as e:
-        print(f"  HATA: Eksik bağımlılık: {e}")
-        print("  Çözüm: pip install pytesseract pdf2image && brew install poppler")
-        return ""
+        print(f"  pytesseract yolu kullanılamıyor ({e}); proje OCRService fallback'i deneniyor.")
+        try:
+            from backend.app.ocr.ocr_service import OCRService
+            return OCRService().extract_text_from_pdf(pdf_path)
+        except Exception as fallback_error:
+            print(f"  HATA: Proje OCR fallback başarısız: {fallback_error}")
+            return ""
 
     try:
         print("  PDF sayfalara dönüştürülüyor (dpi=200)...")

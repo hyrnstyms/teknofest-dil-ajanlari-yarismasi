@@ -5,14 +5,16 @@ import { api } from "../services/api";
 interface Props {
   analysisId?: string;
   hasDocument: boolean;
+  reviewStatus?: string;
   copyText?: string;
   onOpenAudit: () => void;
 }
 
-export const DocumentToolbar: React.FC<Props> = ({ analysisId, hasDocument, copyText, onOpenAudit }) => {
+export const DocumentToolbar: React.FC<Props> = ({ analysisId, hasDocument, reviewStatus, copyText, onOpenAudit }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const canDownloadDocx = reviewStatus === "approved";
 
   const downloadDocx = async () => {
     if (!analysisId) return;
@@ -51,7 +53,7 @@ export const DocumentToolbar: React.FC<Props> = ({ analysisId, hasDocument, copy
       <div className="toolbar-actions">
         <button type="button" disabled title="Genel düzenleme endpoint'i resmî yazı context'ini güvenli biçimde güncellemiyor"><Pencil size={16} /> Düzenle</button>
         <button type="button" disabled title="Yeniden oluşturma backend akışı mevcut değil"><RefreshCw size={16} /> Yeniden Oluştur</button>
-        <button type="button" onClick={downloadDocx} disabled={!analysisId || downloading}><Download size={16} /> {downloading ? "İndiriliyor" : "DOCX İndir"}</button>
+        <button type="button" onClick={downloadDocx} disabled={!analysisId || downloading || !canDownloadDocx} title={canDownloadDocx ? "Onaylı resmî yazıyı DOCX olarak indir" : "DOCX indirmek için önce personel onayı gerekir"}><Download size={16} /> {downloading ? "İndiriliyor" : "DOCX İndir"}</button>
         <button type="button" onClick={() => window.print()} disabled={!hasDocument}><Printer size={16} /> PDF / Yazdır</button>
         <button type="button" onClick={() => void copyDocument()} disabled={!copyText}>{copied ? <Check size={16} /> : <Copy size={16} />} {copied ? "Kopyalandı" : "Kopyala"}</button>
       </div>

@@ -127,6 +127,14 @@ class LegalAgent:
                 sources=selected_sources,
             )
         )
+        if not evidence and explicit_law and explicit_article:
+            evidence = self._exact_reference_evidence(
+                selected_sources,
+                law_number=explicit_law,
+                article=explicit_article,
+            )
+            if evidence:
+                answer = self._render_evidence_answer(evidence, selected_sources)
 
         retrieval_score = (
             self._calculate_retrieval_score(
@@ -656,6 +664,27 @@ Soruyu doğrudan cevaplayan kısa kaynak ifadelerini JSON şemasında çıkar.
             lines
         )
 
+    @staticmethod
+    def _exact_reference_evidence(
+        sources: list[dict[str, Any]],
+        law_number: str,
+        article: str,
+    ) -> list[dict[str, str]]:
+        """Use verbatim text only when an explicit law/article source is exact."""
+
+        for index, source in enumerate(sources, start=1):
+            source_law = str(source.get("law_number") or "").strip()
+            source_article = str(
+                source.get("madde_no") or source.get("article") or ""
+            ).strip().casefold()
+            source_text = str(source.get("text") or "").strip()
+            if (
+                source_law == law_number
+                and source_article == article.casefold()
+                and source_text
+            ):
+                return [{"evidence": source_text, "source": f"K{index}"}]
+        return []
     @staticmethod
     def _calculate_retrieval_score(
         sources: list[dict[str, Any]],

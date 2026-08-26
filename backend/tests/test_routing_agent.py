@@ -227,3 +227,95 @@ def test_routing_wrong_intent_no_boost(agent):
     assert res["score_breakdown"]["intent_score"] == 0
     assert res["score_breakdown"]["keyword_score"] == 50
     assert res["score_breakdown"]["doc_type_score"] == 30
+
+
+@pytest.mark.parametrize(
+    ("subject", "request_text", "expected_unit"),
+    [
+        (
+            "Okul güvenlik planları",
+            "Planların İlçe Millî Eğitim Müdürlüğünce hazırlanması gerekmektedir.",
+            "İlçe Millî Eğitim Müdürlüğü",
+        ),
+        (
+            "Asayiş ihbarı",
+            "Mahalledeki güvenlik ve asayiş sorununun incelenmesini talep ediyorum.",
+            "İlçe Emniyet Müdürlüğü",
+        ),
+        (
+            "Sağlık kuruluşu başvurusu",
+            "Yeni sağlık ocağı ve sağlık raporu işlemleri hakkında bilgi talep ediyorum.",
+            "İlçe Sağlık Müdürlüğü",
+        ),
+    ],
+)
+def test_kaymakamlik_routing_regression(
+    subject,
+    request_text,
+    expected_unit,
+):
+    result = RoutingAgent(institution="kaymakamlik").route(
+        document_type="diger",
+        process_intent="bildirim",
+        subject=subject,
+        request_text=request_text,
+        extracted_fields={},
+    )
+
+    assert result["recommended_unit"] == expected_unit
+    assert result["needs_human_review"] is False
+
+
+@pytest.mark.parametrize(
+    ("document_type", "subject", "request_text", "expected_unit"),
+    [
+        (
+            "sikayet",
+            "Bozuk yol şikayeti",
+            "Caddedeki çukur ve asfalt hasarının onarılmasını talep ediyorum.",
+            "Fen İşleri Müdürlüğü",
+        ),
+        (
+            "imar_talebi",
+            "Yapı ruhsatı talebi",
+            "Parselim için imar durumu ve yapı ruhsatı düzenlenmesini talep ediyorum.",
+            "İmar ve Şehircilik Müdürlüğü",
+        ),
+        (
+            "sikayet",
+            "Çöp toplama şikayeti",
+            "Mahallede biriken çöp ve atıkların temizlenmesini talep ediyorum.",
+            "Temizlik İşleri Müdürlüğü",
+        ),
+    ],
+)
+def test_belediye_routing_regression(
+    document_type,
+    subject,
+    request_text,
+    expected_unit,
+):
+    result = RoutingAgent(institution="belediye").route(
+        document_type=document_type,
+        process_intent="sikayet",
+        subject=subject,
+        request_text=request_text,
+        extracted_fields={},
+    )
+
+    assert result["recommended_unit"] == expected_unit
+    assert result["needs_human_review"] is False
+
+
+def test_generic_ruhsat_does_not_force_health_routing():
+    result = RoutingAgent(institution="kaymakamlik").route(
+        document_type="dilekce",
+        process_intent="bilgi_talebi",
+        subject="Ruhsat hakkında bilgi",
+        request_text="Ruhsat başvurumun durumunu öğrenmek istiyorum.",
+        extracted_fields={},
+    )
+
+    assert result["recommended_unit"] != "İlçe Sağlık Müdürlüğü"
+    assert result["needs_human_review"] is True
+    assert result["routing_score"] == 0

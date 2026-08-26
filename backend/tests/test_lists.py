@@ -75,3 +75,47 @@ def test_get_pending_reviews():
     res2 = client.get("/api/reviews/pending")
     data2 = res2.json()
     assert data2["total"] == 0
+
+
+def test_blocked_null_draft_remains_in_analysis_and_pending_lists():
+    blocked_id = str(uuid.uuid4())
+    analysis_store[blocked_id] = {
+        "analysis_id": blocked_id,
+        "document_id": "blocked-document",
+        "document": {
+            "document_type": "dilekce",
+            "process_intent": "bilgi_talebi",
+        },
+        "extraction": {
+            "fields": {
+                "subject": {
+                    "value": "Eksik bilgi içeren başvuru",
+                },
+            },
+        },
+        "draft": {
+            "draft_type": "diger",
+            "draft_generation_mode": "blocked_insufficient_context",
+            "draft": None,
+        },
+        "quality": {"status": "warning"},
+        "human_review": {
+            "required": True,
+            "status": "pending_review",
+        },
+        "created_at": "2026-08-26T10:00:00Z",
+    }
+
+    analyses_response = client.get("/api/analyses")
+    assert analyses_response.status_code == 200
+    analyses = analyses_response.json()
+    assert analyses["total"] == 1
+    assert analyses["items"][0]["analysis_id"] == blocked_id
+    assert analyses["items"][0]["subject"] == "Eksik bilgi içeren başvuru"
+
+    pending_response = client.get("/api/reviews/pending")
+    assert pending_response.status_code == 200
+    pending = pending_response.json()
+    assert pending["total"] == 1
+    assert pending["items"][0]["analysis_id"] == blocked_id
+    assert pending["items"][0]["subject"] == "Eksik bilgi içeren başvuru"

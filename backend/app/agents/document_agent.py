@@ -101,6 +101,13 @@ class DocumentAgent:
                 "heuristic_fallback"
             )
 
+        generated, was_overridden = self._validate_semantic_classification(
+            text=text,
+            generated=generated,
+        )
+        if was_overridden:
+            classification_mode = "deterministic_validation"
+
         document_type = (
             generated.get(
                 "document_type",
@@ -569,6 +576,9 @@ Evrakı sınıflandır.
             "ö": "o",
             "ş": "s",
             "ü": "u",
+            "â": "a",
+            "î": "i",
+            "û": "u",
         }
 
         for old, new in (
@@ -591,6 +601,66 @@ Evrakı sınıflandır.
     # CLASSIFICATION VALIDATION
     # =====================================================
 
+    def _validate_semantic_classification(
+        self,
+        text: str,
+        generated: dict[str, Any],
+    ) -> tuple[dict[str, Any], bool]:
+        """Override valid LLM labels only for explicit, high-confidence text."""
+
+        result = dict(generated)
+        normalized = self._normalize_label(text)
+        official_signals = (
+            normalized.startswith("t_c_") or "_t_c_" in normalized,
+            "sayi_" in normalized,
+            "konu_" in normalized,
+            "ilgi_" in normalized,
+            bool(re.search(r"(?:mudurlugune|baskanligina|kaymakamligina|ilgili_birimlere)", normalized)),
+            bool(re.search(r"(?:geregini_rica_ederim|bilgilerinize_(?:arz|rica|sunulur))", normalized)),
+        )
+        official_document = (
+            sum(official_signals) >= 3
+            and official_signals[1]
+            and (official_signals[4] or official_signals[5])
+        )
+        personal_action = bool(re.search(
+            r"(?:talep_ediyorum|basvuruyorum|sikayetciyim|sikayet_ediyorum|"
+            r"basvurumun_isleme_alinmasini|onarilmasini_arz_ederim|yapilmasini_arz_ederim)",
+            normalized,
+        ))
+        petition_document = personal_action and not official_document
+
+        document_type = str(result.get("document_type") or "diger")
+        process_intent = str(result.get("process_intent") or "diger")
+        if official_document:
+            document_type = "resmi_yazi"
+        elif petition_document and document_type != "form":
+            document_type = "dilekce"
+
+        if re.search(r"(?:bilgi_edinme_kapsaminda|bilgi_edinme_hakki|bilgi_talep_ediyorum)", normalized):
+            process_intent = "bilgi_talebi"
+        elif re.search(r"(?:sikayetciyim|sikayet_ediyorum|hususu_sikayet)", normalized):
+            process_intent = "sikayet"
+        elif re.search(r"(?:basvurunuza_cevaben|ilgi_yaziniza_cevaben|cevap_olarak)", normalized) or (
+            "basvurunuz_incelenmis" in normalized and "bilgilerinize_sunulur" in normalized
+        ):
+            process_intent = "cevap"
+        elif re.search(r"(?:ekte_gonderilmistir|geregi_icin_gonderilmistir|ilgili_birime_iletilmesi)", normalized) or (
+            "gonderilmesi_hususunda" in normalized and "rica_ederim" in normalized
+        ):
+            process_intent = "iletim"
+        elif re.search(r"(?:basvuruyorum|ruhsat_basvurusu|basvurumun_isleme_alinmasini)", normalized) or (
+            petition_document and re.search(r"(?:onarilmasini|yapilmasini)_arz_ederim", normalized)
+        ):
+            process_intent = "basvuru"
+
+        overridden = (
+            document_type != result.get("document_type")
+            or process_intent != result.get("process_intent")
+        )
+        result["document_type"] = document_type
+        result["process_intent"] = process_intent
+        return result, overridden
     @staticmethod
     def _is_valid_classification(
         result: dict[str, Any],

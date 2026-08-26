@@ -8,6 +8,7 @@ interface Props {
   isLoading: boolean;
   hasAnalysis: boolean;
   hasDraft: boolean;
+  institutionLabel?: string;
   onSend: (message: string) => Promise<void>;
   onClose: () => void;
 }
@@ -17,6 +18,7 @@ export const ChatPanel: React.FC<Props> = ({
   isLoading,
   hasAnalysis,
   hasDraft,
+  institutionLabel,
   onSend,
   onClose,
 }) => {
@@ -41,8 +43,8 @@ export const ChatPanel: React.FC<Props> = ({
     >
       <header className="chat-panel-header">
         <div>
-          <h2>KAMUAI Asistan</h2>
-          <p>Kılavuz, mevzuat ve taslak desteği</p>
+          <h2>KAMUAI Kurumsal Copilot</h2>
+          <p>Evrak, mevzuat, yönlendirme ve taslak desteği</p>
         </div>
         <button
           type="button"
@@ -55,11 +57,33 @@ export const ChatPanel: React.FC<Props> = ({
       </header>
 
       <div className="chat-context-hint">
-        {hasAnalysis
-          ? hasDraft
-            ? "Aktif analiz ve taslak bağlamı kullanılıyor."
-            : "Aktif analizde düzenlenebilir taslak bulunmuyor."
-          : "Taslak düzenlemek için önce bir evrak analiz edin."}
+        <span className="chat-context-badge">Kurum: {institutionLabel || "Seçilmedi"}</span>
+        <span className={`chat-context-badge ${hasAnalysis ? "active" : "idle"}`}>
+          {hasAnalysis ? "Aktif Evrak" : "Aktif evrak yok"}
+        </span>
+        <span>
+          {hasAnalysis
+            ? hasDraft
+              ? "Analiz ve taslak bağlamı kullanılıyor."
+              : "Aktif analizde düzenlenebilir taslak bulunmuyor."
+            : "Evrak işlemleri için önce bir analiz açın."}
+        </span>
+      </div>
+
+      <div className="chat-quick-actions" aria-label="Hızlı sorular">
+        {(hasAnalysis
+          ? ["Bu evrakı özetle", "Eksikleri göster", "Neden bu birim?", "Bu evraka hangi mevzuat uygulanıyor?"]
+          : ["KAMUAI ne yapıyor?", "Nasıl evrak yüklerim?"]
+        ).map((label) => (
+          <button key={label} type="button" onClick={() => void onSend(label)} disabled={isLoading}>
+            {label}
+          </button>
+        ))}
+        {hasDraft && (
+          <button type="button" onClick={() => void onSend("Taslak metni daha resmî yap")} disabled={isLoading}>
+            Taslağı iyileştir
+          </button>
+        )}
       </div>
 
       <div className="chat-message-list" aria-live="polite">

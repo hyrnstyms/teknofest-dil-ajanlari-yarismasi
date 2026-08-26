@@ -20,6 +20,9 @@ const tabs: Array<{ id: AnalysisTab; label: string; icon: React.ComponentType<{ 
 export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
   const [activeTab, setActiveTab] = useState<AnalysisTab>("analysis");
   const missingFields = state.missing_fields?.missing_fields || [];
+  const uncertainFields = state.missing_fields?.uncertain_fields || [];
+  const routingEvidence = state.routing?.routing_evidence || state.routing?.evidence || [];
+  const routingScore = state.routing?.routing_score ?? state.routing?.confidence;
   const legalEvidence = getLegalEvidence(state);
   const extractedFields = Object.entries(state.extraction?.fields || {}).slice(0, 8);
   const routingReason = state.routing?.reason || state.routing?.routing_reason;
@@ -49,7 +52,8 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
             </section>
             <section className="analysis-section">
               <div className="analysis-heading"><ListChecks size={17} /><h3>Eksik Bilgiler</h3></div>
-              {missingFields.length > 0 ? <ul className="compact-list warning-list">{missingFields.map((field) => <li key={field}>{humanize(field)}</li>)}</ul> : <p className="panel-positive">Zorunlu eksik bilgi tespit edilmedi.</p>}
+              {missingFields.length > 0 ? <><span className="analysis-field-label">Eksik alanlar</span><ul className="compact-list warning-list">{missingFields.map((field) => <li key={field}>{humanize(field)}</li>)}</ul></> : <p className="panel-positive">Zorunlu eksik bilgi tespit edilmedi.</p>}
+              {uncertainFields.length > 0 && <><span className="analysis-field-label">Belirsiz alanlar</span><ul className="compact-list uncertain-list">{uncertainFields.map((field: string) => <li key={field}>{humanize(field)}</li>)}</ul></>}
             </section>
             {extractedFields.length > 0 && (
               <section className="analysis-section">
@@ -65,8 +69,10 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
             <div className="analysis-heading"><Route size={17} /><h3>Birim Yönlendirme</h3></div>
             <span className="analysis-field-label">Önerilen birim</span>
             <strong className="routing-unit">{state.routing?.recommended_unit || "Yönlendirme üretilemedi"}</strong>
-            {routingReason && <p>{routingReason}</p>}
-            {state.routing?.needs_human_review && <span className="review-warning"><AlertTriangle size={14} /> Yönlendirme personel incelemesi gerektiriyor</span>}
+            {routingReason && <div className="analysis-content-block"><span>Routing gerekçesi</span><p>{routingReason}</p></div>}
+            {Array.isArray(routingEvidence) && routingEvidence.length > 0 && <div className="analysis-content-block"><span>Kanıt</span><ul className="compact-list">{routingEvidence.map((item: unknown, index: number) => <li key={index}>{String(item)}</li>)}</ul></div>}
+            {routingScore !== undefined && <InfoRow label="Güven / kural skoru" value={formatScore(routingScore)} />}
+            {(state.routing?.needs_human_review || state.routing?.requires_human_review) && <span className="review-warning"><AlertTriangle size={14} /> Personel doğrulaması gerekli</span>}
           </section>
         )}
 
@@ -81,7 +87,7 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
                   {item.text && <p>{item.text}</p>}
                 </li>
               ))}</ul>
-            ) : <p className="panel-muted">Doğrulanmış mevzuat eşleşmesi bulunamadı.</p>}
+            ) : <p className="panel-muted">Doğrulanmış mevzuat kanıtı bulunamadı.</p>}
           </section>
         )}
 
@@ -91,6 +97,7 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
               <div className="analysis-heading"><UserCheck size={17} /><h3>Personel İncelemesi</h3></div>
               <InfoRow label="İnceleme gerekli" value={state.human_review?.required ? "Evet" : "Hayır"} />
               <InfoRow label="Durum" value={state.human_review?.status || "Bilinmiyor"} />
+              <p className="review-disclaimer">AI tarafından oluşturulan taslak. Resmî işlem öncesinde personel kontrolü gerektirir.</p>
             </section>
             <HumanReviewPanel review={state.human_review} analysisId={state.analysis_id || state.document_id} onUpdate={onUpdate} />
           </>
@@ -116,4 +123,16 @@ function formatField(field: unknown): string {
   return String(value);
 }
 
-function humanize(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
+function legalValue(item: LegalEvidence, key: string): string {
+  const direct = (item as Record<string, unknown>)[key];
+  const metadata = (item as Record<string, unknown>).metadata;
+  const nested = metadata && typeof metadata === "object" ? (metadata as Record<string, unknown>)[key] : undefined;
+  return String(direct || nested || "");
+}
+function formatScore(value: unknown): string {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(value);
+  return numeric <= 1 ? `%${Math.round(numeric * 100)}` : String(Math.round(numeric));
+}
+const FIELD_LABELS: Record<string, string> = { person_name: "Ad Soyad", gonderen_adi: "Ad Soyad", address: "Adres", adres: "Adres", signature_present: "İmza", imza: "İmza", date: "Tarih", tarih: "Tarih", subject: "Konu", konu: "Konu", request: "Talep", talep_metni: "Talep" };
+function humanize(value: string): string { return FIELD_LABELS[value] || value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }

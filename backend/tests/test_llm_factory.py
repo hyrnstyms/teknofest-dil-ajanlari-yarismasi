@@ -226,3 +226,26 @@ def test_direct_agent_constructors_request_their_own_model(monkeypatch):
         "legal_agent",
         "writing_agent",
     ]
+
+
+def test_ollama_client_sends_configurable_keep_alive(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"message": {"content": "yanıt"}}
+
+    def fake_post(url, json, timeout):
+        captured.update({"url": url, "json": json, "timeout": timeout})
+        return FakeResponse()
+
+    monkeypatch.setenv("OLLAMA_KEEP_ALIVE", "45m")
+    monkeypatch.setattr("backend.app.llm.ollama_client.requests.post", fake_post)
+    client = OllamaClient("demo-model", "http://ollama.invalid")
+
+    assert client.chat("system", "user") == "yanıt"
+    assert captured["json"]["keep_alive"] == "45m"
+    assert captured["json"]["stream"] is False

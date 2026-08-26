@@ -9,6 +9,7 @@ import unicodedata
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 from rapidfuzz import fuzz
@@ -37,9 +38,8 @@ ROUTER_MODEL = "router"
 ROUTER_TIMEOUT_SANIYE = 8.0
 
 FALLBACK_MESAJI = (
-    "Bu konuda size yardımcı olamadım. Sorunuzu farklı şekilde ifade edebilir "
-    "veya bir mevzuat sorusu soruyorsanız doğrudan kanun/madde belirterek "
-    "sorabilirsiniz."
+    "Bu konuda genel sohbet yerine kamu evrakı, mevzuat, yönlendirme ve "
+    "resmî yazışma süreçlerinde yardımcı olabilirim."
 )
 
 KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI = (
@@ -636,6 +636,8 @@ def match_faq(user_message: str, esik: int = ESLESME_ESIGI) -> str:
     normalized_message = _normalize_text(user_message)
     if not normalized_message:
         return FALLBACK_MESAJI
+    if normalized_message == _normalize_text("KAMUAI ne yapıyor?"):
+        return SSS_LISTESI[0]["cevap"]
 
     best_faq: dict[str, str] | None = None
     best_score = -1.0
@@ -666,21 +668,60 @@ def _get_legal_agent() -> "LegalAgent":
     return LegalAgent()
 
 
+class _LocalOpenAICompat:
+    """Expose the local LLMClient through the narrow chat.completions API used here."""
+
+    def __init__(self, client: Any):
+        self._client = client
+        self.chat = self
+        self.completions = self
+
+    def with_options(self, **kwargs: Any) -> "_LocalOpenAICompat":
+        return self
+
+    def create(self, **kwargs: Any) -> Any:
+        messages = kwargs.get("messages") or []
+        system_prompt = next(
+            (str(item.get("content") or "") for item in messages if item.get("role") == "system"),
+            "",
+        )
+        user_prompt = next(
+            (str(item.get("content") or "") for item in reversed(messages) if item.get("role") == "user"),
+            "",
+        )
+        content = self._client.chat(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=float(kwargs.get("temperature", 0.0)),
+            max_tokens=int(kwargs.get("max_tokens", 500)),
+            json_mode=bool(kwargs.get("response_format")),
+        )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+        )
+
+
 @lru_cache(maxsize=1)
-def _get_evren_client() -> "OpenAI":
+def _get_evren_client() -> Any:
     """EVREN istemcisini yalnızca ilk taslak düzenleme isteğinde oluşturur."""
 
     from dotenv import load_dotenv
-    from openai import OpenAI
+    from backend.app.llm.settings import LLMSettings
 
     project_root = Path(__file__).resolve().parents[3]
     load_dotenv(project_root / ".env", override=False)
+
+    if LLMSettings.get_provider() == "ollama":
+        from backend.app.llm.factory import create_llm_client
+
+        return _LocalOpenAICompat(create_llm_client("writing_agent"))
+
+    from openai import OpenAI
 
     api_key = os.getenv("EVREN_API_KEY")
     base_url = os.getenv("EVREN_BASE_URL")
     if not api_key or not base_url:
         raise RuntimeError("EVREN bağlantı ayarları bulunamadı.")
-
     return OpenAI(base_url=base_url, api_key=api_key)
 
 
@@ -1107,6 +1148,145 @@ def handle_draft_edit(
     )
 
 
+def is_active_document_question(message: str) -> bool:
+    """Aktif evrak state'inden cevaplanabilecek açık soruları belirler."""
+
+    normalized = _normalize_text(message)
+    has_document_reference = bool(re.search(r"\b(?:bu|aktif|mevcut)\s+evrak", normalized))
+    if not has_document_reference:
+        return False
+    return bool(re.search(
+        r"\b(?:konu|özet|ozet|eksik|belirsiz|risk|birim|yönlendir|yonlendir|"
+        r"mevzuat|kanun|personel|onay|taslak)\w*",
+        normalized,
+    ))
+
+
+def is_institution_question(message: str) -> bool:
+    """Seçili kurumun birim yapısına yönelik açık soruları belirler."""
+
+    normalized = _normalize_text(message)
+    return "bu kurumda" in normalized and bool(
+        re.search(r"\b(?:hangi\s+birim|hangi\s+müdürlük|kim\s+ilgilen)", normalized)
+    )
+
+
+def handle_institution_question(message: str, institution: str | None) -> str:
+    """Yalnızca seçili kurum profilindeki birim ve anahtar kelimeleri kullanır."""
+
+    if not institution:
+        return "Bu soruyu yanıtlamak için önce bir kurum profili seçin."
+
+    from backend.app.institutions.profile_loader import load_institution_profile
+
+    try:
+        profile = load_institution_profile(institution)
+    except (FileNotFoundError, ValueError):
+        return "Seçili kurumun birim profili yüklenemedi; doğrulanmamış birim öneremem."
+
+    normalized = _normalize_text(message)
+    matches: list[tuple[int, dict[str, Any], list[str]]] = []
+    for unit in profile.birimler:
+        if not isinstance(unit, dict):
+            continue
+        matched = [
+            str(keyword)
+            for keyword in unit.get("anahtar_kelimeler", [])
+            if _normalize_text(str(keyword)) in normalized
+        ]
+        if matched:
+            matches.append((max(len(_normalize_text(item)) for item in matched), unit, matched))
+
+    if not matches:
+        return (
+            f"{profile.kurum_adi} profilinde bu konu için doğrulanmış bir birim "
+            "eşleşmesi bulunmuyor. Yanlış birim önermek yerine personel incelemesi gerekir."
+        )
+
+    _, unit, matched = max(matches, key=lambda item: item[0])
+    return (
+        f"Seçili kurum profiline göre ilgili birim: {unit.get('ad')}. "
+        f"Dayanak: profil anahtar kelimeleri ({', '.join(matched)})."
+    )
+
+def _state_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def handle_active_document_question(message: str, state: dict[str, Any]) -> str:
+    """Aktif analiz state'ini yorumlamadan, kısa ve kaynak-sınırlı biçimde sunar."""
+
+    normalized = _normalize_text(message)
+    summary = state.get("summary") if isinstance(state.get("summary"), dict) else {}
+    extraction = state.get("extraction") if isinstance(state.get("extraction"), dict) else {}
+    fields = extraction.get("fields") if isinstance(extraction.get("fields"), dict) else {}
+    missing = state.get("missing_fields") if isinstance(state.get("missing_fields"), dict) else {}
+    routing = state.get("routing") if isinstance(state.get("routing"), dict) else {}
+    legal = state.get("legal_analysis") if isinstance(state.get("legal_analysis"), dict) else {}
+    review = state.get("human_review") if isinstance(state.get("human_review"), dict) else {}
+
+    if "konu" in normalized:
+        subject = fields.get("subject") if isinstance(fields.get("subject"), dict) else {}
+        value = subject.get("value") or summary.get("structured_summary", {}).get("subject")
+        return f"Evrakın konusu: {value}" if value else "Aktif evrakta doğrulanmış konu bilgisi bulunmuyor."
+
+    if "eksik" in normalized:
+        missing_items = _state_list(missing.get("missing_fields"))
+        uncertain_items = _state_list(missing.get("uncertain_fields"))
+        parts = []
+        if missing_items:
+            parts.append("Eksik alanlar: " + ", ".join(missing_items) + ".")
+        if uncertain_items:
+            parts.append("Belirsiz alanlar: " + ", ".join(uncertain_items) + ".")
+        return " ".join(parts) or "Aktif evrakta kayıtlı eksik veya belirsiz alan bulunmuyor."
+
+    if "yönlendir" in normalized or "yonlendir" in normalized or "birim" in normalized:
+        unit = routing.get("recommended_unit")
+        reason = routing.get("routing_reason") or routing.get("reason")
+        evidence = _state_list(routing.get("routing_evidence") or routing.get("evidence"))
+        if not unit:
+            return "Aktif evrak için kesin bir birim önerilmedi; personel incelemesi gerekiyor."
+        answer = f"Önerilen birim: {unit}."
+        if reason:
+            answer += f" Gerekçe: {reason}"
+        if evidence:
+            answer += " Dayanak: " + "; ".join(evidence[:3]) + "."
+        if routing.get("requires_human_review"):
+            answer += " Nihai yönlendirme personel onayına tabidir."
+        return answer
+
+    if "mevzuat" in normalized or "kanun" in normalized:
+        answer = str(legal.get("answer") or "").strip()
+        return answer or "Aktif evrak için doğrulanmış bir mevzuat kanıtı bulunmuyor."
+
+    if "risk" in normalized or "belirsiz" in normalized:
+        warnings = _state_list(state.get("warnings")) + _state_list(missing.get("warnings"))
+        uncertain = _state_list(missing.get("uncertain_fields"))
+        if not warnings and not uncertain:
+            return "Aktif evrakta kayıtlı risk veya belirsiz alan bulunmuyor."
+        details = warnings[:3] + [f"Belirsiz alan: {item}" for item in uncertain[:3]]
+        return "İncelenmesi gereken noktalar: " + "; ".join(details) + "."
+
+    if "personel" in normalized or "onay" in normalized:
+        status = review.get("status") or "pending_review"
+        return (
+            f"İnsan incelemesi durumu: {status}. Personelden çıkarımları, mevzuat "
+            "kanıtlarını, yönlendirmeyi ve taslağı doğrulaması bekleniyor."
+        )
+
+    short_summary = str(summary.get("short_summary") or "").strip()
+    if short_summary:
+        return short_summary
+    structured = summary.get("structured_summary") if isinstance(summary.get("structured_summary"), dict) else {}
+    subject = structured.get("subject")
+    request = structured.get("request")
+    if subject or request:
+        return " ".join(part for part in (f"Konu: {subject}." if subject else "", f"Talep: {request}" if request else "") if part)
+    return "Aktif evrak için doğrulanmış kısa özet bulunmuyor."
+
+
 def handle_legal_question(message: str) -> str:
     """Mevzuat sorusunu mevcut LegalAgent'a iletip kaynaklı yanıtı biçimler."""
 
@@ -1178,6 +1358,10 @@ def resolve_chat_mode(message: str) -> str:
 
     if is_taslak_duzenleme_talebi(message):
         return "taslak_duzenleme"
+    if is_active_document_question(message):
+        return "active_document"
+    if is_institution_question(message):
+        return "institution"
     if is_mevzuat_sorusu(message):
         return "mevzuat"
     if is_kucuk_sohbet(message):
@@ -1203,7 +1387,7 @@ def handle_chat_message(
 ) -> str | dict[str, Any]:
     """Tek kez çözülen moda göre mevcut güvenli sohbet işleyicisini çalıştırır."""
 
-    valid_modes = {"taslak_duzenleme", "mevzuat", "kucuk_sohbet", "kilavuz"}
+    valid_modes = {"taslak_duzenleme", "active_document", "institution", "mevzuat", "kucuk_sohbet", "kilavuz"}
     mode = resolved_mode if resolved_mode in valid_modes else resolve_chat_mode(message)
 
     if mode == "taslak_duzenleme":
@@ -1213,6 +1397,16 @@ def handle_chat_message(
             message,
             current_draft,
             workflow_context or {},
+        )
+    if mode == "active_document":
+        state = (workflow_context or {}).get("analysis_state")
+        if not isinstance(state, dict):
+            return "Bu soruyu yanıtlamak için önce bir evrak analizi açın."
+        return handle_active_document_question(message, state)
+    if mode == "institution":
+        return handle_institution_question(
+            message,
+            (workflow_context or {}).get("institution"),
         )
     if mode == "mevzuat":
         return handle_legal_question(message)
@@ -1239,8 +1433,10 @@ __all__ = [
     "handle_chat_message",
     "handle_draft_edit",
     "handle_kucuk_sohbet",
+    "handle_institution_question",
     "handle_legal_question",
     "is_kucuk_sohbet",
+    "is_institution_question",
     "is_mevzuat_sorusu",
     "is_taslak_duzenleme_talebi",
     "match_faq",

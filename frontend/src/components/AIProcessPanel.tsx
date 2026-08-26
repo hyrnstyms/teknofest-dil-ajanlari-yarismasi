@@ -1,0 +1,9 @@
+import React from "react";
+import { AlertTriangle, CheckCircle2, CircleDashed, Workflow } from "lucide-react";
+import type { DocumentState } from "../types";
+const stages = [["document_agent", "Belge Okuma ve Evrak Analizi", "Document Agent"], ["extraction_agent", "Bilgi Çıkarımı", "Extraction Agent"], ["missing_field_agent", "Eksik Bilgi Kontrolü", "Missing Field Agent"], ["legal_agent", "Mevzuat Kontrolü", "Legal Agent"], ["routing_agent", "Birim Yönlendirme", "Routing Agent"], ["writing_agent", "Resmî Yazı", "Writing Agent"], ["quality_agent", "Kalite Kontrolü", "Quality Agent"], ["human_review_agent", "İnsan Onayı", "Human Review"]] as const;
+export const AIProcessPanel: React.FC<{ state: DocumentState }> = ({ state }) => <section className="ai-process-panel no-print" aria-labelledby="ai-process-title">
+  <div className="ai-process-heading"><Workflow size={19} /><div><span className="section-kicker">Gözlemlenebilir işlem kaydı</span><h2 id="ai-process-title">AI İşlem Akışı</h2></div></div>
+  <div className="ai-stage-list">{stages.map(([id, label, agent]) => { const timing = state.node_timings?.[id]; const normalized = typeof timing === "number" ? { duration_ms: timing, status: "completed" } : timing; const status = normalized?.status === "failed" ? "failed" : normalized ? "completed" : "pending"; return <div className={`ai-stage ${status}`} key={id}>{status === "completed" ? <CheckCircle2 size={18} /> : status === "failed" ? <AlertTriangle size={18} /> : <CircleDashed size={18} />}<div><strong>{label}</strong><span>{agent}</span></div><small>{normalized?.duration_ms !== undefined ? `${normalized.duration_ms} ms` : "Kayıt yok"}</small></div>; })}</div>
+  <p className="ai-process-note">Bu panel iç muhakeme göstermez; yalnız backend tarafından kaydedilen aşama durumu ve süreleri gösterir.</p>
+</section>;

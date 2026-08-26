@@ -56,6 +56,9 @@ export const InstitutionSelector: React.FC<InstitutionSelectorProps> = ({
         <Building2 size={20} className="text-primary" />
         Kurum Seçimi
       </div>}
+      {topbar && <span className="topbar-institution-caption">
+        <Building2 size={15} /> Aktif Kurum
+      </span>}
       <div className={topbar || compact ? "institution-selector-body" : "card-body"}>
         {!topbar && <label htmlFor="institution-selector" className="font-medium">Analizin yapılacağı kurum</label>}
         <select

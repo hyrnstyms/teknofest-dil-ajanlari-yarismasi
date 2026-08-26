@@ -58,18 +58,10 @@ def get_workflow(institution: str = "kaymakamlik"):
     return KamuaiWorkflow(institution=institution)
 
 
-@lru_cache(maxsize=1)
-def _get_embedding_service_singleton():
-    from backend.app.rag.embedding_service import EmbeddingService
-
-    return EmbeddingService()
-
-
-@lru_cache(maxsize=1)
-def _get_qdrant_store_singleton():
-    from backend.app.rag.qdrant_store import QdrantStore
-
-    return QdrantStore()
+from backend.app.rag.retriever import (
+    get_shared_embedding_service as _get_embedding_service_singleton,
+    get_shared_qdrant_store as _get_qdrant_store_singleton,
+)
 
 ocr_svc = None
 def get_ocr_service():
@@ -99,6 +91,7 @@ class ChatDraftEditRequest(BaseModel):
 class ChatMessageRequest(BaseModel):
     message: str
     analysis_id: Optional[str] = None
+    institution: Optional[str] = None
 
 
 @app.get("/health")
@@ -524,6 +517,8 @@ def chat_message(req: ChatMessageRequest):
     current_state = None
     current_draft = None
     workflow_context: Dict[str, Any] = {}
+    if req.institution:
+        workflow_context["institution"] = req.institution
 
     if req.analysis_id is not None:
         if req.analysis_id not in analysis_store:
@@ -535,18 +530,20 @@ def chat_message(req: ChatMessageRequest):
                 },
             )
 
-        current_state = analysis_store[req.analysis_id]
-        current_draft = current_state.get("draft")
-        workflow_context = {
-            "extraction": current_state.get("extraction", {}),
-            "routing": current_state.get("routing", {}),
-            "kurum_profili_id": current_state.get(
-                "kurum_profili_id",
-                "kaymakamlik_v1",
-            ),
-            "muhatap": current_state.get("muhatap"),
-            "muhatap_turu": current_state.get("muhatap_turu"),
-        }
+        stored_state = analysis_store[req.analysis_id]
+        state_institution = stored_state.get("kurum_profili_id")
+        context_matches = not req.institution or state_institution == req.institution
+        if context_matches:
+            current_state = stored_state
+            current_draft = stored_state.get("draft")
+            workflow_context.update({
+                "analysis_state": stored_state,
+                "extraction": stored_state.get("extraction", {}),
+                "routing": stored_state.get("routing", {}),
+                "kurum_profili_id": state_institution or "kaymakamlik_v1",
+                "muhatap": stored_state.get("muhatap"),
+                "muhatap_turu": stored_state.get("muhatap_turu"),
+            })
 
     mode = resolve_chat_mode(req.message)
     draft_edit_requested = mode == "taslak_duzenleme"
@@ -691,6 +688,36 @@ def roi_summary():
     return summary.model_dump()
 
 
+def _analysis_list_subject(state: Dict[str, Any]) -> str:
+    draft_state = state.get("draft")
+    if isinstance(draft_state, dict):
+        structured_draft = draft_state.get("draft")
+        if isinstance(structured_draft, dict) and structured_draft.get("subject"):
+            return str(structured_draft["subject"])
+        if draft_state.get("subject"):
+            return str(draft_state["subject"])
+
+    extraction = state.get("extraction")
+    if isinstance(extraction, dict):
+        fields = extraction.get("fields")
+        if isinstance(fields, dict):
+            subject_field = fields.get("subject")
+            if isinstance(subject_field, dict) and subject_field.get("value"):
+                return str(subject_field["value"])
+
+    summary = state.get("summary")
+    if isinstance(summary, dict):
+        structured_summary = summary.get("structured_summary")
+        if isinstance(structured_summary, dict) and structured_summary.get("subject"):
+            return str(structured_summary["subject"])
+
+    document = state.get("document")
+    if isinstance(document, dict) and document.get("subject_excerpt"):
+        return str(document["subject_excerpt"])
+
+    return ""
+
+
 @app.get("/api/analyses")
 def get_analyses(
     limit: int = 20, 
@@ -720,7 +747,7 @@ def get_analyses(
             "document_id": state.get("document_id", ""),
             "document_type": doc.get("document_type"),
             "process_intent": doc.get("process_intent"),
-            "subject": state.get("draft", {}).get("draft", {}).get("subject") or state.get("draft", {}).get("subject", ""),
+            "subject": _analysis_list_subject(state),
             "recommended_unit": r.get("recommended_unit"),
             "human_review_status": hr.get("status"),
             "quality_status": q.get("status"),
@@ -772,7 +799,7 @@ def get_pending_reviews(limit: int = 20, offset: int = 0):
                 "analysis_id": analysis_id,
                 "document_type": doc.get("document_type"),
                 "process_intent": doc.get("process_intent"),
-                "subject": state.get("draft", {}).get("draft", {}).get("subject") or state.get("draft", {}).get("subject", ""),
+                "subject": _analysis_list_subject(state),
                 "recommended_unit": r.get("recommended_unit"),
                 "quality_status": q.get("status"),
                 "review_reasons": reasons,

@@ -6,6 +6,7 @@ const API_BASE_URL =
 export async function sendChatMessage(
   message: string,
   analysisId?: string,
+  institution?: string,
 ): Promise<ChatApiResponse> {
   const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
     method: "POST",
@@ -15,6 +16,7 @@ export async function sendChatMessage(
     body: JSON.stringify({
       message,
       analysis_id: analysisId || null,
+      institution: institution || null,
     }),
   });
 

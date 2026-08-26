@@ -313,3 +313,25 @@
     height: calc(100vh - 6rem);
   }
 }
+
+.chat-quick-actions {
+  display: flex;
+  gap: .4rem;
+  padding: .6rem .75rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-color);
+  background: #fff;
+}
+.chat-quick-actions button {
+  flex: 0 0 auto;
+  padding: .35rem .55rem;
+  color: #285b88;
+  background: #edf7ff;
+  border: 1px solid #bdd9eb;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: .68rem;
+  font-weight: 650;
+}
+.chat-quick-actions button:hover:not(:disabled) { background: #dcedf8; }
+.chat-quick-actions button:disabled { cursor: not-allowed; opacity: .55; }

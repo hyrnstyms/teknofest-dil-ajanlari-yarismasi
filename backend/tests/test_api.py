@@ -705,3 +705,61 @@ def test_general_chat_applies_router_d_atomically(monkeypatch):
     assert analysis_store["router-mod-c"]["human_review"][
         "mod_c_original_draft"
     ] == original_draft
+
+
+def test_chat_forwards_selected_institution_without_analysis(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(
+        "backend.app.main.resolve_chat_mode",
+        lambda message: "institution",
+    )
+
+    def fake_handle(message, current_draft=None, workflow_context=None, resolved_mode=None):
+        calls.append((current_draft, workflow_context, resolved_mode))
+        return "Fen İşleri Müdürlüğü"
+
+    monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
+    response = client.post(
+        "/api/chat/message",
+        json={
+            "message": "Bu kurumda yol işleri hangi birimle ilgilidir?",
+            "institution": "belediye",
+        },
+    )
+
+    assert response.status_code == 200
+    assert calls == [(None, {"institution": "belediye"}, "institution")]
+
+
+def test_chat_drops_analysis_context_when_selected_institution_mismatches(monkeypatch):
+    analysis_store["kaymak-context"] = {
+        "kurum_profili_id": "kaymakamlik",
+        "draft": {"draft": {"subject": "Kaymakamlık evrakı", "body": "Metin"}},
+        "extraction": {"fields": {"subject": {"value": "Kaymakamlık evrakı"}}},
+        "routing": {"recommended_unit": "İlçe Millî Eğitim Müdürlüğü"},
+    }
+    calls = []
+
+    monkeypatch.setattr(
+        "backend.app.main.resolve_chat_mode",
+        lambda message: "active_document",
+    )
+
+    def fake_handle(message, current_draft=None, workflow_context=None, resolved_mode=None):
+        calls.append((current_draft, workflow_context, resolved_mode))
+        return "Bu soruyu yanıtlamak için önce bir evrak analizi açın."
+
+    monkeypatch.setattr("backend.app.main.handle_chat_message", fake_handle)
+    response = client.post(
+        "/api/chat/message",
+        json={
+            "message": "Bu evrakı özetle",
+            "analysis_id": "kaymak-context",
+            "institution": "belediye",
+        },
+    )
+
+    assert response.status_code == 200
+    assert calls == [(None, {"institution": "belediye"}, "active_document")]
+    assert "Kaymakamlık evrakı" not in response.json()["sohbet_yaniti"]

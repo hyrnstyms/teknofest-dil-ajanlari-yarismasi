@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any
 
 from qdrant_client import models
@@ -11,6 +12,20 @@ from backend.app.rag.qdrant_store import (
     LEGAL_COLLECTION,
     DOCUMENT_COLLECTION,
 )
+
+
+@lru_cache(maxsize=1)
+def get_shared_embedding_service() -> EmbeddingService:
+    from backend.app.rag.embedding_service import EmbeddingService as Service
+
+    return Service()
+
+
+@lru_cache(maxsize=1)
+def get_shared_qdrant_store() -> QdrantStore:
+    from backend.app.rag.qdrant_store import QdrantStore as Store
+
+    return Store()
 
 
 class Retriever:
@@ -82,12 +97,15 @@ class Retriever:
             "metadata": metadata,
         }
 
-    def __init__(self):
+    def __init__(
+        self,
+        embedding_service: EmbeddingService | None = None,
+        store: QdrantStore | None = None,
+    ):
         self.embedding_service = (
-            EmbeddingService()
+            embedding_service or get_shared_embedding_service()
         )
-
-        self.store = QdrantStore()
+        self.store = store or get_shared_qdrant_store()
 
     def search(
         self,

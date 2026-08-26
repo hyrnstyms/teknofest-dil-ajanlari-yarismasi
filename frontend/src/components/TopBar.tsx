@@ -8,11 +8,12 @@ interface Props {
 
 export const TopBar: React.FC<Props> = ({ institutionSelector }) => {
   const [ready, setReady] = useState<boolean | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     api.checkSystemReady()
-      .then((result) => mounted && setReady(Boolean(result.ready)))
+      .then((result) => { if (mounted) { setReady(Boolean(result.ready)); setProvider(result.services?.llm?.provider || null); } })
       .catch(() => mounted && setReady(false));
     return () => { mounted = false; };
   }, []);
@@ -23,7 +24,7 @@ export const TopBar: React.FC<Props> = ({ institutionSelector }) => {
       <div className="top-bar-context">
         {institutionSelector}
         <span className={`system-pill ${ready === true ? "online" : ready === false ? "offline" : ""}`}>
-          <Activity size={14} /> {ready === null ? "Kontrol ediliyor" : ready ? "Sistem hazır" : "Sistem bağlantısı yok"}
+          <Activity size={14} /> {ready === null ? "Kontrol ediliyor" : ready ? "Sistem Hazır" : "Bir Servis Kullanılamıyor"}{provider && <small>{provider === "ollama" ? "Yerel • Ollama" : provider.toLocaleUpperCase("tr-TR")}</small>}
         </span>
       </div>
     </header>

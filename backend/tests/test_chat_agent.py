@@ -16,15 +16,20 @@ from backend.app.agents.chat_agent import (
     TASLAK_BAGLAMI_GEREKLI_MESAJI,
     TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI,
     TASLAK_DUZENLEME_SISTEM_PROMPTU,
+    _LocalOpenAICompat,
     _get_evren_client,
     _get_legal_agent,
     _normalize_text,
     classify_with_router,
+    handle_active_document_question,
     handle_chat_message,
     handle_draft_edit,
     handle_kucuk_sohbet,
+    handle_institution_question,
     handle_legal_question,
+    is_active_document_question,
     is_kucuk_sohbet,
+    is_institution_question,
     is_mevzuat_sorusu,
     is_taslak_duzenleme_talebi,
     match_faq,
@@ -1050,3 +1055,110 @@ def test_evren_client_cache_stays_zero_after_mocked_mod_a_b_c_d_tests():
 
     assert initial.hits + initial.misses == 0
     assert current.hits + current.misses == 0
+
+
+def _active_state():
+    return {
+        "summary": {"short_summary": "Vatandaş yol onarımı talep etmektedir."},
+        "extraction": {"fields": {"subject": {"value": "Bozuk yol"}}},
+        "missing_fields": {
+            "missing_fields": ["address"],
+            "uncertain_fields": ["signature_present"],
+        },
+        "routing": {
+            "recommended_unit": "Fen İşleri Müdürlüğü",
+            "routing_reason": "Yol ve asfalt ifadeleri eşleşti.",
+            "routing_evidence": ["Eşleşen Kelimeler: yol, asfalt"],
+            "requires_human_review": False,
+        },
+        "legal_analysis": {
+            "answer": "Doğrulanmış mevzuat kanıtı [K1].",
+            "evidence": [{"evidence": "kanıt", "source": "K1"}],
+        },
+        "human_review": {"status": "pending_review", "required": True},
+        "warnings": [],
+    }
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Bu evrakın konusu ne?", "Bozuk yol"),
+        ("Bu evrakı özetle", "Vatandaş yol onarımı"),
+        ("Bu evrakın eksikleri neler?", "address"),
+        ("Neden bu evrakı bu birime yönlendirdin?", "Fen İşleri Müdürlüğü"),
+        ("Bu evraka hangi mevzuat uygulanıyor?", "[K1]"),
+        ("Şu an bu evrak için personelden ne bekleniyor?", "pending_review"),
+    ],
+)
+def test_active_document_copilot_answers_from_state(message, expected):
+    assert is_active_document_question(message)
+    assert expected in handle_active_document_question(message, _active_state())
+
+
+def test_active_document_mode_requires_analysis_state():
+    assert handle_chat_message(
+        "Bu evrakı özetle",
+        resolved_mode="active_document",
+    ) == "Bu soruyu yanıtlamak için önce bir evrak analizi açın."
+
+
+def test_active_document_mode_uses_provided_state():
+    result = handle_chat_message(
+        "Bu evrakın eksikleri neler?",
+        workflow_context={"analysis_state": _active_state()},
+        resolved_mode="active_document",
+    )
+    assert "address" in result
+    assert "signature_present" in result
+
+def test_local_openai_compat_returns_chat_completion_shape():
+    class FakeLocalLLM:
+        def chat(self, **kwargs):
+            assert kwargs["system_prompt"] == "system"
+            assert kwargs["user_prompt"] == "user"
+            assert kwargs["json_mode"] is True
+            return '{"ok": true}'
+
+    adapter = _LocalOpenAICompat(FakeLocalLLM())
+    response = adapter.chat.completions.create(
+        messages=[
+            {"role": "system", "content": "system"},
+            {"role": "user", "content": "user"},
+        ],
+        response_format={"type": "json_object"},
+    )
+    assert response.choices[0].message.content == '{"ok": true}'
+
+def test_institution_question_uses_belediye_profile_evidence():
+    message = "Bu kurumda yol ve asfalt işleri hangi birimle ilgilidir?"
+
+    assert is_institution_question(message)
+    assert resolve_chat_mode(message) == "institution"
+    result = handle_chat_message(
+        message,
+        workflow_context={"institution": "belediye"},
+        resolved_mode="institution",
+    )
+
+    assert "Fen İşleri Müdürlüğü" in result
+    assert "yol" in result
+    assert "profil" in result.lower()
+
+
+def test_institution_question_does_not_invent_belediye_unit_for_kaymakamlik():
+    message = "Bu kurumda yol ve asfalt işleri hangi birimle ilgilidir?"
+    result = handle_institution_question(message, "kaymakamlik")
+
+    assert "Fen İşleri" not in result
+    assert "eşleşmesi bulunmuyor" in result
+    assert "personel incelemesi" in result
+
+
+def test_institution_question_requires_selected_profile():
+    result = handle_institution_question(
+        "Bu kurumda yol işleri hangi birimle ilgilidir?",
+        None,
+    )
+
+    assert "kurum profili seçin" in result

@@ -9,6 +9,8 @@ import "./chat.css";
 interface Props {
   analysisId?: string;
   currentDraft?: DraftInfo;
+  institutionId?: string;
+  institutionLabel?: string;
   onDraftUpdated: (draft: DraftInfo) => void;
 }
 
@@ -23,14 +25,16 @@ function welcomeMessage(hasAnalysis: boolean): ChatUiMessage {
     mode: "kilavuz",
     status: "answered",
     text: hasAnalysis
-      ? "Aktif evrak analiziyle çalışıyorum. Sistem kullanımı, mevzuat veya taslak düzenleme hakkında sorabilirsiniz."
-      : "Merhaba. Sistem kullanımı hakkında soru sorabilirsiniz. Taslak düzenlemek için önce bir evrak analiz etmeniz gerekir.",
+      ? "Aktif evrak bağlamını kullanıyorum. Özeti, eksikleri, mevzuatı, yönlendirme gerekçesini sorabilir veya taslak üzerinde kontrollü değişiklik isteyebilirsiniz."
+      : "Merhaba, ben KAMUAI Kurumsal Copilot. Kamu evrakı, mevzuat, yönlendirme ve resmî yazışma süreçlerinde yardımcı olabilirim.",
   };
 }
 
 export const ChatWidget: React.FC<Props> = ({
   analysisId,
   currentDraft,
+  institutionId,
+  institutionLabel,
   onDraftUpdated,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -58,7 +62,7 @@ export const ChatWidget: React.FC<Props> = ({
     setIsLoading(true);
 
     try {
-      const result = await sendChatMessage(text, analysisId);
+      const result = await sendChatMessage(text, analysisId, institutionId);
       setMessages((previous) => [
         ...previous,
         {
@@ -109,6 +113,7 @@ export const ChatWidget: React.FC<Props> = ({
           isLoading={isLoading}
           hasAnalysis={Boolean(analysisId)}
           hasDraft={Boolean(currentDraft)}
+          institutionLabel={institutionLabel}
           onSend={handleSend}
           onClose={() => setIsOpen(false)}
         />

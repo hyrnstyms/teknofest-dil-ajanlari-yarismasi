@@ -41,7 +41,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onViewChange }) => (
   <aside className="app-sidebar no-print">
     <div className="sidebar-brand">
       <div className="sidebar-logo"><Building2 size={22} /></div>
-      <div><strong>Evrak Masası</strong><span>Kurumsal çalışma alanı</span></div>
+      <div><strong>KAMUAI Evrak Masası</strong><span>Personel çalışma alanı</span></div>
     </div>
 
     <nav className="sidebar-nav" aria-label="Ana menü">
@@ -56,7 +56,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onViewChange }) => (
         </button>
       ))}
       <button type="button" disabled title="Bağlı bir mevzuat listeleme endpoint'i bulunmuyor">
-        <BookOpen size={18} /> Mevzuat Kütüphanesi
+        <BookOpen size={18} /> Mevzuat Kütüphanesi <span className="soon-label">Yakında</span>
       </button>
       <button
         type="button"
@@ -66,7 +66,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onViewChange }) => (
         <LayoutDashboard size={18} /> Yönetici Paneli
       </button>
       <button type="button" disabled title="Bu özellik henüz kullanıma açık değil">
-        <Settings size={18} /> Ayarlar
+        <Settings size={18} /> Ayarlar <span className="soon-label">Yakında</span>
       </button>
     </nav>
   </aside>

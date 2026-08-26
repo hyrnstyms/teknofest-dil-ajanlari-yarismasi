@@ -60,9 +60,10 @@ export const HomeDashboard: React.FC<Props> = ({ institution, onNewDocument, onO
     <div className="home-dashboard no-print">
       <header className="home-header">
         <div>
-          <span className="section-kicker">Personel çalışma alanı</span>
-          <h1>Çalışma Alanım</h1>
-          <p>Seçili kurum: <strong>{institution?.label || "Kurum seçilmedi"}</strong></p>
+          <span className="section-kicker">KAMUAI karar destek sistemi</span>
+          <h1>KAMUAI Evrak Masası</h1>
+          <p>Kamu evraklarını analiz eder, eksikleri tespit eder, ilgili mevzuatı bulur, doğru birime yönlendirir ve resmî yazı taslağı hazırlar.</p>
+          <span className="institution-profile-badge">Kurum Profili: <strong>{institution?.label || "Kurum seçilmedi"}</strong></span>
         </div>
         <div className="home-actions">
           <button type="button" className="icon-button" onClick={() => void load()} disabled={loading} title="Verileri yenile"><RefreshCw size={17} /></button>

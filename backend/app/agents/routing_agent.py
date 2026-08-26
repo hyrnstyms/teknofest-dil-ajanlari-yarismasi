@@ -8,6 +8,7 @@ from backend.app.institutions.profile_loader import (
 
 # Yarışma demosunda aktif kurum
 _DEFAULT_INSTITUTION = "kaymakamlik"
+_GENERIC_KEYWORDS = {"ruhsat"}
 
 
 def normalize_turkish_text(text: str) -> str:
@@ -17,6 +18,32 @@ def normalize_turkish_text(text: str) -> str:
     text = text.translate(trans).lower()
     text = re.sub(r'[^\w\s]', ' ', text)
     return re.sub(r'\s+', ' ', text).strip()
+
+
+def _has_explicit_target(norm_text: str, unit_name: str) -> bool:
+    norm_name = normalize_turkish_text(unit_name)
+    aliases = {norm_name}
+    if norm_name.startswith("ilçe "):
+        aliases.add(norm_name.removeprefix("ilçe "))
+
+    for alias in aliases:
+        if not alias:
+            continue
+        # Yalın birim adı gönderen/antet bilgisi olabilir. Yalnız hedefi veya
+        # görevlendirilen birimi gösteren yönelme/eyleyen bağlamını güçlendir.
+        suffixed_target = (
+            r"\b"
+            + re.escape(alias)
+            + r"(?:ne|na|nce|nca)\b"
+        )
+        by_unit = (
+            r"\b"
+            + re.escape(alias)
+            + r"\s+tarafından\b"
+        )
+        if re.search(suffixed_target, norm_text) or re.search(by_unit, norm_text):
+            return True
+    return False
 
 
 class RoutingAgent:
@@ -94,6 +121,7 @@ class RoutingAgent:
             "routing_score": 0.0,
             "score_type": "rule_match",
             "score_breakdown": {
+                "explicit_target_score": 0,
                 "intent_score": 0,
                 "keyword_score": 0,
                 "doc_type_score": 0,
@@ -140,13 +168,26 @@ class RoutingAgent:
         for unit in units:
             score = 0
             breakdown = {
+                "explicit_target_score": 0,
                 "intent_score": 0,
                 "keyword_score": 0,
                 "doc_type_score": 0,
                 "details": []
             }
 
-            # 1. Document Type eşleşmesi (En güçlü yeni sinyal)
+            # 1. Açık hedef birim sinyali
+            if _has_explicit_target(norm_text, unit["name"]):
+                score += 100
+                breakdown["explicit_target_score"] += 100
+                breakdown["details"].append(
+                    {
+                        "signal": "explicit_target_match",
+                        "value": 100,
+                        "evidence": unit["name"],
+                    }
+                )
+
+            # 2. Document Type eşleşmesi
             if document_type and document_type in self._doc_type_mapping:
                 if unit["unit_id"] in self._doc_type_mapping[document_type]:
                     score += 30
@@ -159,7 +200,7 @@ class RoutingAgent:
                         }
                     )
 
-            # 2. Intent eşleşmesi
+            # 3. Intent eşleşmesi
             if process_intent and process_intent in unit.get(
                 "supported_intents", []
             ):
@@ -173,7 +214,7 @@ class RoutingAgent:
                     }
                 )
 
-            # 3. Anahtar kelime eşleşmesi (norm metinde kelime sınırı)
+            # 4. Anahtar kelime eşleşmesi (norm metinde kelime sınırı)
             matched_keywords = []
             for kw in unit.get("keywords", []):
                 norm_kw = normalize_turkish_text(kw)
@@ -183,12 +224,18 @@ class RoutingAgent:
                 pattern = r"\b" + re.escape(norm_kw) + r"[a-zçğıöşü]*\b"
                 if re.search(pattern, norm_text):
                     matched_keywords.append(kw)
-                    score += 50
-                    breakdown["keyword_score"] += 50
+                    if norm_kw in _GENERIC_KEYWORDS:
+                        keyword_value = 20
+                    elif " " in norm_kw:
+                        keyword_value = 60
+                    else:
+                        keyword_value = 50
+                    score += keyword_value
+                    breakdown["keyword_score"] += keyword_value
                     breakdown["details"].append(
                         {
                             "signal": "keyword_match",
-                            "value": 50,
+                            "value": keyword_value,
                             "evidence": kw,
                         }
                     )
@@ -228,9 +275,7 @@ class RoutingAgent:
             if len(unit_scores) > 1:
                 runner_up = unit_scores[1]["score"]
                 margin = best_score - runner_up
-                if margin < 15 and best_score < 80:
-                    ambiguous = True
-                elif margin == 0:
+                if margin < 15:
                     ambiguous = True
                     result["ambiguity_reason"] = "low_margin"
 
@@ -268,6 +313,10 @@ class RoutingAgent:
                 if best["matched_keywords"]:
                     result["evidence"].append(
                         f"Eşleşen Kelimeler: {', '.join(best['matched_keywords'])}"
+                    )
+                if best["breakdown"]["explicit_target_score"]:
+                    result["evidence"].append(
+                        f"Açık Hedef Birim: {best['unit']['name']}"
                     )
 
         else:

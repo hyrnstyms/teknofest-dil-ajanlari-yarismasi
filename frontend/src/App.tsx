@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { AlertCircle, FilePlus2, FileSearch } from "lucide-react";
+import { AlertCircle, Building2, FilePlus2, FileSearch } from "lucide-react";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { ChatWidget } from "./components/chat/ChatWidget";
 import { DocumentWorkspace } from "./components/DocumentWorkspace";
+import { EntryLanding } from "./components/EntryLanding";
 import { HomeDashboard } from "./components/HomeDashboard";
 import { InputPanel } from "./components/InputPanel";
 import { InstitutionSelector } from "./components/InstitutionSelector";
@@ -19,6 +20,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [institution, setInstitution] = useState<InstitutionOption | null>(null);
   const [view, setView] = useState<AppView>("home");
+  const [hasEntered, setHasEntered] = useState(false);
+  const [contextNotice, setContextNotice] = useState<string | null>(null);
 
   const prepareAnalysis = (): boolean => {
     setError(null);
@@ -80,6 +83,15 @@ function App() {
     void refreshAnalysis();
   };
 
+  if (!hasEntered) {
+    return (
+      <EntryLanding
+        onEnterDesk={() => { setView("home"); setHasEntered(true); }}
+        onEnterAdmin={() => { setView("admin"); setHasEntered(true); }}
+      />
+    );
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -93,14 +105,23 @@ function App() {
             topbar
             value={institution?.id ?? ""}
             onChange={(selected) => {
+              const changed = institution?.id !== selected?.id;
               setInstitution(selected);
               setAppState(null);
               setError(null);
+              setContextNotice(changed && institution
+                ? "Kurum profili değişti; önceki aktif evrak bağlamı temizlendi."
+                : null);
             }}
             disabled={isLoading}
           />
         )} />
         <div className="app-content">
+          {contextNotice && (
+            <div className="context-notice no-print" role="status">
+              <Building2 size={18} /><span>{contextNotice}</span>
+            </div>
+          )}
           {error && (
             <div className="inline-error no-print" role="alert">
               <AlertCircle size={20} /><div><strong>İşlem tamamlanamadı</strong><span>{error}</span></div>
@@ -119,9 +140,9 @@ function App() {
             <section className="upload-view no-print">
               <div className="view-heading">
                 <span className="section-kicker">Yeni işlem</span>
-                <h1>Yeni Evrak Yükle</h1>
+                <h1>Yeni Evrak Analizi</h1>
                 <p>Dosya yükleyin veya evrak metnini yapıştırın. Analiz seçili kurum profiliyle çalıştırılır.</p>
-                <span className="selected-context">Kurum: <strong>{institution?.label || "Seçilmedi"}</strong></span>
+                <span className="selected-context institution-profile-badge">Kurum Profili: <strong>{institution?.label || "Seçilmedi"}</strong></span>
               </div>
               <InputPanel
                 onAnalyzeText={handleAnalyzeText}
@@ -156,6 +177,8 @@ function App() {
       <ChatWidget
         analysisId={appState?.analysis_id}
         currentDraft={appState?.draft}
+        institutionId={institution?.id}
+        institutionLabel={institution?.label}
         onDraftUpdated={handleChatDraftUpdated}
       />
     </div>

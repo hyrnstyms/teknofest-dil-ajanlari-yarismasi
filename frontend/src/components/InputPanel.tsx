@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { UploadCloud, FileText, X } from "lucide-react";
 
 interface InputPanelProps {
@@ -17,7 +17,26 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   const [text, setText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadingMessages = [
+    "Belge okunuyor...",
+    "Bilgiler çıkarılıyor...",
+    "Mevzuat kontrol ediliyor...",
+    "Uygun birim değerlendiriliyor...",
+    "Resmî yazı taslağı hazırlanıyor...",
+  ];
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingStep(0);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setLoadingStep((current) => Math.min(current + 1, loadingMessages.length - 1));
+    }, 7000);
+    return () => window.clearInterval(timer);
+  }, [isLoading, loadingMessages.length]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -129,15 +148,24 @@ export const InputPanel: React.FC<InputPanelProps> = ({
           >
             {isLoading ? (
               <>
-                <span className="spinner"></span> Analiz Ediliyor...
+                <span className="spinner"></span> EVRAK ANALİZ EDİLİYOR
               </>
             ) : (
               <>
-                Belgeyi Analiz Et
+                EVRAKI ANALİZ ET
               </>
             )}
           </button>
         </div>
+        {isLoading && (
+          <div className="analysis-loading-status" role="status" aria-live="polite">
+            <span className="spinner dark" />
+            <div>
+              <strong>{loadingMessages[loadingStep]}</strong>
+              <small>Gösterilen aşamalar bekleme deneyimidir; gerçek zamanlı backend ilerleme yüzdesi değildir.</small>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

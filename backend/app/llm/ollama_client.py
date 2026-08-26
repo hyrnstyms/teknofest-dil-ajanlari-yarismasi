@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import requests
@@ -36,6 +37,7 @@ class OllamaClient(LLMClient):
         payload: dict[str, Any] = {
             "model": self.model_name,
             "stream": False,
+            "keep_alive": os.getenv("OLLAMA_KEEP_ALIVE", "30m"),
 
             "messages": [
                 {
