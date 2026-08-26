@@ -219,10 +219,33 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
       )}
 
       {/* Workspace Grid: Left = A4 Preview, Right = AI Cards */}
+      {/* Top Section: Analysis & Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <AnalysisCard document={state.document} documentId={state.document_id} />
+        <SummaryCard summary={state.summary} />
+      </div>
+
+      {/* Workspace Grid */}
       <div className="workspace-grid">
-        {/* Left: A4 Document Preview */}
-        <div className="workspace-left">
-          <div className="card">
+        {/* Left Column: Info, Extraction, RAG */}
+        <div className="workspace-left" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <ExtractionCard extraction={state.extraction} />
+          <MissingFieldsCard missingFields={state.missing_fields} />
+          <LegalCard legalAnalysis={state.legal_analysis} />
+        </div>
+
+        {/* Right Column: Routing, Draft, Review */}
+        <div className="workspace-right" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <RoutingCard routing={state.routing} />
+          <QualityFormatCard quality={state.quality} />
+          <HumanReviewPanel
+            review={state.human_review}
+            analysisId={state.analysis_id || state.document_id}
+            onUpdate={handleUpdate}
+            onEdit={startEdit}
+          />
+
+          <div className="card mt-4">
             <div className="card-header flex justify-between items-center w-full">
               <div className="flex items-center gap-2">
                 <FileSignature size={18} /> Resmî Cevap Taslağı
@@ -245,7 +268,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
                 )}
               </div>
             </div>
-            <div className="card-body" style={{ backgroundColor: '#f8fafc' }}>
+            <div className="card-body" style={{ backgroundColor: '#f8fafc', padding: '1rem' }}>
               {/* Tabs */}
               {!isEditing && (
                 <div className="tabs">
@@ -303,7 +326,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
                   <textarea
                     value={editBody}
                     onChange={(e) => setEditBody(e.target.value)}
-                    style={{ minHeight: '400px' }}
+                    style={{ minHeight: '300px' }}
                     disabled={editSaving}
                   />
                   <div className="flex gap-2 justify-end">
@@ -324,7 +347,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
                   </div>
                 </div>
               ) : activeTab === 'official' ? (
-                <div className="official-document print-area">
+                <div className="official-document print-area" style={{ width: '100%', minHeight: '300px', padding: '1.5rem', boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                   {officialText || (
                     <p className="text-center text-secondary" style={{ marginTop: '4rem' }}>
                       Resmî görünüm mevcut değil.
@@ -335,28 +358,11 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
                 <textarea
                   readOnly
                   value={rawDraftText || 'Ham taslak mevcut değil.'}
-                  style={{ minHeight: '400px', backgroundColor: '#fff' }}
+                  style={{ minHeight: '300px', backgroundColor: '#fff' }}
                 />
               )}
             </div>
           </div>
-        </div>
-
-        {/* Right: AI Analysis Cards */}
-        <div className="workspace-right">
-          <AnalysisCard document={state.document} documentId={state.document_id} />
-          <SummaryCard summary={state.summary} />
-          <ExtractionCard extraction={state.extraction} />
-          <MissingFieldsCard missingFields={state.missing_fields} />
-          <LegalCard legalAnalysis={state.legal_analysis} />
-          <RoutingCard routing={state.routing} />
-          <QualityFormatCard quality={state.quality} />
-          <HumanReviewPanel
-            review={state.human_review}
-            analysisId={state.analysis_id || state.document_id}
-            onUpdate={handleUpdate}
-            onEdit={startEdit}
-          />
         </div>
       </div>
     </div>

@@ -103,9 +103,9 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
           <FileText size={18} /> Belge Girişi
         </div>
         <div className="card-body">
-          <div className="dashboard-grid" style={{ marginTop: 0 }}>
-            {/* File Upload */}
-            <div className="flex-col">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+            {/* File Upload Dropzone */}
+            <div>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -115,9 +115,9 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
               />
 
               {selectedFile ? (
-                <div className="upload-area flex flex-col items-center justify-center">
-                  <div className="badge badge-info mb-4">
-                    <FileText size={16} />
+                <div className="upload-area flex flex-col items-center justify-center" style={{ background: '#f8fafc', borderColor: 'var(--primary-color)' }}>
+                  <div className="badge badge-info mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}>
+                    <FileText size={18} />
                     {selectedFile.name}
                   </div>
                   <div className="text-secondary mb-4" style={{ fontSize: '0.85rem' }}>
@@ -128,7 +128,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                     onClick={handleClearFile}
                     disabled={isLoading}
                   >
-                    <X size={16} /> Kaldır
+                    <X size={16} /> Dosyayı Kaldır
                   </button>
                 </div>
               ) : (
@@ -138,27 +138,30 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
+                  style={{ minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
                 >
-                  <UploadCloud size={48} className="upload-icon" style={{ margin: '0 auto' }} />
-                  <p className="font-medium">Dosyayı buraya sürükleyin veya tıklayarak seçin</p>
+                  <UploadCloud size={54} className="upload-icon" style={{ margin: '0 auto 1rem', color: 'var(--primary-color)' }} />
+                  <p className="font-medium" style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Dosyayı buraya sürükleyin veya tıklayarak seçin</p>
                   <p className="text-sm text-secondary" style={{ marginTop: '0.5rem' }}>
-                    PDF, PNG, JPG, TIFF ve BMP desteklenir
+                    Desteklenen Formatlar: PDF, PNG, JPG, TIFF, BMP
                   </p>
                 </div>
               )}
             </div>
 
+            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.9rem' }}>VEYA</div>
+
             {/* Text Input */}
-            <div className="flex-col">
+            <div>
               <textarea
-                placeholder="Veya analiz edilecek metni doğrudan buraya yapıştırın..."
+                placeholder="Analiz edilecek metni doğrudan buraya yapıştırın..."
                 value={text}
                 onChange={(e) => {
                   setText(e.target.value);
                   if (selectedFile) handleClearFile();
                 }}
                 disabled={isLoading || selectedFile !== null}
-                style={{ height: '100%', minHeight: '180px' }}
+                style={{ height: '100%', minHeight: '160px', backgroundColor: selectedFile ? '#f1f5f9' : '#ffffff' }}
               />
             </div>
           </div>
