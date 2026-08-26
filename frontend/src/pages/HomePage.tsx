@@ -14,6 +14,7 @@ import { api } from '../services/api';
 import type { AnalysisListItem } from '../types/analysis';
 import type { ROISummaryResponse } from '../types/metrics';
 import type { InstitutionOption } from '../services/api';
+import { EVRAGBrand } from '../components/EVRAGBrand';
 
 export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ institution }) => {
   const navigate = useNavigate();
@@ -64,18 +65,34 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
     <div className="page-container">
       {/* Üst Aksiyonlar */}
       <div className="home-hero">
-        <div>
-          <h2 style={{ marginBottom: '0.5rem' }}>KAMUAI Evrak Masası</h2>
-          <p className="text-secondary">Kamu Evrak ve Yazışma Süreçleri için Akıllı Agent Destek Sistemi</p>
+        <div className="home-hero-copy">
+          <EVRAGBrand variant="compact" theme="dark" className="home-brand" />
+          <span className="home-ai-kicker">AKILLI EVRAK VE KARAR DESTEK SİSTEMİ</span>
+          <h2>Evraktan karara,<br />tek akıllı akış.</h2>
+          <p className="text-secondary">Kurumsal evrakları anlayan, mevzuatla ilişkilendiren, doğru birime yönlendiren yapay zekâ destekli karar sistemi.</p>
           <span className="selected-context institution-profile-badge">Kurum Profili: <strong>{institution?.label || "Seçilmedi"}</strong></span>
         </div>
-        <button
-          className="btn btn-primary"
-          style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
-          onClick={() => navigate('/yeni-evrak')}
-        >
-          <FilePlus size={20} /> Yeni Evrak Analiz Et
-        </button>
+        <div className="home-hero-product" aria-label="Evraktan karara EVRAG akışı">
+          <div className="origami-route" aria-hidden="true">
+            <div className="origami-sheet"><span /></div>
+            <div className="origami-fold-line" />
+          </div>
+          <div className="home-hero-actions">
+            <button className="btn btn-primary" onClick={() => navigate('/yeni-evrak')}>
+              <FilePlus size={18} /> Yeni Evrak Analizi
+            </button>
+            <button className="btn home-ai-button" onClick={() => navigate('/ai-operasyon')}>
+              <Activity size={17} /> AI Operasyon Merkezi
+            </button>
+          </div>
+          <div className="home-ai-flow" aria-label="EVRAG yapay zekâ işlem mimarisi">
+            {["Analiz", "Mevzuat", "Yönlendirme", "Taslak"].map((stage, index) => (
+              <React.Fragment key={stage}>
+                <span>{stage}</span>{index < 3 && <ArrowRight size={13} />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* İstatistik Kartları */}

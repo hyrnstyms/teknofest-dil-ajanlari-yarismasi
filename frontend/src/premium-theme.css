@@ -1,0 +1,107 @@
+/* Premium Enterprise UI Overrides */
+:root {
+  --primary-color: #0ea5e9;
+  --secondary-color: #0284c7;
+  --bg-color: #f1f5f9;
+  --card-bg: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --info-color: #3b82f6;
+
+  --color-navy: #0f172a;
+  --color-primary: #0ea5e9;
+  --color-primary-hover: #0284c7;
+  --color-bg: #f8fafc;
+  --color-workspace: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-border: #e2e8f0;
+  
+  --border-radius: 12px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--text-primary);
+}
+
+/* Sidebar styles are now handled by index.css light theme override */
+
+/* Buttons */
+.btn {
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  font-weight: 600 !important;
+}
+
+.btn-primary {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--secondary-color) !important;
+}
+
+/* App Header & Hero Overrides */
+.home-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  border: 1px solid #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.home-hero h2 {
+  color: #ffffff !important;
+}
+
+.home-hero .text-secondary {
+  color: #94a3b8 !important;
+}
+
+.home-hero .institution-profile-badge {
+  background: rgba(255,255,255,0.1) !important;
+  color: #38bdf8 !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.8rem !important;
+  display: inline-block !important;
+  margin-top: 0.75rem !important;
+}
+
+.home-hero .btn-primary {
+  background: #38bdf8 !important;
+  color: #0f172a !important;
+}
+
+.home-hero .btn-primary:hover {
+  background: #7dd3fc !important;
+}
+
+/* Data Table Updates */
+.data-table thead th {
+  background-color: #f8fafc !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+/* Card Updates */
+.card {
+  box-shadow: var(--shadow) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+}
+
+.card-header {
+  border-bottom: 1px solid var(--border-color) !important;
+  background-color: #ffffff !important;
+  border-radius: 12px 12px 0 0 !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}

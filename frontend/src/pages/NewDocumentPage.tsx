@@ -11,6 +11,7 @@ import {
 import { api, type InstitutionOption } from '../services/api';
 import { DocumentState } from '../types';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { humanizeFilename } from '../utils/presentation';
 
 interface Props {
   institution: InstitutionOption | null;
@@ -28,6 +29,7 @@ const PROCESSING_STAGES = [
 export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded }) => {
   const navigate = useNavigate();
   const [text, setText] = useState('');
+  const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +48,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
     setIsDragging(false);
     if (e.dataTransfer.files?.length > 0) {
       setSelectedFile(e.dataTransfer.files[0]);
+      setInputMode('file');
       setText('');
     }
   };
@@ -53,6 +56,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       setSelectedFile(e.target.files[0]);
+      setInputMode('file');
       setText('');
     }
   };
@@ -97,15 +101,20 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
         Aktif Kurum: <strong>{institution?.label || "Seçilmedi"}</strong>
       </div>
 
+      <div className="document-mode-tabs" role="tablist" aria-label="Evrak giriş yöntemi">
+        <button type="button" role="tab" aria-selected={inputMode === 'file'} className={inputMode === 'file' ? 'active' : ''} onClick={() => { setInputMode('file'); setText(''); }}>Dosya Yükle</button>
+        <button type="button" role="tab" aria-selected={inputMode === 'text'} className={inputMode === 'text' ? 'active' : ''} onClick={() => { setInputMode('text'); handleClearFile(); }}>Metin Gir</button>
+      </div>
+
       {/* Dosya + Metin Girişi */}
       <div className="card mb-6">
         <div className="card-header">
           <FileText size={18} /> Belge Girişi
         </div>
         <div className="card-body">
-          <div className="dashboard-grid" style={{ marginTop: 0 }}>
-            {/* File Upload */}
-            <div className="flex-col">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+            {/* File Upload Dropzone */}
+            <div className={inputMode === 'file' ? '' : 'input-mode-hidden'}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -115,20 +124,20 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
               />
 
               {selectedFile ? (
-                <div className="upload-area flex flex-col items-center justify-center">
-                  <div className="badge badge-info mb-4">
-                    <FileText size={16} />
-                    {selectedFile.name}
+                <div className="upload-area selected-document-paper flex flex-col items-center justify-center" style={{ background: '#f8fafc', borderColor: 'var(--primary-color)' }}>
+                  <div className="badge badge-info mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}>
+                    <FileText size={18} />
+                    {humanizeFilename(selectedFile.name).title}
                   </div>
                   <div className="text-secondary mb-4" style={{ fontSize: '0.85rem' }}>
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    {humanizeFilename(selectedFile.name).extension || "DOSYA"} · {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </div>
                   <button
                     className="btn btn-secondary"
                     onClick={handleClearFile}
                     disabled={isLoading}
                   >
-                    <X size={16} /> Kaldır
+                    <X size={16} /> Dosyayı Kaldır
                   </button>
                 </div>
               ) : (
@@ -138,27 +147,30 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
+                  style={{ minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
                 >
-                  <UploadCloud size={48} className="upload-icon" style={{ margin: '0 auto' }} />
-                  <p className="font-medium">Dosyayı buraya sürükleyin veya tıklayarak seçin</p>
+                  <div className="folded-document-icon" aria-hidden="true"><UploadCloud size={27} /></div>
+                  <p className="font-medium" style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Dosyayı buraya sürükleyin veya tıklayarak seçin</p>
                   <p className="text-sm text-secondary" style={{ marginTop: '0.5rem' }}>
-                    PDF, PNG, JPG, TIFF ve BMP desteklenir
+                    Desteklenen Formatlar: PDF, PNG, JPG, TIFF, BMP
                   </p>
                 </div>
               )}
             </div>
 
+            <div className="input-mode-hidden">VEYA</div>
+
             {/* Text Input */}
-            <div className="flex-col">
+            <div className={inputMode === 'text' ? '' : 'input-mode-hidden'}>
               <textarea
-                placeholder="Veya analiz edilecek metni doğrudan buraya yapıştırın..."
+                placeholder="Analiz edilecek metni doğrudan buraya yapıştırın..."
                 value={text}
                 onChange={(e) => {
                   setText(e.target.value);
                   if (selectedFile) handleClearFile();
                 }}
                 disabled={isLoading || selectedFile !== null}
-                style={{ height: '100%', minHeight: '180px' }}
+                style={{ height: '100%', minHeight: '160px', backgroundColor: selectedFile ? '#f1f5f9' : '#ffffff' }}
               />
             </div>
           </div>
@@ -176,7 +188,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                   <Loader2 size={18} className="spinner" /> Analiz Ediliyor...
                 </>
               ) : (
-                'Belgeyi Analiz Et'
+                'Evrakı Analiz Et'
               )}
             </button>
           </div>
@@ -205,7 +217,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
       )}
 
       {/* Error Display */}
-      {error ? <ErrorDisplay error={error} /> : null}
+      {error ? <ErrorDisplay error={error} onRetry={() => void handleSubmit()} /> : null}
     </div>
   );
 };

@@ -10,6 +10,7 @@ interface Props {
   hasDraft: boolean;
   institutionLabel?: string;
   onSend: (message: string) => Promise<void>;
+  onRetry?: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -20,6 +21,7 @@ export const ChatPanel: React.FC<Props> = ({
   hasDraft,
   institutionLabel,
   onSend,
+  onRetry,
   onClose,
 }) => {
   const [input, setInput] = useState("");
@@ -98,6 +100,11 @@ export const ChatPanel: React.FC<Props> = ({
             <span />
             <span className="chat-typing-label">yazıyor...</span>
           </div>
+        )}
+        {onRetry && (
+          <button type="button" className="chat-retry-button" onClick={() => void onRetry()} disabled={isLoading}>
+            Son mesajı tekrar gönder
+          </button>
         )}
         <div ref={messageEndRef} />
       </div>

@@ -5,6 +5,8 @@ import { ApiRequestError } from '../services/api';
 interface Props {
   error: unknown;
   title?: string;
+  onRetry?: () => void;
+  retryLabel?: string;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -62,7 +64,7 @@ function getUserFacingError(error: unknown): string {
   return message || 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
 }
 
-export const ErrorDisplay: React.FC<Props> = ({ error, title = 'İşlem Başarısız' }) => (
+export const ErrorDisplay: React.FC<Props> = ({ error, title = 'İşlem Başarısız', onRetry, retryLabel = 'Tekrar Dene' }) => (
   <div className="card error-display" role="alert">
     <div className="card-body">
       <div className="flex items-center gap-4">
@@ -73,6 +75,11 @@ export const ErrorDisplay: React.FC<Props> = ({ error, title = 'İşlem Başarı
             {getUserFacingError(error)}
           </p>
         </div>
+        {onRetry && (
+          <button type="button" className="btn btn-secondary" onClick={onRetry}>
+            {retryLabel}
+          </button>
+        )}
       </div>
     </div>
   </div>

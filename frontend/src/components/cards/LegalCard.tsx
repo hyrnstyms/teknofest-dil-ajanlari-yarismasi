@@ -7,7 +7,15 @@ interface Props {
 }
 
 export const LegalCard: React.FC<Props> = ({ legalAnalysis }) => {
-  const evidence = legalAnalysis?.evidence || [];
+  const rawEvidence = legalAnalysis?.evidence || [];
+  const sources = Array.isArray(legalAnalysis?.sources) ? legalAnalysis.sources : [];
+  const evidence = rawEvidence.map((entry: any, index: number) => {
+    const value = typeof entry === "string" ? { evidence: entry } : entry;
+    const sourceRef = typeof value?.source === "string" ? /^K(d+)$/i.exec(value.source) : null;
+    const sourceIndex = sourceRef ? Number(sourceRef[1]) - 1 : index;
+    const source = sources[sourceIndex] || {};
+    return { ...source, ...value, text: value?.evidence || value?.text || source?.text };
+  });
 
   if (evidence.length === 0) {
     return (
@@ -37,7 +45,7 @@ export const LegalCard: React.FC<Props> = ({ legalAnalysis }) => {
 const LegalEvidenceItem: React.FC<{ item: any, isLast: boolean }> = ({ item, isLast }) => {
   const [expanded, setExpanded] = useState(false);
   
-  const title = item.law_name || item.source || "Mevzuat Maddesi";
+  const title = item.law_name || item.title || item.document_id || item.source || "Mevzuat Maddesi";
   const num = item.law_number || "";
   const article = item.article || item.madde_no || "";
 

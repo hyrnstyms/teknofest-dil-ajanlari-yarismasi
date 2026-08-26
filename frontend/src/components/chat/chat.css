@@ -335,3 +335,16 @@
 }
 .chat-quick-actions button:hover:not(:disabled) { background: #dcedf8; }
 .chat-quick-actions button:disabled { cursor: not-allowed; opacity: .55; }
+.chat-retry-button {
+  align-self: center; padding: 0.45rem 0.8rem; border: 1px solid var(--primary-color); border-radius: 999px; background: white; color: var(--primary-color); cursor: pointer;
+}
+
+/* EVRAG Copilot identity */
+.chat-panel { border-color:rgba(62,157,178,.36); box-shadow:0 22px 60px rgba(4,34,53,.24); }
+.chat-panel-header { background:linear-gradient(125deg,#0a2840,#14526a 70%,#0d7779); }
+.chat-launch-button { background:linear-gradient(145deg,#196fb1,#0a9290); box-shadow:0 10px 28px rgba(16,105,140,.3); transition:transform .18s ease,box-shadow .18s ease; }
+.chat-launch-button:hover { transform:translateY(-2px) scale(1.02); box-shadow:0 14px 34px rgba(16,105,140,.36); }
+.chat-quick-actions { background:linear-gradient(180deg,#f8fcfd,#f1f7f9); }
+.chat-quick-actions button { color:#146482; background:#e5f5f7; border-color:#b9dfe3; }
+.chat-send-button { background:linear-gradient(145deg,#196fb1,#0a9290); }
+@media (prefers-reduced-motion:reduce){.chat-launch-button{transition:none}}

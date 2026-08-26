@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, FileText, Filter, Inbox, RefreshCw, Search, UserCheck } from "lucide-react";
 import { api, type AnalysisListItem, type PendingReviewItem } from "../services/api";
 import type { DocumentState } from "../types";
+import { formatDate, formatDisplayName as humanize } from "../utils/presentation";
 
 interface ViewProps {
   onOpenAnalysis: (analysisId: string) => void | Promise<void>;
@@ -95,8 +96,10 @@ export const IncomingDocumentsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) =
 export const DraftsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
   const { items, loading, error, load } = useDetailedAnalyses();
   const drafts = items.filter((item) => hasDraft(item.detail));
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const download = async (analysisId: string) => {
+    setDownloadError(null);
     const blob = await api.downloadDocx(analysisId);
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -109,7 +112,7 @@ export const DraftsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
   return (
     <div className="records-page no-print">
       <PageHeader icon={<FileText />} eyebrow="Resmî yazılar" title="Taslaklarım" description="Gerçek analiz kayıtlarında resmî yazı taslağı bulunan çalışmalar." onRefresh={load} loading={loading} />
-      {error && <div className="inline-error" role="alert">{error}</div>}
+      {(error || downloadError) && <div className="inline-error" role="alert">{error || downloadError}</div>}
       <div className="draft-grid">
         {drafts.length === 0 ? <div className="records-empty">{loading ? "Taslaklar yükleniyor…" : "Henüz oluşturulmuş resmî yazı taslağı bulunmuyor."}</div> : drafts.map((item) => (
           <article className="draft-card" key={item.analysis_id}>
@@ -120,7 +123,7 @@ export const DraftsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
             <Status value={item.human_review_status} />
             <div className="draft-actions">
               <button type="button" onClick={() => void onOpenAnalysis(item.analysis_id)}>A4 önizlemeyi aç</button>
-              <button type="button" onClick={() => void download(item.analysis_id)}><Download size={14} /> DOCX</button>
+              <button type="button" disabled={item.human_review_status !== "approved"} title={item.human_review_status === "approved" ? "Onaylı taslağı indir" : "DOCX için personel onayı gerekir"} onClick={() => void download(item.analysis_id).catch((downloadFailure) => setDownloadError(downloadFailure instanceof Error ? downloadFailure.message : "DOCX indirilemedi."))}><Download size={14} /> DOCX</button>
             </div>
           </article>
         ))}
@@ -169,8 +172,6 @@ const EmptyTable: React.FC<{ loading: boolean; columns: number }> = ({ loading, 
 
 function unique(values: string[]): string[] { return [...new Set(values)].sort((a, b) => a.localeCompare(b, "tr")); }
 function shortId(value: string): string { return value.length > 12 ? `${value.slice(0, 8)}…` : value; }
-function humanize(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
-function formatDate(value?: string): string { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("tr-TR", { dateStyle: "short", timeStyle: "short" }).format(date); }
 function statusTone(value: string): string { return value.includes("approved") || value === "pass" ? "success" : value.includes("pending") || value === "warning" ? "warning" : value === "rejected" || value === "fail" ? "danger" : "neutral"; }
 function getDraftSubject(state?: DocumentState): string { return state?.draft?.edited_draft?.subject || state?.draft?.draft?.subject || ""; }
 function hasDraft(state?: DocumentState): boolean { return Boolean(state?.draft && (state.draft.official_rendered_text || state.draft.draft_text || state.draft.draft?.body)); }
