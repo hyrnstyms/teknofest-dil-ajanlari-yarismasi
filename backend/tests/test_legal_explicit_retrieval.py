@@ -47,10 +47,10 @@ def source(law, article, score=0.7):
     }
 
 
-def analyze(query, by_law):
+def analyze(query, by_law, **kwargs):
     retriever = RecordingRetriever(by_law)
     agent = LegalAgent(llm=EmptyLLM(), retriever=retriever)
-    return agent.analyze(query), retriever
+    return agent.analyze(query, **kwargs), retriever
 
 
 def test_3071_article_7_is_prioritized():
@@ -108,6 +108,19 @@ def test_missing_explicit_law_falls_back_to_semantic_retrieval():
     assert result["retrieved_sources"] == fallback
     assert [call["law_number"] for call in retriever.calls] == ["9999", None]
     assert [call["limit"] for call in retriever.calls] == [20, 5]
+
+
+def test_strict_explicit_law_never_uses_an_unrelated_semantic_fallback():
+    result, retriever = analyze(
+        "4734 sayılı Kanun kapsamında ihale itirazı",
+        {"4734": [], None: [source("4982", "19")]},
+        strict_explicit_law=True,
+    )
+
+    assert result["evidence"] == []
+    assert result["sources"] == []
+    assert "4734 sayılı Kanun" in result["answer"]
+    assert [call["law_number"] for call in retriever.calls] == ["4734"]
 
 
 def test_temporary_article_identity_is_not_guessed():

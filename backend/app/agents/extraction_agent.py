@@ -1,9 +1,17 @@
 import json
 import re
+import unicodedata
 from typing import Any
 
 from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
+
+
+def turkish_lower(value: Any) -> str:
+    """Case-normalize Turkish text without leaving a combining dot on ``İ``."""
+
+    text = str(value or "").replace("I", "ı").replace("İ", "i")
+    return unicodedata.normalize("NFKC", text.casefold()).replace("i\u0307", "i")
 
 
 class ExtractionAgent:
@@ -275,7 +283,7 @@ class ExtractionAgent:
             return None, None
             
         # Common law numbers check
-        if cand in ["4982", "3071"] and "sayılı" in text.lower():
+        if cand in ["4982", "3071"] and "sayılı" in turkish_lower(text):
             return None, None
             
         return cand, match.group(0).strip()
@@ -300,7 +308,7 @@ class ExtractionAgent:
         matches = re.finditer(r"(?:\bEk|\bEkler|\bEK-\d+)[\s:]+(.+)", text, re.IGNORECASE)
         for m in matches:
             line = m.group(1).strip()
-            if "yoktur" not in line.lower():
+            if "yoktur" not in turkish_lower(line):
                 attachments.append({
                     "name": line,
                     "evidence": m.group(0).strip()
@@ -308,7 +316,7 @@ class ExtractionAgent:
         return attachments
 
     def _extract_signature_present(self, text: str) -> tuple[bool | None, str, str | None]:
-        lower_text = text.lower()
+        lower_text = turkish_lower(text)
         indicators = ["imza", "imzalıdır", "e-imza", "elektronik imza", "elektronik olarak imzalanmıştır"]
         for ind in indicators:
             if ind in lower_text:
@@ -318,7 +326,7 @@ class ExtractionAgent:
         return None, "unknown", None
 
     def _extract_authority_present(self, text: str) -> tuple[bool | None, str, str | None]:
-        lower_text = text.lower()
+        lower_text = turkish_lower(text)
         indicators = ["yetki belgesi", "vekaletname", "vekalet", "imza sirküsü", "yetkilendirme belgesi"]
         for ind in indicators:
             if ind in lower_text:
@@ -328,7 +336,7 @@ class ExtractionAgent:
         return None, "unknown", None
 
     def _is_invalid_person(self, val: str) -> bool:
-        lower_val = val.lower()
+        lower_val = turkish_lower(val)
         if "müdür" in lower_val or "sayın" in lower_val or "muhatap" in lower_val:
             return True
         if "[" in val and "]" in val:
@@ -413,7 +421,7 @@ class ExtractionAgent:
         match = re.search(r"(?:^|\n)\s*(?:Konu|KONU)[\s:]+([^\n]+)", text)
         if match:
             val = match.group(1).strip()
-            lower_val = val.lower()
+            lower_val = turkish_lower(val)
             # Reject if it's a recipient misidentified as subject
             if "makamına" in lower_val or "müdürlüğüne" in lower_val or "birimine" in lower_val:
                 return None, None
@@ -539,7 +547,7 @@ FORMAT ÖRNEĞİ (SADECE İSTENEN ALANLAR İÇİN):
         return normalized_ev in normalized_source
 
     def _normalize_text(self, text: str) -> str:
-        return " ".join(str(text).lower().split())
+        return " ".join(turkish_lower(text).split())
 
     def _empty_result(self, message: str) -> dict[str, Any]:
         return {

@@ -64,6 +64,7 @@ class LegalAgent:
         query: str,
         law_number: str | None = None,
         top_k: int = 5,
+        strict_explicit_law: bool = False,
     ) -> dict[str, Any]:
         """
         Kullanıcı sorgusunu mevzuat açısından analiz eder.
@@ -90,6 +91,14 @@ class LegalAgent:
         # An explicit query-derived law number is a preference, not a hard
         # failure mode. If that law is absent, preserve semantic retrieval.
         if explicit_law and law_number is None and not retrieved_sources:
+            if strict_explicit_law:
+                return self._empty_result(
+                    message=(
+                        f"Belgede atıf yapılan {explicit_law} sayılı Kanun "
+                        "mevzuat indeksinde bulunamadı; alakasız kaynaklardan "
+                        "hukuki kanıt üretilmedi."
+                    )
+                )
             retrieved_sources = self.retriever.search_legal(
                 query=query,
                 limit=top_k,

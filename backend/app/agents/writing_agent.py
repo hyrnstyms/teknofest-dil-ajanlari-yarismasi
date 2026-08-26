@@ -61,6 +61,8 @@ class WritingAgent:
         requested_action: str | None = None,
         missing_fields: list[str] | None = None,
         verified_facts: list[str] | None = None,
+        legal_context: str | None = None,
+        document_legal_references: list[str] | None = None,
         recipient: str | None = None,
         sender_unit: str | None = None,
         top_k: int = 5,
@@ -76,6 +78,13 @@ class WritingAgent:
             str(fact).strip()
             for fact in (verified_facts or [])
             if str(fact).strip()
+        ]
+
+        legal_context = str(legal_context or "").strip()
+        document_legal_references = [
+            str(reference).strip()
+            for reference in (document_legal_references or [])
+            if str(reference).strip()
         ]
 
         # -------------------------------------------------
@@ -196,6 +205,8 @@ class WritingAgent:
                 verified_facts=(
                     verified_facts
                 ),
+                legal_context=legal_context,
+                document_legal_references=document_legal_references,
                 recipient=recipient,
                 sender_unit=sender_unit,
                 draft_type=draft_type,
@@ -244,6 +255,8 @@ class WritingAgent:
                         verified_facts=(
                             verified_facts
                         ),
+                        legal_context=legal_context,
+                        document_legal_references=document_legal_references,
                         recipient=recipient,
                         sender_unit=sender_unit,
                         draft_type=draft_type,
@@ -362,6 +375,11 @@ class WritingAgent:
                     "olarak oluşturulmadı."
                 ),
             }
+
+        generated = self._ensure_document_legal_references(
+            generated,
+            document_legal_references,
+        )
 
         # -------------------------------------------------
         # 7. LLM'in iddia ettiği kuralları doğrula
@@ -808,6 +826,8 @@ Kaynak: Resmî Yazışma Kılavuzu
         requested_action: str | None,
         missing_fields: list[str],
         verified_facts: list[str],
+        legal_context: str,
+        document_legal_references: list[str],
         recipient: str | None,
         sender_unit: str | None,
         draft_type: str,
@@ -874,6 +894,12 @@ KESİN KURALLAR:
 
 10. JSON dışında hiçbir şey döndürme.
 
+11. DOĞRULANMIŞ İŞLEM BİLGİLERİ işlem sonucunu açıkça doğrulamıyorsa
+    "başvurunuz işleme alınmıştır", "kabul edilmiştir", "onaylanmıştır",
+    "verilmiştir" veya "tamamlanmıştır" gibi kesin sonuç/başvuru durumu
+    söyleme. Yalnızca "incelenmektedir" veya "değerlendirilecektir" gibi
+    sonuca dair olmayan süreç ifadelerini kullan.
+
 SADECE ŞU JSON FORMATINI DÖNDÜR:
 
 {
@@ -897,6 +923,13 @@ EKSİK ALANLAR:
 
 DOĞRULANMIŞ İŞLEM BİLGİLERİ:
 {facts_text}
+
+HUKUKİ BAĞLAM (yalnızca doğrulanmış kanıt):
+{legal_context or "Yok"}
+
+EVRAKTA AÇIKÇA GEÇEN MEVZUAT ATIFLARI:
+{', '.join(document_legal_references) if document_legal_references else "Yok"}
+Bu atıflar başvuru sahibinin beyanıdır; bunlardan hukuki sonuç çıkarma.
 
 MUHATAP:
 {recipient or "BELİRTİLMEDİ"}
@@ -960,6 +993,8 @@ Sadece verilen gerçeklere dayanarak subject ve body üret.
         document_summary: str,
         requested_action: str | None,
         verified_facts: list[str],
+        legal_context: str,
+        document_legal_references: list[str],
         recipient: str | None,
         sender_unit: str | None,
         draft_type: str,
@@ -981,6 +1016,9 @@ eksik bırakıldı.
 
 Yalnızca verilen olguları kullan.
 Yeni kurum, tarih, sayı, süre, mevzuat veya sonuç uydurma.
+Doğrulanmış işlem sonucu yoksa başvurunun işleme alındığını, kabul
+edildiğini, onaylandığını, tamamlandığını veya sonuçlandığını söyleme.
+Yalnızca süreç belirten ve sonucu kesinleştirmeyen ifade kullan.
 
 JSON dışında hiçbir şey döndürme.
 
@@ -1002,6 +1040,13 @@ EVRAK ÖZETİ:
 
 DOĞRULANMIŞ İŞLEM BİLGİLERİ:
 {facts_text}
+
+HUKUKİ BAĞLAM (yalnızca doğrulanmış kanıt):
+{legal_context or "Yok"}
+
+EVRAKTA AÇIKÇA GEÇEN MEVZUAT ATIFLARI:
+{', '.join(document_legal_references) if document_legal_references else "Yok"}
+Bu atıflar başvuru sahibinin beyanıdır; bunlardan hukuki sonuç çıkarma.
 
 MUHATAP:
 {recipient or "BELİRTİLMEDİ"}
@@ -1454,6 +1499,32 @@ subject ve body alanlarını eksiksiz üret.
     # =====================================================
     # SANITIZE
     # =====================================================
+
+    @staticmethod
+    def _ensure_document_legal_references(
+        generated: dict[str, Any],
+        references: list[str],
+    ) -> dict[str, Any]:
+        """Preserve statute references explicitly asserted by the applicant.
+
+        This records a document fact only; it does not treat the reference as
+        a verified legal conclusion.
+        """
+
+        if not generated or not references:
+            return generated
+        body = str(generated.get("body") or "").strip()
+        combined = f"{generated.get('subject') or ''} {body}".casefold()
+        missing = [
+            reference
+            for reference in references
+            if reference.casefold() not in combined
+        ]
+        if missing:
+            suffix = "Başvuruda " + ", ".join(missing) + " atfı yapılmıştır."
+            generated = dict(generated)
+            generated["body"] = f"{body} {suffix}".strip()
+        return generated
 
     @staticmethod
     def _sanitize_draft(

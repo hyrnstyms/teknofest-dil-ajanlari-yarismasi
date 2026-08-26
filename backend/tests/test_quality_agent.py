@@ -36,6 +36,25 @@ def test_quality_sources_only_warning(agent):
     assert res["status"] == "warning"
     assert res["checks"]["legal_evidence"]["status"] == "warning"
 
+
+def test_quality_flags_unverified_outcome_claim_for_human_review(agent):
+    res = agent.check_quality(
+        document={"document_type": "dilekce", "process_intent": "basvuru"},
+        extraction={"fields": {"name": {"value": "test", "evidence": "text"}}},
+        legal_analysis={"evidence": ["valid evidence"]},
+        missing_fields={"present_fields": ["name"], "missing_fields": [], "uncertain_fields": [], "needs_human_review": False},
+        summary={"short_summary": "test"},
+        routing={"recommended_unit": _VALID_UNIT, "needs_human_review": False},
+        draft={
+            "draft_generation_mode": "normal",
+            "draft": {"body": "Başvurunuz işleme alınmıştır."},
+        },
+        human_review={"required": False},
+    )
+
+    assert res["checks"]["unverified_outcome_claim"]["status"] == "warning"
+    assert res["requires_human_review"] is True
+
 def test_quality_contradictory_missing_statuses(agent):
     res = agent.check_quality(
         document={"document_type": "dilekce", "process_intent": "basvuru"},
