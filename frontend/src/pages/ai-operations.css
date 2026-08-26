@@ -516,3 +516,52 @@
     overflow-x: auto;
   }
 }
+/* Final demo-density gate: keep status, workflow and summary visible at laptop widths. */
+@media (min-width: 1100px) {
+  .aiops-page {
+    max-width: 1600px;
+    padding: .75rem 1rem 1rem;
+    gap: .7rem;
+  }
+  .aiops-hero {
+    padding: .75rem 1rem;
+    align-items: center;
+  }
+  .aiops-hero .section-kicker { margin-bottom: .2rem; font-size: .65rem; }
+  .aiops-hero h1 { margin-bottom: .2rem; font-size: 1.35rem; }
+  .aiops-hero p { font-size: .8rem; }
+  .aiops-tabs { gap: .35rem; margin: 0; }
+  .aiops-tab { padding: .5rem .75rem; font-size: .78rem; }
+  .aiops-status-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .55rem;
+  }
+  .aiops-status-card { gap: .55rem; padding: .65rem; border-radius: 9px; }
+  .aiops-status-icon { width: 32px; height: 32px; border-radius: 8px; }
+  .aiops-status-icon svg { width: 17px; }
+  .aiops-status-card small { font-size: .62rem; }
+  .aiops-status-card strong { font-size: .82rem; margin: .08rem 0; }
+  .aiops-status-card p { font-size: .65rem; }
+  .aiops-primary-grid { grid-template-columns: minmax(0, 2.1fr) minmax(285px, .9fr); gap: .7rem; }
+  .aiops-panel { padding: .75rem; border-radius: 9px; }
+  .aiops-section-title { gap: .5rem; margin-bottom: .65rem; }
+  .aiops-section-title h2 { font-size: .92rem; }
+  .aiops-section-title small { font-size: .62rem; }
+  .aiops-flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .4rem;
+  }
+  .aiops-flow-arrow { display: none; }
+  .aiops-node { min-width: 0; gap: .4rem; padding: .45rem .5rem; }
+  .aiops-node-index { width: 20px; height: 20px; }
+  .aiops-node-content strong { font-size: .72rem; }
+  .aiops-node-content small { display: none; }
+  .aiops-node-time { font-size: .66rem; }
+  .aiops-report dl { gap: .2rem; margin-bottom: .55rem; }
+  .aiops-report dl > div { padding-bottom: .22rem; }
+  .aiops-report dt, .aiops-report dd { font-size: .68rem; }
+  .aiops-bars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem .7rem; }
+  .aiops-bar-row { grid-template-columns: 82px 1fr 48px; gap: .35rem; }
+  .aiops-bar-row span, .aiops-bar-row strong { font-size: .65rem; }
+}
