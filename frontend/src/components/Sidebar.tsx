@@ -26,7 +26,7 @@ const groups = [
 
 export const Sidebar: React.FC = () => <aside className="sidebar no-print">
   <div className="sidebar-brand">
-    <EVRAGBrand variant="full" theme="dark" />
+    <EVRAGBrand variant="full" theme="light" />
   </div>
   <nav className="sidebar-nav">
     {groups.map((group) => <React.Fragment key={group.label}>

@@ -8,6 +8,8 @@ import {
   Edit3,
   FileSignature,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { DocumentState, DraftInfo } from '../types';
@@ -43,6 +45,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
   const [reloadKey, setReloadKey] = useState(0);
   const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'document' | 'legal' | 'draft'>('overview');
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [showDocument, setShowDocument] = useState(false);
 
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -208,12 +211,28 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
             <span className={"record-status " + statusTone(state.human_review?.status)}>{formatReviewStatus(state.human_review?.status)}</span>
           </div>
         </div>
-        {state.human_review?.status === 'approved' ? (
-          <button className="btn btn-primary" type="button" onClick={handleDownloadDocx} disabled={downloading}><Download size={17}/>{downloading ? 'İndiriliyor' : 'DOCX İndir'}</button>
-        ) : (
-          <button className="btn btn-primary" type="button" onClick={() => { setWorkspaceTab('draft'); setReviewOpen(true); }}>İncelemeyi Tamamla</button>
-        )}
+        <div className="workspace-header-actions">
+          <button className="btn btn-secondary" type="button" aria-pressed={showDocument} onClick={() => setShowDocument((visible) => !visible)}>
+            {showDocument ? <EyeOff size={17}/> : <Eye size={17}/>}{showDocument ? 'Belgeyi Gizle' : 'Belgeyi Göster'}
+          </button>
+          {state.human_review?.status === 'approved' ? (
+            <button className="btn btn-primary" type="button" onClick={handleDownloadDocx} disabled={downloading}><Download size={17}/>{downloading ? 'İndiriliyor' : 'DOCX İndir'}</button>
+          ) : (
+            <button className="btn btn-primary" type="button" onClick={() => { setWorkspaceTab('draft'); setReviewOpen(true); }}>İncelemeyi Tamamla</button>
+          )}
+        </div>
       </header>
+
+      <div className={`workspace-view-shell ${showDocument ? 'document-visible' : ''}`}>
+        {showDocument && <aside className="original-document-viewer" aria-label="Orijinal belge önizlemesi">
+          <header><div><span>Orijinal Belge</span><strong>Çıkarılmış metin önizlemesi</strong></div><button type="button" onClick={() => setShowDocument(false)} aria-label="Belge önizlemesini kapat"><EyeOff size={17}/></button></header>
+          <div className="document-preview-canvas">
+            <article className="a4-original-paper">
+              {state.raw_text?.trim() ? <pre>{state.raw_text}</pre> : <div className="document-preview-unavailable"><FileSignature size={28}/><strong>Belge önizlemesi kullanılamıyor</strong><p>Bu kayıt için kaynak dosya veya çıkarılmış metin bulunmuyor.</p></div>}
+            </article>
+          </div>
+        </aside>}
+        <div className="workspace-main-pane">
 
       <section className="workspace-decision-hero">
         <div className="workspace-decision-main">
@@ -273,6 +292,8 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
         </section>
         <aside className="workspace-draft-side"><RoutingCard routing={state.routing}/><QualityFormatCard quality={state.quality}/>{!reviewOpen && state.human_review?.status !== 'approved' && <button className="btn btn-primary" type="button" onClick={() => setReviewOpen(true)}>İncelemeyi Tamamla</button>}{reviewOpen && <div className="review-sheet"><header><h2>Personel İncelemesi</h2><button type="button" onClick={() => setReviewOpen(false)}>×</button></header><HumanReviewPanel review={state.human_review} analysisId={state.analysis_id || state.document_id} onUpdate={async () => { await handleUpdate(); setReviewOpen(false); }} onEdit={() => { startEdit(); setReviewOpen(false); }}/></div>}</aside>
       </div>}
+        </div>
+      </div>
     </div>
   );
 };
