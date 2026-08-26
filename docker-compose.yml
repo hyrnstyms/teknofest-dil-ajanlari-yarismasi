@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kamuai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kamuai}
+      POSTGRES_DB: ${POSTGRES_DB:-kamuai}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   qdrant:
     image: qdrant/qdrant:latest
     ports:
@@ -9,4 +20,5 @@ services:
       - qdrant_data:/qdrant/storage
 
 volumes:
+  postgres_data:
   qdrant_data:
