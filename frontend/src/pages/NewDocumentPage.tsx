@@ -11,6 +11,7 @@ import {
 import { api, type InstitutionOption } from '../services/api';
 import { DocumentState } from '../types';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { humanizeFilename } from '../utils/presentation';
 
 interface Props {
   institution: InstitutionOption | null;
@@ -28,6 +29,7 @@ const PROCESSING_STAGES = [
 export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded }) => {
   const navigate = useNavigate();
   const [text, setText] = useState('');
+  const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +48,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
     setIsDragging(false);
     if (e.dataTransfer.files?.length > 0) {
       setSelectedFile(e.dataTransfer.files[0]);
+      setInputMode('file');
       setText('');
     }
   };
@@ -53,6 +56,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       setSelectedFile(e.target.files[0]);
+      setInputMode('file');
       setText('');
     }
   };
@@ -97,6 +101,11 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
         Aktif Kurum: <strong>{institution?.label || "Seçilmedi"}</strong>
       </div>
 
+      <div className="document-mode-tabs" role="tablist" aria-label="Evrak giriş yöntemi">
+        <button type="button" role="tab" aria-selected={inputMode === 'file'} className={inputMode === 'file' ? 'active' : ''} onClick={() => { setInputMode('file'); setText(''); }}>Dosya Yükle</button>
+        <button type="button" role="tab" aria-selected={inputMode === 'text'} className={inputMode === 'text' ? 'active' : ''} onClick={() => { setInputMode('text'); handleClearFile(); }}>Metin Gir</button>
+      </div>
+
       {/* Dosya + Metin Girişi */}
       <div className="card mb-6">
         <div className="card-header">
@@ -105,7 +114,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
         <div className="card-body">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
             {/* File Upload Dropzone */}
-            <div>
+            <div className={inputMode === 'file' ? '' : 'input-mode-hidden'}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -118,10 +127,10 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                 <div className="upload-area flex flex-col items-center justify-center" style={{ background: '#f8fafc', borderColor: 'var(--primary-color)' }}>
                   <div className="badge badge-info mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}>
                     <FileText size={18} />
-                    {selectedFile.name}
+                    {humanizeFilename(selectedFile.name).title}
                   </div>
                   <div className="text-secondary mb-4" style={{ fontSize: '0.85rem' }}>
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    {humanizeFilename(selectedFile.name).extension || "DOSYA"} · {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </div>
                   <button
                     className="btn btn-secondary"
@@ -149,10 +158,10 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
               )}
             </div>
 
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.9rem' }}>VEYA</div>
+            <div className="input-mode-hidden">VEYA</div>
 
             {/* Text Input */}
-            <div>
+            <div className={inputMode === 'text' ? '' : 'input-mode-hidden'}>
               <textarea
                 placeholder="Analiz edilecek metni doğrudan buraya yapıştırın..."
                 value={text}
@@ -179,7 +188,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                   <Loader2 size={18} className="spinner" /> Analiz Ediliyor...
                 </>
               ) : (
-                'Belgeyi Analiz Et'
+                'Evrakı Analiz Et'
               )}
             </button>
           </div>

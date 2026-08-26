@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, FileText, Filter, Inbox, RefreshCw, Search, UserCheck } from "lucide-react";
 import { api, type AnalysisListItem, type PendingReviewItem } from "../services/api";
 import type { DocumentState } from "../types";
+import { formatDate, formatDisplayName as humanize } from "../utils/presentation";
 
 interface ViewProps {
   onOpenAnalysis: (analysisId: string) => void | Promise<void>;
@@ -171,8 +172,6 @@ const EmptyTable: React.FC<{ loading: boolean; columns: number }> = ({ loading, 
 
 function unique(values: string[]): string[] { return [...new Set(values)].sort((a, b) => a.localeCompare(b, "tr")); }
 function shortId(value: string): string { return value.length > 12 ? `${value.slice(0, 8)}…` : value; }
-function humanize(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
-function formatDate(value?: string): string { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("tr-TR", { dateStyle: "short", timeStyle: "short" }).format(date); }
 function statusTone(value: string): string { return value.includes("approved") || value === "pass" ? "success" : value.includes("pending") || value === "warning" ? "warning" : value === "rejected" || value === "fail" ? "danger" : "neutral"; }
 function getDraftSubject(state?: DocumentState): string { return state?.draft?.edited_draft?.subject || state?.draft?.draft?.subject || ""; }
 function hasDraft(state?: DocumentState): boolean { return Boolean(state?.draft && (state.draft.official_rendered_text || state.draft.draft_text || state.draft.draft?.body)); }

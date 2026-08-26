@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { DocumentState } from "../types";
+import { formatDisplayName } from "../utils/presentation";
 
 export const DecisionSummary: React.FC<{ state: DocumentState }> = ({ state }) => {
   const missing = state.missing_fields?.missing_fields || [];
@@ -16,5 +17,5 @@ export const DecisionSummary: React.FC<{ state: DocumentState }> = ({ state }) =
     </div>
   </section>;
 };
-const Item: React.FC<{ label: string; value?: string | null }> = ({ label, value }) => <div className="decision-item"><span>{label}</span><strong>{friendly(value || "Belirlenemedi")}</strong></div>;
+const Item: React.FC<{ label: string; value?: string | null }> = ({ label, value }) => <div className="decision-item"><span>{label}</span><strong>{formatDisplayName(value || "Belirlenemedi")}</strong></div>;
 function friendly(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
