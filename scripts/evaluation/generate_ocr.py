@@ -2,6 +2,7 @@ import json
 import random
 import os
 import math
+import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 import numpy as np
@@ -12,16 +13,25 @@ EVRAKLAR_PATH = BASE_DIR / "data" / "evaluation" / "synthetic" / "evraklar.jsonl
 OUT_DIR = BASE_DIR / "data" / "evaluation" / "ocr"
 
 # Platform bağımsız font tespiti
-def _find_font() -> str | None:
-    candidates = [
-        r"C:\Windows\Fonts\arial.ttf",           # Windows
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Ubuntu/Debian
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",  # macOS
-    ]
-    for c in candidates:
-        if os.path.exists(c):
-            return c
+def _find_font() -> Path | None:
+    candidates: list[Path] = []
+    windows_dir = os.getenv("WINDIR")
+    if windows_dir:
+        candidates.append(Path(windows_dir) / "Fonts" / "arial.ttf")
+
+    filesystem_root = Path(os.sep)
+    candidates.extend([
+        filesystem_root / "usr" / "share" / "fonts" / "truetype" / "dejavu" / "DejaVuSans.ttf",
+        filesystem_root / "usr" / "share" / "fonts" / "truetype" / "liberation" / "LiberationSans-Regular.ttf",
+    ])
+    if sys.platform == "darwin":
+        candidates.append(
+            filesystem_root / "System" / "Library" / "Fonts" / "Helvetica.ttc"
+        )
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
     return None
 
 FONT_PATH = _find_font()

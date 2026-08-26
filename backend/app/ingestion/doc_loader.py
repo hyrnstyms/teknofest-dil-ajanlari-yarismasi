@@ -1,6 +1,8 @@
 import hashlib
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from .docx_loader import load_docx
@@ -17,15 +19,23 @@ def find_soffice() -> Path:
     if soffice_from_path:
         return Path(soffice_from_path)
 
-    # Windows varsayılan kurulum konumları
-    candidates = [
-        Path(
-            r"C:\Program Files\LibreOffice\program\soffice.exe"
-        ),
-        Path(
-            r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"
-        ),
-    ]
+    candidates: list[Path] = []
+    for environment_name in ("PROGRAMFILES", "PROGRAMFILES(X86)"):
+        program_files = os.getenv(environment_name)
+        if program_files:
+            candidates.append(
+                Path(program_files) / "LibreOffice" / "program" / "soffice.exe"
+            )
+
+    if sys.platform == "darwin":
+        candidates.append(
+            Path(os.sep)
+            / "Applications"
+            / "LibreOffice.app"
+            / "Contents"
+            / "MacOS"
+            / "soffice"
+        )
 
     for candidate in candidates:
         if candidate.exists():
@@ -87,6 +97,8 @@ def convert_doc_to_docx(path: Path) -> Path:
         command,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=120,
     )
 
