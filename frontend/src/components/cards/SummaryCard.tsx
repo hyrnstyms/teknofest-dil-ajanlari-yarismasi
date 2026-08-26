@@ -13,7 +13,7 @@ export const SummaryCard: React.FC<Props> = ({ summary }) => {
 
   return (
     <div className="card mb-4">
-      <div className="card-header"><AlignLeft size={18}/> Kısa Özet</div>
+      <div className="card-header"><AlignLeft size={18}/> Özet</div>
       <div className="card-body">
         <p className="text-sm" style={{ lineHeight: 1.6 }}>
           {summary.short_summary}

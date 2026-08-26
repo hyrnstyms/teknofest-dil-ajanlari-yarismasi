@@ -1,4 +1,11 @@
 import { DocumentState } from "../types";
+import type {
+  AnalysesResponse,
+  AnalysisListItem as AnalysisItem,
+  ReviewQueueItem,
+  ReviewQueueResponse,
+} from "../types/analysis";
+import type { ROISummaryResponse } from "../types/metrics";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -15,55 +22,37 @@ export interface InstitutionOption {
   ui_config: InstitutionUiConfig;
 }
 
-export interface RoiSummary {
-  processed_documents: number;
-  average_processing_seconds: number;
-  human_review_required_rate: number;
-  approved_count: number;
-  edited_count: number;
-  rejected_count: number;
-  estimated_saved_seconds?: number;
-  estimated_saved_percentage?: number | null;
-  message?: string;
-}
+export type RoiSummary = ROISummaryResponse;
+export type AnalysisListItem = AnalysisItem;
+export type PendingReviewItem = ReviewQueueItem;
 
-export interface AnalysisListItem {
-  analysis_id: string;
-  document_id?: string;
-  document_type?: string;
-  process_intent?: string;
-  subject?: string;
-  recommended_unit?: string;
-  human_review_status?: string;
-  quality_status?: string;
-  created_at?: string;
-  total_processing_ms?: number;
-}
+type AnalysisQuery = number | { limit?: number; offset?: number; status?: string };
+type ReviewQuery = number | { limit?: number; offset?: number };
 
-export interface PendingReviewItem {
-  analysis_id: string;
-  document_type?: string;
-  process_intent?: string;
-  subject?: string;
-  recommended_unit?: string;
-  quality_status?: string;
-  review_reasons?: string[];
-  created_at?: string;
-}
+export class ApiRequestError extends Error {
+  readonly code: string;
+  readonly status: number;
 
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+  constructor(
+    code: string,
+    message: string,
+    status: number,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.code = code;
+    this.status = status;
   }
-  return response.json() as Promise<T>;
+}
+
+async function throwApiError(response: Response): Promise<never> {
+  const errorData = await response.json().catch(() => ({}));
+  const detail = errorData?.detail;
+  throw new ApiRequestError(
+    detail?.code || `http_${response.status}`,
+    detail?.message || `HTTP Error: ${response.status}`,
+    response.status,
+  );
 }
 
 export const api = {
@@ -78,63 +67,32 @@ export const api = {
   async listInstitutionOptions(): Promise<InstitutionOption[]> {
     const response = await fetch(`${API_BASE_URL}/api/institutions`);
     if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status}`);
+      return throwApiError(response);
     }
-
     const data = await response.json();
-    return data.institution_options;
+    return data.institution_options || [];
   },
 
-  async getAnalysis(analysisId: string): Promise<DocumentState> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}`);
-    return parseResponse<DocumentState>(response);
-  },
-
-  async getRoiSummary(): Promise<RoiSummary> {
-    const response = await fetch(`${API_BASE_URL}/api/roi/summary`);
-    return parseResponse<RoiSummary>(response);
-  },
-
-  async getAnalyses(limit = 20): Promise<PaginatedResponse<AnalysisListItem>> {
-    const response = await fetch(`${API_BASE_URL}/api/analyses?limit=${limit}&offset=0`);
-    return parseResponse<PaginatedResponse<AnalysisListItem>>(response);
-  },
-
-  async getPendingReviews(limit = 20): Promise<PaginatedResponse<PendingReviewItem>> {
-    const response = await fetch(`${API_BASE_URL}/api/reviews/pending?limit=${limit}&offset=0`);
-    return parseResponse<PaginatedResponse<PendingReviewItem>>(response);
-  },
-
-  async downloadDocx(analysisId: string): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/export/docx`);
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail?.message || "DOCX indirilemedi.");
-    }
-    return response.blob();
-  },
-
-  async analyzeText(text: string, institution: string): Promise<DocumentState> {
+  async analyzeText(text: string, institution?: string): Promise<DocumentState> {
     const response = await fetch(`${API_BASE_URL}/api/documents/analyze-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ text, institution }),
+      body: JSON.stringify({ text, ...(institution ? { institution } : {}) }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+      return throwApiError(response);
     }
 
     return response.json();
   },
 
-  async uploadDocument(file: File, institution: string): Promise<DocumentState> {
+  async uploadDocument(file: File, institution?: string): Promise<DocumentState> {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("institution", institution);
+    if (institution) formData.append("institution", institution);
 
     const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
       method: "POST",
@@ -142,8 +100,7 @@ export const api = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+      return throwApiError(response);
     }
 
     return response.json();
@@ -177,5 +134,84 @@ export const api = {
     }
 
     return response.json();
+  },
+
+  async getAnalyses(query?: AnalysisQuery): Promise<AnalysesResponse> {
+    const params = typeof query === "number" ? { limit: query } : query;
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    if (params?.status) searchParams.set('status', params.status);
+
+    const response = await fetch(`${API_BASE_URL}/api/analyses?${searchParams}`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  async getAnalysis(analysisId: string): Promise<DocumentState> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}`);
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+    return response.json();
+  },
+
+  async getRoiSummary(): Promise<ROISummaryResponse> {
+    const response = await fetch(`${API_BASE_URL}/api/roi/summary`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  async getInstitutions(): Promise<{ institutions: string[]; count: number }> {
+    const response = await fetch(`${API_BASE_URL}/api/institutions`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  async editAnalysis(analysisId: string, subject: string, body: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/edit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ subject, body }),
+    });
+
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+
+    return response.json();
+  },
+
+  async getPendingReviews(query?: ReviewQuery): Promise<ReviewQueueResponse> {
+    const params = typeof query === "number" ? { limit: query } : query;
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+
+    const response = await fetch(`${API_BASE_URL}/api/reviews/pending?${searchParams}`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  getDocxUrl(analysisId: string): string {
+    return `${API_BASE_URL}/api/analysis/${analysisId}/export/docx`;
+  },
+
+  async downloadDocx(analysisId: string): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/export/docx`);
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+    return response.blob();
   },
 };

@@ -1,164 +1,88 @@
-import React, { useState } from "react";
-import { AlertCircle, FilePlus2, FileSearch } from "lucide-react";
-import { AdminDashboard } from "./components/AdminDashboard";
-import { ChatWidget } from "./components/chat/ChatWidget";
-import { DocumentWorkspace } from "./components/DocumentWorkspace";
-import { HomeDashboard } from "./components/HomeDashboard";
-import { InputPanel } from "./components/InputPanel";
-import { InstitutionSelector } from "./components/InstitutionSelector";
-import { DraftsPage, IncomingDocumentsPage, ReviewQueuePage } from "./components/RecordViews";
-import { Sidebar, type AppView } from "./components/Sidebar";
-import { TopBar } from "./components/TopBar";
-import { api, type InstitutionOption } from "./services/api";
-import type { DocumentState } from "./types";
-import "./index.css";
+import React, { useCallback, useState } from 'react';
+import { BrowserRouter, Navigate, Routes, Route, useMatch, useNavigate } from 'react-router-dom';
+import { AdminDashboard } from './components/AdminDashboard';
+import { DraftsPage, IncomingDocumentsPage, ReviewQueuePage } from './components/RecordViews';
+import { Sidebar } from './components/Sidebar';
+import { HomePage } from './pages/HomePage';
+import { NewDocumentPage } from './pages/NewDocumentPage';
+import { DocumentWorkspacePage } from './pages/DocumentWorkspacePage';
+import { ChatWidget } from './components/chat/ChatWidget';
+import { DocumentState } from './types';
+import './index.css';
 
 function App() {
-  const [appState, setAppState] = useState<DocumentState | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [institution, setInstitution] = useState<InstitutionOption | null>(null);
-  const [view, setView] = useState<AppView>("home");
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  );
+}
 
-  const prepareAnalysis = (): boolean => {
-    setError(null);
-    if (!institution) {
-      setError("Analize başlamadan önce bir kurum seçin.");
-      return false;
-    }
-    setAppState(null);
-    setIsLoading(true);
-    return true;
-  };
+function AppShell() {
+  const navigate = useNavigate();
+  // ChatWidget state — lives at App level, outside routes
+  const [activeAnalysisId, setActiveAnalysisId] = useState<string | undefined>(undefined);
+  const [activeDraft, setActiveDraft] = useState<DocumentState["draft"] | undefined>(undefined);
+  const workspaceMatch = useMatch('/evrak/:id');
 
-  const handleAnalyzeText = async (text: string) => {
-    if (!prepareAnalysis() || !institution) return;
-    try {
-      setAppState(await api.analyzeText(text, institution.id));
-      setView("document-workspace");
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Analiz sırasında bir hata oluştu.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleAnalysisLoaded = useCallback((state: DocumentState) => {
+    setActiveAnalysisId(state.analysis_id);
+    setActiveDraft(state.draft);
+  }, []);
 
-  const handleUploadFile = async (file: File) => {
-    if (!prepareAnalysis() || !institution) return;
-    try {
-      setAppState(await api.uploadDocument(file, institution.id));
-      setView("document-workspace");
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Dosya yüklenirken bir hata oluştu.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleChatDraftUpdated = useCallback((updatedDraft: DocumentState["draft"]) => {
+    setActiveDraft(updatedDraft);
+  }, []);
 
-  const refreshAnalysis = async () => {
-    if (!appState?.analysis_id) return;
-    try {
-      setAppState(await api.getAnalysis(appState.analysis_id));
-    } catch (refreshError) {
-      setError(refreshError instanceof Error ? refreshError.message : "Analiz güncellenemedi.");
-    }
-  };
+  const handleOpenAnalysis = useCallback((analysisId: string) => {
+    navigate(`/evrak/${analysisId}`);
+  }, [navigate]);
 
-  const handleOpenAnalysis = async (analysisId: string) => {
-    setError(null);
-    try {
-      const result = await api.getAnalysis(analysisId);
-      setAppState(result);
-      setView("document-workspace");
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Analiz kaydı açılamadı.");
-    }
-  };
-
-  const handleChatDraftUpdated = (updatedDraft: DocumentState["draft"]) => {
-    setAppState((previous) => previous ? { ...previous, draft: updatedDraft } : previous);
-    void refreshAnalysis();
-  };
+  const chatAnalysisId = workspaceMatch?.params.id === activeAnalysisId
+    ? activeAnalysisId
+    : undefined;
+  const chatDraft = chatAnalysisId ? activeDraft : undefined;
 
   return (
-    <div className="app-shell">
-      <Sidebar
-        activeView={view}
-        onViewChange={setView}
-      />
-
-      <div className="app-main">
-        <TopBar institutionSelector={(
-          <InstitutionSelector
-            topbar
-            value={institution?.id ?? ""}
-            onChange={(selected) => {
-              setInstitution(selected);
-              setAppState(null);
-              setError(null);
-            }}
-            disabled={isLoading}
-          />
-        )} />
-        <div className="app-content">
-          {error && (
-            <div className="inline-error no-print" role="alert">
-              <AlertCircle size={20} /><div><strong>İşlem tamamlanamadı</strong><span>{error}</span></div>
-            </div>
-          )}
-
-          {view === "admin" ? (
-            <AdminDashboard onOpenAnalysis={handleOpenAnalysis} />
-          ) : view === "incoming" ? (
-            <IncomingDocumentsPage onOpenAnalysis={handleOpenAnalysis} />
-          ) : view === "drafts" ? (
-            <DraftsPage onOpenAnalysis={handleOpenAnalysis} />
-          ) : view === "reviews" ? (
-            <ReviewQueuePage onOpenAnalysis={handleOpenAnalysis} />
-          ) : view === "new-document" ? (
-            <section className="upload-view no-print">
-              <div className="view-heading">
-                <span className="section-kicker">Yeni işlem</span>
-                <h1>Yeni Evrak Yükle</h1>
-                <p>Dosya yükleyin veya evrak metnini yapıştırın. Analiz seçili kurum profiliyle çalıştırılır.</p>
-                <span className="selected-context">Kurum: <strong>{institution?.label || "Seçilmedi"}</strong></span>
-              </div>
-              <InputPanel
-                onAnalyzeText={handleAnalyzeText}
-                onUploadFile={handleUploadFile}
-                isLoading={isLoading}
-                uploadLabel={institution?.ui_config.upload_label}
-              />
-            </section>
-          ) : view === "document-workspace" ? (
-            appState ? (
-              <DocumentWorkspace state={appState} onUpdate={refreshAnalysis} />
-            ) : (
-              <div className="workspace-empty no-print">
-                <FileSearch size={38} />
-                <h2>Henüz analiz edilmiş evrak yok</h2>
-                <p>Resmî yazı çalışma alanını açmak için yeni bir evrak yükleyin.</p>
-                <button type="button" className="btn btn-primary" onClick={() => setView("new-document")}>
-                  <FilePlus2 size={17} /> Yeni Evrak Yükle
-                </button>
-              </div>
-            )
-          ) : (
-            <HomeDashboard
-              institution={institution}
-              onNewDocument={() => setView("new-document")}
-              onOpenAnalysis={handleOpenAnalysis}
+    <>
+      <div className="app-layout">
+        <Sidebar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/yeni-evrak"
+              element={
+                <NewDocumentPage
+                  onAnalysisLoaded={handleAnalysisLoaded}
+                />
+              }
             />
-          )}
-        </div>
+            <Route
+              path="/evrak/:id"
+              element={
+                <DocumentWorkspacePage
+                  onAnalysisLoaded={handleAnalysisLoaded}
+                  externallyUpdatedDraft={chatDraft}
+                />
+              }
+            />
+            <Route path="/gelen-evraklar" element={<IncomingDocumentsPage onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="/taslaklar" element={<DraftsPage onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="/inceleme-bekleyenler" element={<ReviewQueuePage onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="/yonetici" element={<AdminDashboard onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
       </div>
 
+      {/* Route içeriklerinin dışında; bütün sayfalarda görünür. */}
       <ChatWidget
-        analysisId={appState?.analysis_id}
-        currentDraft={appState?.draft}
+        analysisId={chatAnalysisId}
+        currentDraft={chatDraft}
         onDraftUpdated={handleChatDraftUpdated}
       />
-    </div>
+    </>
   );
 }
 
