@@ -2135,3 +2135,36 @@ textarea:focus, input:focus, select:focus { border-color:#2b9fc5 !important; box
 .review-sheet>.card { margin:0;border:0;box-shadow:none; }
 @media(max-width:1100px){.workspace-decision-hero,.workspace-overview-grid,.workspace-detail-grid,.workspace-draft-layout{grid-template-columns:1fr}.workspace-decision-facts{min-height:80px}.workspace-process-compact{align-items:flex-start;flex-direction:column}}
 @media(max-width:700px){.workspace-product-header{align-items:flex-start;flex-direction:column}.workspace-decision-facts{grid-template-columns:1fr}.workspace-decision-facts>div{border-left:0;border-top:1px solid rgba(255,255,255,.1)}.workspace-process-steps{width:100%}}
+/* EVRAG official brand and restrained folded-paper language */
+.evrag-brand { display: inline-flex; align-items: center; flex-direction: column; justify-content: center; min-width: 0; }
+.evrag-brand img { display: block; width: auto; object-fit: contain; }
+.evrag-brand-full { width: 100%; }
+.evrag-brand-full img { height: 88px; max-width: 112px; }
+.evrag-brand-full span { margin-top: .2rem; color: #a9c5e7; font-size: .68rem; letter-spacing: .035em; white-space: nowrap; }
+.evrag-brand-compact img { height: 102px; max-width: 108px; }
+.evrag-brand-icon img { height: 44px; width: 44px; object-fit: contain; }
+.sidebar-brand { justify-content: center; padding-block: .85rem 1rem !important; }
+.home-brand { align-items: flex-start; margin-bottom: .2rem; }
+.home-hero-copy { display: flex; align-items: flex-start; flex-direction: column; }
+.home-hero-copy h2 { margin: .4rem 0 .65rem; }
+.home-hero-product { position: relative; }
+.origami-route { position: relative; align-self: end; width: 100%; height: 94px; overflow: hidden; opacity: .92; }
+.origami-sheet { position: absolute; top: 5px; right: 54px; width: 74px; height: 82px; border: 1px solid rgba(194,236,240,.6); border-radius: 5px 5px 3px 5px; background: linear-gradient(145deg,rgba(255,255,255,.14),rgba(50,178,188,.08)); box-shadow: 0 16px 36px rgba(0,0,0,.14); animation: evrag-unfold .45s ease-out both; }
+.origami-sheet::after { content:""; position:absolute; top:-1px; right:-1px; width:24px; height:24px; background:linear-gradient(225deg,transparent 49%,rgba(164,230,233,.5) 50%,rgba(31,91,124,.9) 53%); clip-path:polygon(0 0,100% 100%,0 100%); }
+.origami-sheet span { position:absolute; left:15px; right:15px; top:39px; height:1px; background:rgba(197,235,239,.34); box-shadow:0 9px 0 rgba(197,235,239,.25); }
+.origami-fold-line { position:absolute; top:46px; right:0; width:65px; height:28px; border-top:1px solid rgba(90,211,214,.7); transform:skewX(-35deg); transform-origin:left; animation:evrag-route-in .5s .12s ease-out both; }
+.origami-fold-line::after { content:""; position:absolute; top:-4px; right:0; width:7px; height:7px; border-top:1px solid #79dadd; border-right:1px solid #79dadd; transform:rotate(45deg); }
+.folded-document-icon { position:relative; display:grid; place-items:center; width:62px; height:72px; margin:0 auto 1rem; color:var(--primary-color); border:1px solid #94b8c9; border-radius:5px; background:#fff; box-shadow:0 10px 24px rgba(30,66,89,.1); }
+.folded-document-icon::after,.selected-document-paper::after,.official-document::after,.decision-summary::after { content:""; position:absolute; top:-1px; right:-1px; width:22px; height:22px; background:linear-gradient(225deg,#f3f8fa 48%,#b8d6df 49%,#e5f1f3 52%); clip-path:polygon(0 0,100% 100%,0 100%); }
+.selected-document-paper { position:relative; }
+.decision-summary { position:relative; overflow:hidden; }
+.decision-summary::after { width:18px; height:18px; }
+.official-document { position:relative; overflow:hidden; box-shadow:0 14px 40px rgba(24,47,68,.09); }
+.official-document::after { width:30px; height:30px; background:linear-gradient(225deg,#f6f8f9 48%,#d5dfe3 49%,#edf2f4 52%); }
+.aiops-hero { position:relative; overflow:hidden; }
+.aiops-hero::after { content:""; position:absolute; right:-32px; bottom:-50px; width:150px; height:110px; border:1px solid rgba(58,176,184,.14); transform:rotate(-12deg) skewX(-18deg); pointer-events:none; }
+@keyframes evrag-unfold { from { opacity:0; transform:translateY(8px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes evrag-route-in { from { opacity:0; transform:translateX(-10px) skewX(-35deg); } to { opacity:1; transform:skewX(-35deg); } }
+@media (max-width:1100px) { .origami-route { position:absolute; top:0; right:0; width:190px; opacity:.4; pointer-events:none; } .home-hero-product { width:100%; } }
+@media (max-width:720px) { .evrag-brand-compact img { height:82px; } .origami-route { display:none; } .home-ai-flow { overflow-x:auto; max-width:100%; } }
+@media (prefers-reduced-motion:reduce) { .origami-sheet,.origami-fold-line { animation:none; } }

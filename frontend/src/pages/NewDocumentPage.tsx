@@ -124,7 +124,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
               />
 
               {selectedFile ? (
-                <div className="upload-area flex flex-col items-center justify-center" style={{ background: '#f8fafc', borderColor: 'var(--primary-color)' }}>
+                <div className="upload-area selected-document-paper flex flex-col items-center justify-center" style={{ background: '#f8fafc', borderColor: 'var(--primary-color)' }}>
                   <div className="badge badge-info mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}>
                     <FileText size={18} />
                     {humanizeFilename(selectedFile.name).title}
@@ -149,7 +149,7 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
                   onClick={() => fileInputRef.current?.click()}
                   style={{ minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
                 >
-                  <UploadCloud size={54} className="upload-icon" style={{ margin: '0 auto 1rem', color: 'var(--primary-color)' }} />
+                  <div className="folded-document-icon" aria-hidden="true"><UploadCloud size={27} /></div>
                   <p className="font-medium" style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Dosyayı buraya sürükleyin veya tıklayarak seçin</p>
                   <p className="text-sm text-secondary" style={{ marginTop: '0.5rem' }}>
                     Desteklenen Formatlar: PDF, PNG, JPG, TIFF, BMP

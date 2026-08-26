@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { Bot, FilePlus, FileText, Inbox, LayoutDashboard, Settings, UserCheck } from "lucide-react";
+import { EVRAGBrand } from "./EVRAGBrand";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   "sidebar-link " + (isActive ? "sidebar-link-active" : "");
@@ -25,8 +26,7 @@ const groups = [
 
 export const Sidebar: React.FC = () => <aside className="sidebar no-print">
   <div className="sidebar-brand">
-    <div className="sidebar-logo"><span aria-hidden="true">E</span></div>
-    <div className="sidebar-brand-text"><span className="sidebar-brand-title">EVRAG</span><span className="sidebar-brand-subtitle">Akıllı Evrak ve Karar Destek Sistemi</span></div>
+    <EVRAGBrand variant="full" theme="dark" />
   </div>
   <nav className="sidebar-nav">
     {groups.map((group) => <React.Fragment key={group.label}>
