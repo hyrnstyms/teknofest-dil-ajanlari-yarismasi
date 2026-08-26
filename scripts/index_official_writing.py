@@ -4,7 +4,7 @@ scripts/index_official_writing.py
 A1 (P0) — official_writing RAG Alanını Doldurma
 
 Girdi:
-  - data/regulations/resmi_yazisma_yonetmeligi.pdf  (taranmış/OCR gerekiyor)
+  - data/regulations/resmi_yazisma_yonetmeligi_2646.pdf (resmî, metin tabanlı PDF)
   - data/regulations/resmiyazısmakılavuzu.pdf        (düzyazı, fallback chunk)
 
 Hedef:
@@ -44,13 +44,16 @@ from backend.app.rag.point_ids import deterministic_point_id
 
 SOURCES = [
     {
-        "file": "data/regulations/resmi_yazisma_yonetmeligi.pdf",
+        "file": "data/regulations/resmi_yazisma_yonetmeligi_2646.pdf",
         "source_id": "resmi_yazisma_yonetmeligi",
         "title": "Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik",
         "law_number": "resmi_yazisma_yonetmeligi",
         "rag_domain": "official_writing",
         "key": "yonetmelik",
-        "ocr_required": True,   # Taranmış PDF
+        "source_type": "regulation",
+        "url": "https://www.mevzuat.gov.tr/MevzuatMetin/21.5.2646.pdf",
+        "direct_text": True,
+        "ocr_required": False,
     },
     {
         "file": "data/regulations/resmiyazısmakılavuzu.pdf",
@@ -59,6 +62,8 @@ SOURCES = [
         "law_number": "resmi_yazisma_kilavuzu",
         "rag_domain": "official_writing",
         "key": "kilavuz",
+        "source_type": "guide",
+        "url": None,
         "ocr_required": False,  # Metin tabanlı PDF
         "force_fallback": True, # 126k karakter, 4 madde = yetersiz; tüm metin 1500-char chunk
     },
@@ -68,7 +73,7 @@ CHUNK_SIZE = 1500       # Fallback chunk boyutu (index_test_pdfs.py ile aynı)
 MADDE_CHUNK_MAX = 2000  # Madde bazlı chunk max boyutu (index_test_pdfs.py ile aynı)
 
 MADDE_PATTERN = re.compile(
-    r"(MADDE\s+(\d+)\s*[.\-\u2013\u2014]|Madde\s+(\d+)\s*[.\-\u2013\u2014]|Madde\s+(\d+)\s*$)",
+    r"(MADDE\s+(\d+)\s*[.\-\u2012\u2013\u2014]|Madde\s+(\d+)\s*[.\-\u2012\u2013\u2014]|Madde\s+(\d+)\s*$)",
     re.MULTILINE,
 )
 
@@ -199,7 +204,7 @@ def main():
             continue
 
         # Metin çıkar
-        if src["ocr_required"]:
+        if src["ocr_required"] and not src.get("direct_text", False):
             print("  OCR gerekiyor (taranmış PDF)...")
             full_text = extract_text_with_ocr(str(file_path))
         else:
@@ -271,7 +276,6 @@ def main():
 
         if not new_articles:
             print("  Tümü zaten mevcut, upsert yapılmadı.")
-            total_indexed += len(ids)
             continue
 
         print(f"  Yeni indexlenecek: {len(new_articles)} chunk")
@@ -286,24 +290,30 @@ def main():
                 "chunk_id": pid,
                 "document_id": src["source_id"],
                 "source": src["source_id"],
+                "source_type": src["source_type"],
                 "title": src["title"],
                 "law_number": src["law_number"],
                 "rag_domain": src["rag_domain"],
                 "madde_no": a["madde_no"],
+                "section_id": a["madde_no"],
                 "chunk_index": a["chunk_index"],
                 "text": a["text"],
                 "trusted_source": True,
+                "url": src.get("url"),
                 "corpus_type": "legal_knowledge",
                 "metadata": {
                     "rag_eligible": True,
                     "document_id": src["source_id"],
+                    "source_type": src["source_type"],
                     "law_number": src["law_number"],
                     "rag_domain": src["rag_domain"],
                     "madde_no": a["madde_no"],
+                    "section_id": a["madde_no"],
                     "chunk_index": a["chunk_index"],
                     "source": src["source_id"],
                     "title": src["title"],
                     "trusted_source": True,
+                    "url": src.get("url"),
                 },
             }
             for pid, a in zip(new_ids, new_articles)

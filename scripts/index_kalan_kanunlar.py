@@ -1,9 +1,9 @@
 """
 scripts/index_kalan_kanunlar.py
 ──────────────────────────────────────────────────────────────────────────────
-A2 (P1) — Kalan 16 Kanunu Qdrant'a İndeksleme
+A2 (P1) — Kurumsal Mevzuatı Qdrant'a İndeksleme
 
-index_test_pdfs.py'nin işlemediği data/regulations/ altındaki kanun PDF'leri
+index_test_pdfs.py'nin işlemediği data/regulations/ altındaki kanun ve yönetmelik PDF'leri
 rag_domain="legal" etiketiyle MEVCUT koleksiyona EKLER.
 Mevcut noktaları SİLMEZ, sadece yeni ekler. Upsert deterministik (uuid5).
 
@@ -42,6 +42,42 @@ from backend.app.rag.point_ids import deterministic_point_id
 # index_test_pdfs.py'de işlenenler ÇIKARILDI, çakışma yok.
 
 SOURCES = [
+    {
+        "file": "data/regulations/3194_imar_kanunu.pdf",
+        "source_id": "3194",
+        "title": "\u0130mar Kanunu (3194)",
+        "law_number": "3194",
+        "rag_domain": "legal",
+        "source_type": "law",
+        "url": "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.3194.pdf",
+    },
+    {
+        "file": "data/regulations/3294_sosyal_yardimlasma_kanunu.pdf",
+        "source_id": "3294",
+        "title": "Sosyal Yard\u0131mla\u015fma ve Dayan\u0131\u015fmay\u0131 Te\u015fvik Kanunu (3294)",
+        "law_number": "3294",
+        "rag_domain": "legal",
+        "source_type": "law",
+        "url": "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.3294.pdf",
+    },
+    {
+        "file": "data/regulations/valilik_kaymakamlik_birimleri_yonetmeligi.pdf",
+        "source_id": "valilik_kaymakamlik_birimleri_yonetmeligi",
+        "title": "Valilik ve Kaymakaml\u0131k Birimleri Te\u015fkilat, G\u00f6rev ve \u00c7al\u0131\u015fma Y\u00f6netmeli\u011fi",
+        "law_number": "valilik_kaymakamlik_birimleri_yonetmeligi",
+        "rag_domain": "legal",
+        "source_type": "regulation",
+        "url": "https://icisleri.gov.tr/kurumlar/icisleri.gov.tr/IcSite/bilgiislem/egitimler/eicisleri_proje/proje_mevzuatlari/Vk_yonetmelik_eotoban.pdf",
+    },
+    {
+        "file": "data/regulations/isyeri_acma_calisma_ruhsatlari_yonetmeligi.pdf",
+        "source_id": "isyeri_acma_calisma_ruhsatlari_yonetmeligi",
+        "title": "\u0130\u015fyeri A\u00e7ma ve \u00c7al\u0131\u015fma Ruhsatlar\u0131na \u0130li\u015fkin Y\u00f6netmelik",
+        "law_number": "isyeri_acma_calisma_ruhsatlari_yonetmeligi",
+        "rag_domain": "legal",
+        "source_type": "regulation",
+        "url": "https://www.mevzuat.gov.tr/MevzuatMetin/21.5.20059207.pdf",
+    },
     {
         "file": "data/regulations/193kanun.pdf",
         "source_id": "193",
@@ -162,7 +198,7 @@ CHUNK_SIZE = 1500
 MADDE_CHUNK_MAX = 2000
 
 MADDE_PATTERN = re.compile(
-    r"(MADDE\s+(\d+)\s*[.\-\u2013\u2014]|Madde\s+(\d+)\s*[.\-\u2013\u2014]|Madde\s+(\d+)\s*$)",
+    r"(MADDE\s+(\d+)\s*[.\-\u2012\u2013\u2014]|Madde\s+(\d+)\s*[.\-\u2012\u2013\u2014]|Madde\s+(\d+)\s*$)",
     re.MULTILINE,
 )
 
@@ -207,7 +243,7 @@ def extract_articles_from_pdf(pdf_path: str) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Kalan 16 kanunu Qdrant'a indexler."
+        description="Kurumsal kanun ve yönetmelikleri Qdrant'a indexler."
     )
     parser.add_argument(
         "--dry-run",
@@ -285,7 +321,7 @@ def main():
         print(f"  Chunk sayısı: {len(articles)}")
 
         if args.dry_run:
-            preview = articles[0]["text"][:80].replace("\n", " ") if articles else ""
+            preview = articles[0]["text"][:80].replace("\n", " ").replace("\u2012", "-") if articles else ""
             print(f"  İlk chunk   : '{preview}...'")
             per_source.append((src["law_number"], len(articles)))
             total_indexed += len(articles)
@@ -314,7 +350,6 @@ def main():
 
         if not new_articles:
             print(f"  Tümü zaten indexlenmiş.")
-            total_indexed += len(ids)
             per_source.append((src["law_number"], 0))
             continue
 
@@ -326,24 +361,32 @@ def main():
         payloads = [
             {
                 "chunk_id": pid,
+                "document_id": src["source_id"],
                 "source": src["source_id"],
+                "source_type": src.get("source_type", "law"),
                 "title": src["title"],
                 "law_number": src["law_number"],
                 "rag_domain": src["rag_domain"],
                 "madde_no": a["madde_no"],
+                "section_id": a["madde_no"],
                 "chunk_index": a["chunk_index"],
                 "text": a["text"],
                 "trusted_source": True,
+                "url": src.get("url"),
                 "corpus_type": "legal_knowledge",
                 "metadata": {
                     "rag_eligible": True,
+                    "document_id": src["source_id"],
+                    "source_type": src.get("source_type", "law"),
                     "law_number": src["law_number"],
                     "rag_domain": src["rag_domain"],
                     "madde_no": a["madde_no"],
+                    "section_id": a["madde_no"],
                     "chunk_index": a["chunk_index"],
                     "source": src["source_id"],
                     "title": src["title"],
                     "trusted_source": True,
+                    "url": src.get("url"),
                 },
             }
             for pid, a in zip(new_ids, new_articles)
