@@ -15,7 +15,9 @@ def repository(tmp_path):
     database_url = os.getenv("TEST_DATABASE_URL")
     if not database_url:
         repo = AnalysisRepository(
-            database_url=f"sqlite:///{tmp_path / 'analyses.sqlite3'}"
+            database_url=(
+                f"sqlite:///{(tmp_path / 'analyses.sqlite3').as_posix()}"
+            )
         )
         yield repo
         repo.engine.dispose()
@@ -76,6 +78,22 @@ def test_create_read_and_json_round_trip(repository):
         assert row.institution_id == "kaymakamlik_v1"
 
 
+def test_turkish_unicode_round_trip(repository):
+    state = _state("turkish-unicode")
+    state["document"]["subject_excerpt"] = "Çığ, şüphe, ılık göl ve üzüm"
+    state["draft"] = {
+        "subject": "Türkçe karakter doğrulaması",
+        "body": "ç, ş, ğ, ı, ö, ü ve büyükleri Ç, Ş, Ğ, İ, Ö, Ü",
+    }
+
+    repository.save_analysis("turkish-unicode", state)
+    stored = repository.get_analysis("turkish-unicode")
+
+    assert stored is not None
+    assert stored["document"]["subject_excerpt"] == "Çığ, şüphe, ılık göl ve üzüm"
+    assert stored["draft"] == state["draft"]
+
+
 def test_list_analyses_and_pending_reviews(repository):
     repository.save_analysis("pending", _state("pending"))
     approved = _state("approved")
@@ -130,7 +148,7 @@ def test_state_update_rolls_back_when_review_event_insert_fails(repository):
 
 
 def test_restart_simulation_reads_from_second_engine(tmp_path):
-    database_url = f"sqlite:///{tmp_path / 'restart.sqlite3'}"
+    database_url = f"sqlite:///{(tmp_path / 'restart.sqlite3').as_posix()}"
     first = AnalysisRepository(database_url=database_url)
     first.save_analysis("survives-restart", _state("survives-restart"))
     first.engine.dispose()

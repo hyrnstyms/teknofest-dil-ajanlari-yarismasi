@@ -272,7 +272,7 @@ def test_system_status():
 
 def test_upload_txt(tmp_path):
     txt_file = tmp_path / "test.txt"
-    txt_file.write_text("dummy test text")
+    txt_file.write_text("dummy test text", encoding="utf-8")
     
     # Mock analyze-text so upload doesn't run LLM
     from backend.app.main import app

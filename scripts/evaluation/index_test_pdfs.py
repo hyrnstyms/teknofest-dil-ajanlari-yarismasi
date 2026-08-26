@@ -9,9 +9,8 @@ Test seti kaynakları:
 - format_kurallari_checklist.md  (docs/format_kurallari_checklist.md) -> resmi_yazisma_yonetmeligi yerine
 - resmi_yazisma_kilavuzu.pdf     (data/regulations/resmiyazısmakılavuzu.pdf)
 
-Calıştırma:
-    set PYTHONPATH=.
-    .venv\Scripts\python scripts/evaluation/index_test_pdfs.py
+Çalıştırma:
+    python -m scripts.evaluation.index_test_pdfs
 """
 import sys
 import re

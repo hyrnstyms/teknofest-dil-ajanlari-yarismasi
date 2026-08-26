@@ -4,14 +4,12 @@ scripts/evaluation/legal_agent_degerlendirme.py
 Legal Agent'i 45 soruluk RAG test setiyle degerlendirir.
 
 Calistirma:
-    set PYTHONPATH=.
-    .venv\Scripts\python scripts\evaluation\legal_agent_degerlendirme.py
+    python -m scripts.evaluation.legal_agent_degerlendirme
 """
 import sys
 import json
 import re
 import unicodedata
-import io
 
 # Force UTF-8 output on Windows
 # Removed sys.stdout wrapper
