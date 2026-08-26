@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Res
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
+from collections.abc import Iterator, MutableMapping
 import uuid
 import os
 import shutil
@@ -27,6 +28,7 @@ from backend.app.institutions.profile_loader import (
     load_institution_profile,
 )
 from backend.app.agents.transfer_agent import TransferAgent
+from backend.app.db.repository import AnalysisRepository
 
 
 # Initialize FastAPI app
@@ -44,8 +46,61 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory Analysis Store
-analysis_store: Dict[str, Any] = {}
+analysis_repository: AnalysisRepository | None = None
+
+
+def get_analysis_repository() -> AnalysisRepository:
+    """Lazily initialize persistence so non-DB endpoints remain importable."""
+    global analysis_repository
+    if analysis_repository is None:
+        analysis_repository = AnalysisRepository()
+    return analysis_repository
+
+
+def _get_stored_analysis(analysis_id: str) -> dict[str, Any]:
+    state = get_analysis_repository().get_analysis(analysis_id)
+    if state is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."},
+        )
+    return state
+
+
+class _PersistentAnalysisStore(MutableMapping[str, dict[str, Any]]):
+    """Legacy dict facade backed entirely by PostgreSQL.
+
+    A few existing internal tests import ``analysis_store`` directly. Keeping
+    this facade preserves that test seam without retaining any in-memory state;
+    runtime endpoints use ``AnalysisRepository`` explicitly below.
+    """
+
+    def __getitem__(self, analysis_id: str) -> dict[str, Any]:
+        state = get_analysis_repository().get_analysis(analysis_id)
+        if state is None:
+            raise KeyError(analysis_id)
+        return state
+
+    def __setitem__(self, analysis_id: str, state: dict[str, Any]) -> None:
+        get_analysis_repository().save_analysis(analysis_id, state)
+
+    def __delitem__(self, analysis_id: str) -> None:
+        get_analysis_repository().delete_analysis(analysis_id)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(
+            state["analysis_id"]
+            for state in get_analysis_repository().list_analyses()
+        )
+
+    def __len__(self) -> int:
+        return len(get_analysis_repository().list_analyses())
+
+    def clear(self) -> None:
+        get_analysis_repository().clear()
+
+
+analysis_store: MutableMapping[str, dict[str, Any]] = _PersistentAnalysisStore()
 
 TASLAK_BAGLAMI_GEREKLI_MESAJI = (
     "Önce bir evrak analiz edin, sonra taslak düzenleme özelliğini "
@@ -116,7 +171,8 @@ def readiness_check():
         # olarak okuyor. Gerçek sağlayıcı services.llm.provider alanındadır.
         "ollama": {"status": "unknown"},
         "qdrant": {"status": "unknown"},
-        "embedding": {"status": "unknown"}
+        "embedding": {"status": "unknown"},
+        "postgres": {"status": "unknown"},
     }
     
     # Check only the selected provider. EVREN check lists models and never
@@ -191,6 +247,14 @@ def readiness_check():
             services["qdrant"]["status"] = "error"
         ready = False
 
+    try:
+        get_analysis_repository().health_check()
+        services["postgres"]["status"] = "ok"
+    except Exception as e:
+        logger.error(f"PostgreSQL connection failed: {e}", exc_info=True)
+        services["postgres"]["status"] = "unavailable"
+        ready = False
+
     return {
         "ready": ready,
         "services": services,
@@ -224,7 +288,7 @@ def analyze_text(req: AnalyzeRequest):
         # Telemetry extraction
         telemetry_service.extract_from_state(analysis_id, final_state)
         
-        analysis_store[analysis_id] = final_state
+        get_analysis_repository().save_analysis(analysis_id, final_state)
         return final_state
         
     except Exception as e:
@@ -307,17 +371,12 @@ async def upload_document(
 
 @app.get("/api/analysis/{analysis_id}")
 def get_analysis(analysis_id: str):
-    if analysis_id not in analysis_store:
-        raise HTTPException(status_code=404, detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."})
-    return analysis_store[analysis_id]
+    return _get_stored_analysis(analysis_id)
 
 
 @app.post("/api/analysis/{analysis_id}/approve")
 def approve_analysis(analysis_id: str):
-    if analysis_id not in analysis_store:
-        raise HTTPException(status_code=404, detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."})
-        
-    state = analysis_store[analysis_id]
+    state = _get_stored_analysis(analysis_id)
     
     if "human_review" not in state:
         state["human_review"] = {}
@@ -325,13 +384,16 @@ def approve_analysis(analysis_id: str):
     state["human_review"]["status"] = "approved"
     
     # Audit log
-    state.get("audit_history", []).append({
+    state.setdefault("audit_history", []).append({
         "event": "approved",
         "timestamp": datetime.utcnow().isoformat(),
         "message": "Analiz ve taslak personel tarafından onaylandı."
     })
     
     telemetry_service.update_human_review(analysis_id, "approved")
+    get_analysis_repository().update_analysis_with_event(
+        analysis_id, state, "approve", {}
+    )
     
     return {"status": "success", "message": "Analiz ve taslak personel tarafından onaylandı."}
 
@@ -339,13 +401,7 @@ def approve_analysis(analysis_id: str):
 @app.get("/api/analysis/{analysis_id}/export/docx")
 def export_docx(analysis_id: str):
     """Onaylı taslağı biçimlendirilmiş .docx dosyası olarak dışa aktarır."""
-    if analysis_id not in analysis_store:
-        raise HTTPException(
-            status_code=404,
-            detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."},
-        )
-
-    state = analysis_store[analysis_id]
+    state = _get_stored_analysis(analysis_id)
 
     # Draft ve draft_type bilgisini çıkar
     draft_data = state.get("draft", {})
@@ -395,10 +451,7 @@ def export_docx(analysis_id: str):
 
 @app.post("/api/analysis/{analysis_id}/reject")
 def reject_analysis(analysis_id: str, req: RejectRequest):
-    if analysis_id not in analysis_store:
-        raise HTTPException(status_code=404, detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."})
-        
-    state = analysis_store[analysis_id]
+    state = _get_stored_analysis(analysis_id)
     
     if "human_review" not in state:
         state["human_review"] = {}
@@ -407,23 +460,23 @@ def reject_analysis(analysis_id: str, req: RejectRequest):
     state["human_review"]["reject_reason"] = req.reason
     
     # Audit log
-    state.get("audit_history", []).append({
+    state.setdefault("audit_history", []).append({
         "event": "rejected",
         "timestamp": datetime.utcnow().isoformat(),
         "message": f"Analiz reddedildi. Sebep: {req.reason or 'Belirtilmedi'}"
     })
     
     telemetry_service.update_human_review(analysis_id, "rejected")
+    get_analysis_repository().update_analysis_with_event(
+        analysis_id, state, "reject", {"reason": req.reason}
+    )
     
     return {"status": "success", "message": "Analiz reddedildi."}
 
 
 @app.post("/api/analysis/{analysis_id}/edit")
 def edit_analysis(analysis_id: str, req: EditRequest):
-    if analysis_id not in analysis_store:
-        raise HTTPException(status_code=404, detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."})
-        
-    state = analysis_store[analysis_id]
+    state = _get_stored_analysis(analysis_id)
     
     if "draft" not in state:
         state["draft"] = {}
@@ -447,29 +500,23 @@ def edit_analysis(analysis_id: str, req: EditRequest):
     state["human_review"]["status"] = "edited"
     
     # Audit log
-    state.get("audit_history", []).append({
+    state.setdefault("audit_history", []).append({
         "event": "draft_edited",
         "timestamp": datetime.utcnow().isoformat(),
         "message": "Taslak metin üzerinde manuel düzenleme yapıldı."
     })
     
     telemetry_service.update_human_review(analysis_id, "edited")
+    get_analysis_repository().update_analysis_with_event(
+        analysis_id, state, "edit", req.model_dump(exclude_none=True)
+    )
     
     return {"status": "success", "message": "Taslak güncellendi."}
 
 
 @app.post("/api/analysis/{analysis_id}/chat/edit-draft")
 def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
-    if analysis_id not in analysis_store:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "code": "analysis_not_found",
-                "message": "İstenen analiz kaydı bulunamadı.",
-            },
-        )
-
-    current_state = analysis_store[analysis_id]
+    current_state = _get_stored_analysis(analysis_id)
     current_draft = current_state.get("draft")
     workflow_context = {
         "extraction": current_state.get("extraction", {}),
@@ -505,7 +552,12 @@ def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
             "message": "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi.",
         })
 
-        analysis_store[analysis_id] = candidate_state
+        get_analysis_repository().update_analysis_with_event(
+            analysis_id,
+            candidate_state,
+            "chat_edit",
+            {"message": req.message, "updated_draft": updated_draft},
+        )
 
     return result
 
@@ -521,16 +573,7 @@ def chat_message(req: ChatMessageRequest):
         workflow_context["institution"] = req.institution
 
     if req.analysis_id is not None:
-        if req.analysis_id not in analysis_store:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "code": "analysis_not_found",
-                    "message": "İstenen analiz kaydı bulunamadı.",
-                },
-            )
-
-        stored_state = analysis_store[req.analysis_id]
+        stored_state = _get_stored_analysis(req.analysis_id)
         state_institution = stored_state.get("kurum_profili_id")
         context_matches = not req.institution or state_institution == req.institution
         if context_matches:
@@ -602,7 +645,12 @@ def chat_message(req: ChatMessageRequest):
             "timestamp": datetime.utcnow().isoformat(),
             "message": "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi.",
         })
-        analysis_store[req.analysis_id] = candidate_state
+        get_analysis_repository().update_analysis_with_event(
+            req.analysis_id,
+            candidate_state,
+            "chat_edit",
+            {"message": req.message, "updated_draft": updated_draft},
+        )
 
     return response_data
 
@@ -727,21 +775,19 @@ def get_analyses(
     process_intent: Optional[str] = None
 ):
     items = []
-    for analysis_id, state in analysis_store.items():
+    states = get_analysis_repository().list_analyses(
+        status=status,
+        document_type=document_type,
+        process_intent=process_intent,
+    )
+    for state in states:
+        analysis_id = state["analysis_id"]
         doc = state.get("document", {})
         hr = state.get("human_review", {})
         q = state.get("quality", {})
         r = state.get("routing", {})
         t = state.get("telemetry", {})
         
-        # Filtering
-        if status and hr.get("status") != status:
-            continue
-        if document_type and doc.get("document_type") != document_type:
-            continue
-        if process_intent and doc.get("process_intent") != process_intent:
-            continue
-            
         items.append({
             "analysis_id": analysis_id,
             "document_id": state.get("document_id", ""),
@@ -769,7 +815,8 @@ def get_analyses(
 @app.get("/api/reviews/pending")
 def get_pending_reviews(limit: int = 20, offset: int = 0):
     items = []
-    for analysis_id, state in analysis_store.items():
+    for state in get_analysis_repository().list_pending_reviews():
+        analysis_id = state["analysis_id"]
         hr = state.get("human_review", {})
         
         # The key in state is requires_human_approval or human_review.required
@@ -921,4 +968,3 @@ def institution_transfer(req: TransferRequest):
             status_code=500,
             detail={"code": "transfer_error", "message": str(e)}
         )
-

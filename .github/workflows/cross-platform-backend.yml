@@ -1,0 +1,127 @@
+name: Cross-platform backend
+
+on:
+  push:
+    branches:
+      - final-db-persistence
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: Python 3.12 / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-14
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Create and activate venv (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          python --version
+          echo "$PWD/venv/bin" >> "$GITHUB_PATH"
+      - name: Create and activate venv (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m venv venv
+          .\venv\Scripts\Activate.ps1
+          python --version
+          (Resolve-Path .\venv\Scripts).Path | Out-File -Append $env:GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Import application
+        run: python -c "from backend.app.main import app; print(app.title)"
+      - name: Start uvicorn and check health (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          python -m uvicorn backend.app.main:app --reload --port 8010 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8010/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+      - name: Start uvicorn and check health (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $server = Start-Process python -ArgumentList @(
+            "-m", "uvicorn", "backend.app.main:app", "--reload", "--port", "8010"
+          ) -PassThru
+          try {
+            foreach ($attempt in 1..60) {
+              try {
+                $response = Invoke-RestMethod http://127.0.0.1:8010/health
+                $response | ConvertTo-Json -Compress
+                exit 0
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+            exit 1
+          } finally {
+            Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+          }
+      - name: Run backend tests
+        run: python -m pytest backend/tests -q
+      - name: Show Turkish Unicode round-trip
+        run: >-
+          python -m pytest backend/tests/test_db_repository.py
+          -k turkish_unicode_round_trip -vv
+
+  windows-docker-probe:
+    name: Windows hosted runner Docker probe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Start Postgres and Qdrant
+        shell: pwsh
+        run: |
+          docker compose up -d postgres qdrant
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          foreach ($attempt in 1..24) {
+            $states = docker compose ps --format json | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+            $states | ConvertTo-Json -Compress
+            if (($states | Where-Object { $_.Health -ne "healthy" }).Count -eq 0) {
+              exit 0
+            }
+            Start-Sleep -Seconds 5
+          }
+          exit 1
+      - name: Probe services
+        shell: pwsh
+        run: |
+          docker compose exec -T postgres pg_isready -U kamuai -d kamuai
+          Invoke-RestMethod http://127.0.0.1:6333/healthz
+      - name: Verify Turkish Unicode in PostgreSQL
+        shell: pwsh
+        run: |
+          python -m pip install pytest sqlalchemy "psycopg[binary]"
+          $env:TEST_DATABASE_URL = "postgresql+psycopg://kamuai:kamuai@127.0.0.1:5432/kamuai"
+          python -m pytest backend/tests/test_db_repository.py -k turkish_unicode_round_trip -vv

@@ -3,6 +3,7 @@ from copy import deepcopy
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app, analysis_store
+from backend.app.main import get_analysis_repository
 from backend.app.telemetry.service import telemetry_service
 
 client = TestClient(app)
@@ -252,6 +253,11 @@ def test_approve_edit_reject(monkeypatch):
     assert res.status_code == 200
     assert analysis_store["test_id"]["human_review"]["status"] == "rejected"
     assert analysis_store["test_id"]["human_review"]["reject_reason"] == "bad text"
+    assert [event["action"] for event in get_analysis_repository().list_review_events("test_id")] == [
+        "approve",
+        "edit",
+        "reject",
+    ]
 
 def test_roi_summary_empty():
     res = client.get("/api/roi/summary")
@@ -266,7 +272,7 @@ def test_system_status():
 
 def test_upload_txt(tmp_path):
     txt_file = tmp_path / "test.txt"
-    txt_file.write_text("dummy test text")
+    txt_file.write_text("dummy test text", encoding="utf-8")
     
     # Mock analyze-text so upload doesn't run LLM
     from backend.app.main import app
