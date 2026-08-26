@@ -79,7 +79,7 @@ def collect_documents(
 
             print(
                 f"[OK] {path.name} "
-                f"→ {len(loaded)} document"
+                f"-> {len(loaded)} document"
             )
 
         except Exception as exc:

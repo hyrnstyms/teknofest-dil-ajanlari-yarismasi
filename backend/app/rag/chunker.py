@@ -318,7 +318,7 @@ def is_official_writing_guide(
         + title
         + " "
         + filename
-    )
+    ).replace("_", " ").replace("-", " ")
 
     return (
         "resmiyaz" in combined
@@ -350,15 +350,26 @@ def extract_law_number(
             )
         ).name
 
+    normalized_filename = filename.lower()
     match = re.match(
-        r"^(\d+)\s*kanun",
-        filename.lower(),
+        r"^(\d{3,6})(?:\s*kanun|[_-])",
+        normalized_filename,
     )
 
-    if not match:
-        return None
+    if match:
+        return match.group(1)
 
-    return match.group(1)
+    named_sources = {
+        "isyeri_acma_calisma_ruhsatlari_yonetmeligi": (
+            "isyeri_acma_calisma_ruhsatlari_yonetmeligi"
+        ),
+        "valilik_kaymakamlik_birimleri_yonetmeligi": (
+            "valilik_kaymakamlik_birimleri_yonetmeligi"
+        ),
+        "resmigazete": "resmigazete",
+    }
+    stem = Path(normalized_filename).stem
+    return named_sources.get(stem)
 
 
 def chunk_document(
@@ -464,6 +475,12 @@ def chunk_document(
 
     chunks: list[Chunk] = []
 
+    law_number = (
+        extract_law_number(document)
+        if source_type == "mevzuat" and rag_domain == "legal"
+        else None
+    )
+
     for chunk_index, chunk_text in enumerate(
         texts
     ):
@@ -501,8 +518,11 @@ def chunk_document(
                 ),
                 "synthetic": False,
                 "rag_eligible": True,
+                "trusted_source": source_type == "mevzuat",
             }
         )
+        if law_number:
+            metadata["law_number"] = law_number
 
         chunks.append(
             Chunk(

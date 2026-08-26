@@ -9,6 +9,8 @@ from backend.app.institutions.profile_loader import (
 # Yarışma demosunda aktif kurum
 _DEFAULT_INSTITUTION = "kaymakamlik"
 _GENERIC_KEYWORDS = {"ruhsat"}
+_EXEMPLAR_MIN_SCORE = 0.55
+_EXEMPLAR_MIN_GAP = 0.04
 
 
 def normalize_turkish_text(text: str) -> str:
@@ -110,6 +112,7 @@ class RoutingAgent:
         subject: str,
         request_text: str,
         extracted_fields: Dict[str, Any],
+        retrieved_documents: list[dict[str, Any]] | None = None,
     ) -> Dict[str, Any]:
 
         result: Dict[str, Any] = {
@@ -162,6 +165,31 @@ class RoutingAgent:
         # Combined search text
         search_text = f"{subject or ''} {request_text or ''} {ext_subject} {ext_request}"
         norm_text = normalize_turkish_text(search_text)
+
+        labelled_exemplars = sorted(
+            (
+                candidate
+                for candidate in (retrieved_documents or [])
+                if candidate.get("expected_unit")
+            ),
+            key=lambda candidate: float(candidate.get("score") or 0.0),
+            reverse=True,
+        )
+        exemplar_unit = None
+        exemplar_score = 0.0
+        if labelled_exemplars:
+            top_exemplar = labelled_exemplars[0]
+            exemplar_score = float(top_exemplar.get("score") or 0.0)
+            runner_up_score = (
+                float(labelled_exemplars[1].get("score") or 0.0)
+                if len(labelled_exemplars) > 1
+                else 0.0
+            )
+            if (
+                exemplar_score >= _EXEMPLAR_MIN_SCORE
+                and exemplar_score - runner_up_score >= _EXEMPLAR_MIN_GAP
+            ):
+                exemplar_unit = str(top_exemplar["expected_unit"])
 
         unit_scores = []
 
@@ -239,6 +267,18 @@ class RoutingAgent:
                             "evidence": kw,
                         }
                     )
+
+            # High-similarity, labelled synthetic examples are a bounded,
+            # explainable signal. They complement but do not replace rules.
+            if exemplar_unit and unit["unit_id"] == exemplar_unit:
+                score += 35
+                breakdown["details"].append(
+                    {
+                        "signal": "document_exemplar_match",
+                        "value": 35,
+                        "evidence": f"{exemplar_unit} ({exemplar_score:.3f})",
+                    }
+                )
 
             unit_scores.append(
                 {

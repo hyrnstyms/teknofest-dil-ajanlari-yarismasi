@@ -12,6 +12,8 @@ def test_result_mapping_preserves_new_payload_metadata():
             "law_number": "4982",
             "madde_no": "11",
             "text": "...",
+            "institution": "kaymakamlik",
+            "expected_unit": "sydv",
         },
     )
 
@@ -20,6 +22,8 @@ def test_result_mapping_preserves_new_payload_metadata():
     assert result["law_number"] == "4982"
     assert result["document_id"] == "statute_4982"
     assert result["madde_no"] == "11"
+    assert result["institution"] == "kaymakamlik"
+    assert result["expected_unit"] == "sydv"
 
 
 def test_result_mapping_falls_back_to_legacy_payload_metadata():

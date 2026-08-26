@@ -57,6 +57,20 @@ def load_chunks(chunks_file: Path = DEFAULT_CHUNKS_FILE) -> list[dict[str, Any]]
 
             chunks.append(chunk)
 
+    invalid_legal = [
+        chunk.get("id")
+        for chunk in chunks
+        if chunk.get("corpus_type") == "legal_knowledge"
+        and chunk.get("metadata", {}).get("rag_domain") == "legal"
+        and not chunk.get("metadata", {}).get("law_number")
+    ]
+    if invalid_legal:
+        preview = ", ".join(str(item) for item in invalid_legal[:5])
+        raise ValueError(
+            "İndeksleme reddedildi: law_number alanı boş olan "
+            f"{len(invalid_legal)} legal chunk var. Örnekler: {preview}"
+        )
+
     return chunks
 
 
@@ -144,6 +158,10 @@ def build_payload(
             "trusted_source",
             False,
         ),
+
+        "institution": metadata.get("institution"),
+
+        "expected_unit": metadata.get("expected_unit"),
 
         "synthetic": metadata.get(
             "synthetic",

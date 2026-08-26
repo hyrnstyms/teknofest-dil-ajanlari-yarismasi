@@ -130,6 +130,7 @@ class KamuaiWorkflow:
                     intent,
                     subject,
                     req,
+                    s.raw_text[:1000],
                     *document_legal_references,
                 )
                 if part
@@ -194,6 +195,7 @@ class KamuaiWorkflow:
                     retrieved_documents = self.document_retriever.search_documents(
                         query=query,
                         limit=8,
+                        institution=self.institution,
                     )
                 except Exception as exc:
                     retrieval_warning = (
@@ -207,6 +209,7 @@ class KamuaiWorkflow:
                 sub,
                 req,
                 ext,
+                retrieved_documents=retrieved_documents,
             )
             if retrieval_warning:
                 res.setdefault("warnings", []).append(retrieval_warning)

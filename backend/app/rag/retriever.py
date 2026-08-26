@@ -78,6 +78,14 @@ class Retriever:
             payload.get("madde_no"),
             metadata.get("madde_no"),
         )
+        institution = cls._first_metadata_value(
+            payload.get("institution"),
+            metadata.get("institution"),
+        )
+        expected_unit = cls._first_metadata_value(
+            payload.get("expected_unit"),
+            metadata.get("expected_unit"),
+        )
 
         return {
             "score": float(point.score),
@@ -90,6 +98,8 @@ class Retriever:
             "document_id": document_id,
             "madde_no": madde_no,
             "article": article,
+            "institution": institution,
+            "expected_unit": expected_unit,
             "trusted_source": payload.get(
                 "trusted_source",
                 False,
@@ -114,6 +124,7 @@ class Retriever:
         limit: int = 5,
         rag_domain: str | None = None,
         law_number: str | None = None,
+        institution: str | None = None,
     ) -> list[dict[str, Any]]:
 
         query_vector = (
@@ -141,6 +152,14 @@ class Retriever:
                     match=models.MatchValue(
                         value=str(law_number)
                     ),
+                )
+            )
+
+        if institution:
+            conditions.append(
+                models.FieldCondition(
+                    key="institution",
+                    match=models.MatchValue(value=str(institution)),
                 )
             )
 
@@ -207,6 +226,7 @@ class Retriever:
         self,
         query: str,
         limit: int = 5,
+        institution: str | None = None,
     ) -> list[dict[str, Any]]:
 
         return self.search(
@@ -216,4 +236,5 @@ class Retriever:
             ),
             limit=limit,
             rag_domain="document",
+            institution=institution,
         )

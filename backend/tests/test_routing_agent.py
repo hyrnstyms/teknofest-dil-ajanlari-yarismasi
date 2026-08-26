@@ -206,6 +206,61 @@ def test_routing_intent_only_match(agent):
     assert all(unit["score"] == 50 for unit in res["ranked_units"])
 
 
+def test_high_confidence_document_exemplar_breaks_safe_tie(agent):
+    res = agent.route(
+        "dilekce",
+        "basvuru",
+        "Alakasız Konu",
+        "alakasız metin içeriği",
+        {},
+        retrieved_documents=[{
+            "score": 0.91,
+            "institution": "kaymakamlik",
+            "expected_unit": "sydv",
+        }],
+    )
+
+    assert res["recommended_unit"] == "Sosyal Yardımlaşma ve Dayanışma Vakfı (SYDV)"
+    assert any(
+        detail["signal"] == "document_exemplar_match"
+        for detail in res["score_breakdown"]["details"]
+    )
+
+
+def test_low_confidence_document_exemplar_is_ignored(agent):
+    res = agent.route(
+        "dilekce",
+        "basvuru",
+        "Alakasız Konu",
+        "alakasız metin içeriği",
+        {},
+        retrieved_documents=[{
+            "score": 0.54,
+            "expected_unit": "sydv",
+        }],
+    )
+
+    assert res["recommended_unit"] is None
+    assert res["needs_human_review"] is True
+
+
+def test_ambiguous_document_exemplars_are_ignored(agent):
+    res = agent.route(
+        "dilekce",
+        "basvuru",
+        "Alakasız Konu",
+        "alakasız metin içeriği",
+        {},
+        retrieved_documents=[
+            {"score": 0.70, "expected_unit": "sydv"},
+            {"score": 0.68, "expected_unit": "nufus"},
+        ],
+    )
+
+    assert res["recommended_unit"] is None
+    assert res["needs_human_review"] is True
+
+
 # ------------------------------------------------------------------
 # 12. Yanlış intent unit'i boost etmiyor
 # ------------------------------------------------------------------

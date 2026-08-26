@@ -17,6 +17,21 @@ VECTOR_SIZE = 1024
 LEGAL_COLLECTION = "legal_knowledge_v2"
 DOCUMENT_COLLECTION = "document_knowledge"
 
+# Production demos should not be reported as fully covered merely because the
+# collection contains at least one point. These are the minimum sources used
+# by the supported municipality/kaymakamlik scenarios.
+REQUIRED_LEGAL_SOURCES = frozenset({
+    "3071",
+    "3194",
+    "3294",
+    "4734",
+    "4982",
+    "5393",
+    "5442",
+    "isyeri_acma_calisma_ruhsatlari_yonetmeligi",
+    "valilik_kaymakamlik_birimleri_yonetmeligi",
+})
+
 
 class QdrantStore:
 
@@ -66,6 +81,9 @@ class QdrantStore:
             print(
                 f"[VAR] {collection_name}"
             )
+            # Payload indexes can evolve after the vector collection is first
+            # created. Reconcile them on every startup/indexing run.
+            self._create_indexes(collection_name)
             return
 
         self.client.create_collection(
@@ -94,6 +112,9 @@ class QdrantStore:
             "rag_domain",
             "source_type",
             "document_id",
+            "law_number",
+            "institution",
+            "expected_unit",
         ]
 
         for field in fields:
@@ -105,6 +126,27 @@ class QdrantStore:
                     models.PayloadSchemaType.KEYWORD
                 ),
             )
+
+    def legal_coverage(self) -> dict[str, object]:
+        """Return a one-request coverage report for required legal sources."""
+        response = self.client.facet(
+            collection_name=LEGAL_COLLECTION,
+            key="law_number",
+            limit=100,
+            exact=True,
+        )
+        available = {
+            str(hit.value)
+            for hit in response.hits
+            if hit.count > 0
+        }
+        missing = sorted(REQUIRED_LEGAL_SOURCES - available)
+        return {
+            "required_sources": sorted(REQUIRED_LEGAL_SOURCES),
+            "available_sources": sorted(REQUIRED_LEGAL_SOURCES & available),
+            "missing_sources": missing,
+            "complete": not missing,
+        }
 
     def ensure_all_collections(
         self,

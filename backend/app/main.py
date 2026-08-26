@@ -681,6 +681,7 @@ def system_status():
     qdrant_total = 0
     qdrant_legal = 0
     qdrant_docs = 0
+    legal_coverage = None
     
     try:
         from backend.app.rag.qdrant_store import QdrantStore
@@ -695,13 +696,25 @@ def system_status():
             elif c.name == "document_knowledge":
                 qdrant_docs = info.points_count
             qdrant_total += info.points_count
+        if qdrant_legal > 0:
+            legal_coverage = store.legal_coverage()
     except Exception as e:
         logger.error(f"System status Qdrant check failed: {e}", exc_info=True)
         pass
         
-    # Full index isn't done
-    index_status = "partial" if qdrant_legal > 0 else "empty"
-    index_msg = "Mevzuat indeksi kısmi." if index_status == "partial" else "Mevzuat indeksi oluşturulmadı."
+    if not qdrant_legal:
+        index_status = "empty"
+        index_msg = "Mevzuat indeksi oluşturulmadı."
+    elif legal_coverage and legal_coverage["complete"]:
+        index_status = "complete"
+        index_msg = "Zorunlu mevzuat kaynakları indekslendi."
+    elif legal_coverage is None:
+        index_status = "unknown"
+        index_msg = "Mevzuat kapsamı doğrulanamadı."
+    else:
+        index_status = "partial"
+        missing = legal_coverage.get("missing_sources", [])
+        index_msg = "Eksik mevzuat kaynakları: " + ", ".join(missing)
     
     return {
         "api": "online",
@@ -716,7 +729,8 @@ def system_status():
             "legal_points": qdrant_legal,
             "document_points": qdrant_docs,
             "index_status": index_status,
-            "message": index_msg
+            "message": index_msg,
+            "coverage": legal_coverage,
         }
     }
 

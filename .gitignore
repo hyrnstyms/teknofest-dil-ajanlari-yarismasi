@@ -60,6 +60,7 @@ qdrant_storage/
 
 # Generated conversion cache
 data/processed/converted_docx/
+data/processed/documents.jsonl
 
 # Sensitive/private data
 data/private/

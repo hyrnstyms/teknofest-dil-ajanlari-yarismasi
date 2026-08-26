@@ -252,8 +252,12 @@ def main():
     )
     parser.add_argument(
         "--only",
+        action="append",
         default=None,
-        help="Yalnızca belirtilen law_number'ı işler (örn. --only 657).",
+        help=(
+            "Yalnızca belirtilen law_number'ı işler; birden fazla kez "
+            "verilebilir (örn. --only 3194 --only 3294)."
+        ),
     )
     args = parser.parse_args()
 
@@ -287,7 +291,7 @@ def main():
     per_source = []
 
     for src in SOURCES:
-        if args.only and src["law_number"] != args.only:
+        if args.only and src["law_number"] not in args.only:
             continue
 
         print(f"\n{'=' * 60}")
