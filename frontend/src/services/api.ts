@@ -50,6 +50,21 @@ export interface InstitutionOption {
 export type RoiSummary = ROISummaryResponse;
 export type AnalysisListItem = AnalysisItem;
 export type PendingReviewItem = ReviewQueueItem;
+export interface SystemStatus {
+  api?: string;
+  llm_provider?: string;
+  llm_model?: string;
+  llm_models?: Record<string, string>;
+  embedding_model?: string;
+  embedding_dimension?: number;
+  qdrant?: {
+    total_points?: number;
+    legal_points?: number;
+    document_points?: number;
+    index_status?: string;
+    message?: string;
+  };
+}
 
 type AnalysisQuery = number | { limit?: number; offset?: number; status?: string };
 type ReviewQuery = number | { limit?: number; offset?: number };
@@ -81,6 +96,13 @@ async function throwApiError(response: Response): Promise<never> {
 }
 
 export const api = {
+  async getSystemStatus(): Promise<SystemStatus> {
+    const response = await apiFetch(API_BASE_URL + "/api/system/status");
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+    return response.json();
+  },
   async checkSystemReady(): Promise<any> {
     const response = await apiFetch(`${API_BASE_URL}/ready`);
     if (!response.ok) {

@@ -11,6 +11,7 @@ import { TopBar } from "./components/TopBar";
 import { DocumentWorkspacePage } from "./pages/DocumentWorkspacePage";
 import { HomePage } from "./pages/HomePage";
 import { NewDocumentPage } from "./pages/NewDocumentPage";
+import { AIOperationsPage } from "./pages/AIOperationsPage";
 import { api, type InstitutionOption } from "./services/api";
 import type { DocumentState } from "./types";
 import "./index.css";
@@ -136,6 +137,7 @@ function AppShell() {
               <Route path="/taslaklar" element={<DraftsPage onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/inceleme-bekleyenler" element={<ReviewQueuePage onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/yonetici" element={<AdminDashboard onOpenAnalysis={handleOpenAnalysis} />} />
+              <Route path="/ai-operasyon" element={<AIOperationsPage institution={institution} onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
