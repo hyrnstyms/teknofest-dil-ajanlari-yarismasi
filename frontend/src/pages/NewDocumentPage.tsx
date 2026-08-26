@@ -92,9 +92,9 @@ export const NewDocumentPage: React.FC<Props> = ({ onAnalysisLoaded }) => {
     try {
       let result: DocumentState;
       if (selectedFile) {
-        result = await api.uploadDocument(selectedFile);
+        result = await api.uploadDocument(selectedFile, selectedInstitution);
       } else {
-        result = await api.analyzeText(text);
+        result = await api.analyzeText(text, selectedInstitution);
       }
       onAnalysisLoaded?.(result);
       const analysisId = result.analysis_id || result.document_id;
@@ -140,7 +140,6 @@ export const NewDocumentPage: React.FC<Props> = ({ onAnalysisLoaded }) => {
                 <option
                   key={institution}
                   value={institution}
-                  disabled={institution !== ACTIVE_ANALYSIS_INSTITUTION}
                 >
                   {formatInstitutionName(institution)}
                 </option>

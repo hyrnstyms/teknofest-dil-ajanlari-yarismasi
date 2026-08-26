@@ -1,8 +1,33 @@
 import { DocumentState } from "../types";
-import type { AnalysesResponse, ReviewQueueResponse } from "../types/analysis";
+import type {
+  AnalysesResponse,
+  AnalysisListItem as AnalysisItem,
+  ReviewQueueItem,
+  ReviewQueueResponse,
+} from "../types/analysis";
 import type { ROISummaryResponse } from "../types/metrics";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+export interface InstitutionUiConfig {
+  title?: string;
+  description?: string;
+  upload_label?: string;
+  institution_display_name?: string;
+}
+
+export interface InstitutionOption {
+  id: string;
+  label: string;
+  ui_config: InstitutionUiConfig;
+}
+
+export type RoiSummary = ROISummaryResponse;
+export type AnalysisListItem = AnalysisItem;
+export type PendingReviewItem = ReviewQueueItem;
+
+type AnalysisQuery = number | { limit?: number; offset?: number; status?: string };
+type ReviewQuery = number | { limit?: number; offset?: number };
 
 export class ApiRequestError extends Error {
   readonly code: string;
@@ -39,13 +64,22 @@ export const api = {
     return response.json();
   },
 
-  async analyzeText(text: string): Promise<DocumentState> {
+  async listInstitutionOptions(): Promise<InstitutionOption[]> {
+    const response = await fetch(`${API_BASE_URL}/api/institutions`);
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+    const data = await response.json();
+    return data.institution_options || [];
+  },
+
+  async analyzeText(text: string, institution?: string): Promise<DocumentState> {
     const response = await fetch(`${API_BASE_URL}/api/documents/analyze-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, ...(institution ? { institution } : {}) }),
     });
 
     if (!response.ok) {
@@ -55,9 +89,10 @@ export const api = {
     return response.json();
   },
 
-  async uploadDocument(file: File): Promise<DocumentState> {
+  async uploadDocument(file: File, institution?: string): Promise<DocumentState> {
     const formData = new FormData();
     formData.append("file", file);
+    if (institution) formData.append("institution", institution);
 
     const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
       method: "POST",
@@ -101,7 +136,8 @@ export const api = {
     return response.json();
   },
 
-  async getAnalyses(params?: { limit?: number; offset?: number; status?: string }): Promise<AnalysesResponse> {
+  async getAnalyses(query?: AnalysisQuery): Promise<AnalysesResponse> {
+    const params = typeof query === "number" ? { limit: query } : query;
     const searchParams = new URLSearchParams();
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.offset) searchParams.set('offset', String(params.offset));
@@ -154,7 +190,8 @@ export const api = {
     return response.json();
   },
 
-  async getPendingReviews(params?: { limit?: number; offset?: number }): Promise<ReviewQueueResponse> {
+  async getPendingReviews(query?: ReviewQuery): Promise<ReviewQueueResponse> {
+    const params = typeof query === "number" ? { limit: query } : query;
     const searchParams = new URLSearchParams();
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.offset) searchParams.set('offset', String(params.offset));
@@ -168,5 +205,13 @@ export const api = {
 
   getDocxUrl(analysisId: string): string {
     return `${API_BASE_URL}/api/analysis/${analysisId}/export/docx`;
+  },
+
+  async downloadDocx(analysisId: string): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}/export/docx`);
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+    return response.blob();
   },
 };

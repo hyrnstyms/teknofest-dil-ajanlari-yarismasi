@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { BrowserRouter, Routes, Route, useMatch } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useMatch, useNavigate } from 'react-router-dom';
+import { AdminDashboard } from './components/AdminDashboard';
+import { DraftsPage, IncomingDocumentsPage, ReviewQueuePage } from './components/RecordViews';
 import { Sidebar } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
 import { NewDocumentPage } from './pages/NewDocumentPage';
 import { DocumentWorkspacePage } from './pages/DocumentWorkspacePage';
-import { InboxPage } from './pages/InboxPage';
-import { AdminPage } from './pages/AdminPage';
 import { ChatWidget } from './components/chat/ChatWidget';
 import { DocumentState } from './types';
 import './index.css';
@@ -19,6 +19,7 @@ function App() {
 }
 
 function AppShell() {
+  const navigate = useNavigate();
   // ChatWidget state — lives at App level, outside routes
   const [activeAnalysisId, setActiveAnalysisId] = useState<string | undefined>(undefined);
   const [activeDraft, setActiveDraft] = useState<DocumentState["draft"] | undefined>(undefined);
@@ -32,6 +33,10 @@ function AppShell() {
   const handleChatDraftUpdated = useCallback((updatedDraft: DocumentState["draft"]) => {
     setActiveDraft(updatedDraft);
   }, []);
+
+  const handleOpenAnalysis = useCallback((analysisId: string) => {
+    navigate(`/evrak/${analysisId}`);
+  }, [navigate]);
 
   const chatAnalysisId = workspaceMatch?.params.id === activeAnalysisId
     ? activeAnalysisId
@@ -62,8 +67,11 @@ function AppShell() {
                 />
               }
             />
-            <Route path="/gelen-evraklar" element={<InboxPage />} />
-            <Route path="/yonetici" element={<AdminPage />} />
+            <Route path="/gelen-evraklar" element={<IncomingDocumentsPage onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="/taslaklar" element={<DraftsPage onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="/inceleme-bekleyenler" element={<ReviewQueuePage onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="/yonetici" element={<AdminDashboard onOpenAnalysis={handleOpenAnalysis} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>

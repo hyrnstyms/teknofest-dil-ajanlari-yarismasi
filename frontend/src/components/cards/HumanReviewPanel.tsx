@@ -69,7 +69,7 @@ export const HumanReviewPanel: React.FC<Props> = ({ review, analysisId, onUpdate
   }
 
   return (
-    <div className="card mb-4 border-2" style={{ borderColor: "var(--warning-color)" }}>
+    <div className="card mb-4 border-2 review-state review-state-warning" style={{ borderColor: "var(--warning-color)" }}>
       <div className="card-header bg-yellow-50" style={{ color: "#92400e" }}>
         <UserCheck size={18} />
         {review?.required ? "Personel Onayı Gerekiyor" : "Personel Kararı"}

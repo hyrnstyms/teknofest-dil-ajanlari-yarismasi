@@ -107,7 +107,7 @@ export const OfficialDraftPanel: React.FC<Props> = ({ draft, analysisId }) => {
             <textarea 
               readOnly 
               value={rawDraftText || "Ham taslak mevcut değil."}
-              style={{ minHeight: '400px', backgroundColor: '#fff' }}
+              className="draft-source-textarea"
             />
           )}
         </div>

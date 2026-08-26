@@ -1,4 +1,6 @@
+import platform
 from pathlib import Path
+
 import pymupdf
 
 from paddleocr import PaddleOCR
@@ -14,9 +16,12 @@ class OCRService:
         Böylece metin tabanlı PDF'lerde gereksiz model yüklenmez.
         """
         if self.paddle_ocr is None:
-            self.paddle_ocr = PaddleOCR(
-                lang="tr"
-            )
+            paddle_options = {"lang": "tr"}
+
+            if platform.system() == "Windows":
+                paddle_options["enable_mkldnn"] = False
+
+            self.paddle_ocr = PaddleOCR(**paddle_options)
 
         return self.paddle_ocr
 

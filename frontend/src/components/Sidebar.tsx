@@ -3,14 +3,19 @@ import { NavLink } from 'react-router-dom';
 import {
   Home,
   FilePlus,
+  FileText,
   Inbox,
+  BookOpen,
   Settings,
   ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Anasayfa' },
   { to: '/yeni-evrak', icon: FilePlus, label: 'Yeni Evrak' },
+  { to: '/taslaklar', icon: FileText, label: 'Taslaklar\u0131m' },
+  { to: '/inceleme-bekleyenler', icon: UserCheck, label: '\u0130nceleme Bekleyenler' },
   { to: '/gelen-evraklar', icon: Inbox, label: 'Gelen Evraklar' },
   { to: '/yonetici', icon: Settings, label: 'Yönetici Paneli' },
 ];
@@ -40,6 +45,14 @@ export const Sidebar: React.FC = () => {
             <span>{item.label}</span>
           </NavLink>
         ))}
+        <button type="button" disabled title="No regulation listing endpoint is available">
+          <BookOpen size={20} />
+          <span>Mevzuat K\u00FCt\u00FCphanesi</span>
+        </button>
+        <button type="button" disabled title="This feature is not available yet">
+          <Settings size={20} />
+          <span>Ayarlar</span>
+        </button>
       </nav>
 
       <div className="sidebar-footer">
