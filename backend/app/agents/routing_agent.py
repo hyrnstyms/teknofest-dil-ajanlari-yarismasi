@@ -81,6 +81,41 @@ class RoutingAgent:
             self._units = self._parse_units(self._profile)
             self._doc_type_mapping = self._parse_doc_types(self._profile)
 
+    @staticmethod
+    def _apply_recommendation_contract(result: Dict[str, Any]) -> Dict[str, Any]:
+        """Add frozen routing-recommendation fields without removing legacy keys.
+
+        ``score`` is a diagnostic rule-match ratio, not user-facing accuracy.
+        ``assigned`` is always false: Case Engine owns assignment.
+        """
+        ranked = result.get("ranked_units") or []
+        recommended_name = result.get("recommended_unit")
+        recommended_code = None
+        alternatives: list[dict[str, Any]] = []
+        for item in ranked:
+            code = item.get("unit_id") or item.get("department_code")
+            item["department_code"] = code
+            if recommended_name and item.get("name") == recommended_name:
+                recommended_code = code
+            elif item.get("name") != recommended_name:
+                alternatives.append(
+                    {
+                        "unit": item.get("name"),
+                        "department_code": code,
+                        "score": item.get("score"),
+                    }
+                )
+
+        routing_score = float(result.get("routing_score") or 0)
+        result["recommended_department_code"] = (
+            recommended_code if recommended_name else None
+        )
+        result["alternatives"] = alternatives
+        result["score"] = round(min(1.0, routing_score / 100.0), 4) if routing_score else 0.0
+        result["requires_human_review"] = bool(result.get("needs_human_review"))
+        result["assigned"] = False
+        return result
+
     def _parse_units(self, profile: InstitutionProfile) -> list[dict]:
         units = []
         for birim in profile.birimler:
@@ -148,7 +183,7 @@ class RoutingAgent:
                 "belirlenemedi (profil eksik)."
             )
             result["ambiguity_reason"] = "profile_empty"
-            return result
+            return self._apply_recommendation_contract(result)
 
         # Reuse extracted fields subject and request if available to strengthen signal
         ext_subject = ""
@@ -388,4 +423,4 @@ class RoutingAgent:
                 "belirlenemedi."
             )
 
-        return result
+        return self._apply_recommendation_contract(result)

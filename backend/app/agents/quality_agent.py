@@ -103,6 +103,9 @@ class QualityAgent:
         routing: Dict[str, Any],
         draft: Dict[str, Any],
         human_review: Dict[str, Any] | None = None,
+        case_context: Dict[str, Any] | None = None,
+        department_action: Dict[str, Any] | None = None,
+        originator: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         
         result = {
@@ -298,6 +301,31 @@ class QualityAgent:
             result["decision"] = "human_review"
         else:
             result["decision"] = "continue"
+
+        if case_context or department_action or originator:
+            from backend.app.intelligence.case_quality import check_case_aware_quality
+
+            extra = check_case_aware_quality(
+                draft=draft,
+                department_action=department_action or (case_context or {}).get("department_action"),
+                originator=originator or (case_context or {}).get("originator"),
+                extraction=extraction,
+                legal_analysis=legal_analysis,
+                routing=routing,
+            )
+            result["case_aware"] = extra
+            for key, check in (extra.get("checks") or {}).items():
+                result["checks"][key] = check
+            result["issues"].extend(extra.get("issues") or [])
+            result["warnings"].extend(extra.get("warnings") or [])
+            if extra.get("status") == "fail":
+                result["status"] = "fail"
+                result["decision"] = "block"
+                result["requires_human_review"] = True
+            elif extra.get("requires_human_review"):
+                result["requires_human_review"] = True
+                if result["decision"] == "continue":
+                    result["decision"] = "human_review"
 
         return result
 
