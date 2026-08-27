@@ -13,7 +13,9 @@ from backend.app.intelligence.process_profiles import field_label
 from backend.app.agents.quality_agent import (
     find_unverified_outcome_claims,
     find_unverified_reference_claims,
+    QualityAgent,
 )
+from backend.app.agents.writing_agent import WritingAgent, WritingContext
 
 _LEGACY_BY_CANONICAL: dict[str, str] = {
     "MISSING_INFORMATION_REQUEST": "eksik_bilgi_talebi",
@@ -95,6 +97,9 @@ def _missing_request_body(clarification: dict[str, Any], missing_fields: dict[st
 
 class CaseWritingService:
     """Lifecycle-aware drafts. Does not persist and does not assign Cases."""
+    
+    def __init__(self, writing_agent: WritingAgent | None = None):
+        self.writing_agent = writing_agent or WritingAgent()
 
     def draft_for_intake(
         self,
@@ -139,19 +144,52 @@ class CaseWritingService:
         summary: dict[str, Any] | None = None,
         legal_analysis: dict[str, Any] | None = None,
         document: dict[str, Any] | None = None,
+        case_id: str | None = None,
     ) -> dict[str, Any]:
-        del summary, legal_analysis, document, routing
         action = _verified_action(department_action)
-        if action is None:
-            raise VerifiedDepartmentActionRequired(
-                context={"department_action_present": department_action is not None}
-            )
+        
+        # Guard: Official response requires verified department action
+        if action is None or not action.get("verified"):
+            return {
+                "allowed": False,
+                "draft": None,
+                "reason": "verified_department_action_required"
+            }
+            
+        if case_id and action.get("case_id") and str(action.get("case_id")) != str(case_id):
+            return {
+                "allowed": False,
+                "draft": None,
+                "reason": "verified_department_action_required"
+            }
+            
         recipient = _originator_recipient(originator, extraction or {})
         body = _grounded_official_body(action)
+        
+        doc = document or {}
+        context = WritingContext(
+            institution_id="belediye",
+            document_type=doc.get("document_type", ""),
+            document_subtype=doc.get("document_subtype"),
+            process_intent=doc.get("process_intent", ""),
+            document_summary=(summary or {}).get("short_summary", ""),
+            extracted_fields=(extraction or {}).get("fields", {}),
+            verified_facts=[body],
+            missing_fields=[],
+            uncertain_fields=[],
+            legal_evidence=(legal_analysis or {}).get("evidence", []),
+            legal_context="",
+            document_legal_references=[],
+            routing=routing or {},
+            recipient=recipient,
+        )
+        
+        draft_result = self.writing_agent.draft(context=context)
+        
         return self._result(
             "OFFICIAL_RESPONSE",
-            subject="Başvurunuz Hk.",
-            body=body,
+            subject=draft_result.get("draft", {}).get("subject", "Başvurunuz Hk."),
+            body=draft_result.get("draft", {}).get("body", body),
             recipient=recipient,
             grounded_in_action=True,
             department_action_id=action.get("id"),
@@ -197,6 +235,7 @@ class CaseWritingService:
             "grounded_in_action": grounded_in_action,
             "department_action_id": department_action_id,
             "assigns_case": False,
+            "allowed": True,
         }
 
 
