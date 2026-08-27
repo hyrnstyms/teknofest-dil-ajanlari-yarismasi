@@ -1,6 +1,7 @@
 import pytest
 from backend.app.telemetry.models import TelemetryRecord
 from backend.app.telemetry.roi import calculate_roi_summary
+from backend.app.telemetry.service import TelemetryService
 import os
 
 def test_roi_calculation(monkeypatch):
@@ -44,3 +45,19 @@ def test_roi_calculation(monkeypatch):
     # saved = 900 - 210 = 690s
     assert summary.estimated_saved_seconds == 690
     assert summary.estimated_saved_percentage == (690 / 900) * 100
+
+
+def test_telemetry_records_are_filterable_by_institution():
+    service = TelemetryService()
+    service.extract_from_state(
+        "kay-1",
+        {"kurum_profili_id": "kaymakamlik", "node_timings": {}},
+    )
+    service.extract_from_state(
+        "bel-1",
+        {"institution_id": "belediye", "node_timings": {}},
+    )
+
+    assert len(service.get_all_records()) == 2
+    assert [record.analysis_id for record in service.get_all_records("kaymakamlik")] == ["kay-1"]
+    assert [record.analysis_id for record in service.get_all_records("belediye")] == ["bel-1"]

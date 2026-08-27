@@ -45,7 +45,7 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
     const results = await Promise.allSettled([
       api.checkSystemReady(),
       api.getSystemStatus(),
-      api.getAnalyses(20),
+      api.getAnalyses({ limit: 20, institution: institution?.id }),
       api.listInstitutionOptions(),
     ]);
     if (results[0].status === "fulfilled") setReady(results[0].value);
@@ -55,9 +55,8 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
     if (results[3].status === "fulfilled") setInstitutions(results[3].value);
 
     if (results[2].status === "fulfilled" && results[2].value.items.length) {
-      const preferred = results[2].value.items.find((item) => !institution?.id || item.analysis_id);
       try {
-        setAnalysis(await api.getAnalysis((preferred || results[2].value.items[0]).analysis_id));
+        setAnalysis(await api.getAnalysis(results[2].value.items[0].analysis_id));
       } catch {
         setAnalysis(null);
       }

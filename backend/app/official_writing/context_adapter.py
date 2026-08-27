@@ -10,6 +10,7 @@ için yalnızca açık placeholder değerleri kullanılır ve bu alanlar ayrıca
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from typing import Any
 
 from backend.app.institutions.profile_loader import (
@@ -19,7 +20,6 @@ from backend.app.institutions.profile_loader import (
 
 
 PLACEHOLDER_SAYI = "[SAYI]"
-PLACEHOLDER_TARIH = "[TARİH]"
 PLACEHOLDER_IMZA_AD_SOYAD = "[AD SOYAD]"
 PLACEHOLDER_IMZA_UNVAN = "[UNVAN]"
 PLACEHOLDER_IDARE_ADI = "[İDARE ADI]"
@@ -27,8 +27,6 @@ PLACEHOLDER_BIRIM_ADI = "[BİRİM ADI]"
 PLACEHOLDER_KONU = "[KONU]"
 PLACEHOLDER_MUHATAP = "[MUHATAP]"
 PLACEHOLDER_METIN = "[METİN]"
-PLACEHOLDER_ILGI_TARIHI = "[İLGİ TARİHİ]"
-PLACEHOLDER_ILGI_SAYISI = "[İLGİ SAYISI]"
 
 _VALID_MUHATAP_TURLERI = {
     "kurum_alt",
@@ -182,10 +180,10 @@ def build_official_writing_context(
 
     # 2. Giden evrak sayı/tarihi incoming belgeden devralınamaz.
     context["sayi"] = PLACEHOLDER_SAYI
-    context["tarih"] = PLACEHOLDER_TARIH
-    missing.extend(["sayi", "tarih"])
+    context["tarih"] = datetime.now().strftime("%d.%m.%Y")
+    missing.append("sayi")
     source_map["sayi"] = "placeholder: outgoing EBYS metadata unavailable"
-    source_map["tarih"] = "placeholder: outgoing EBYS metadata unavailable"
+    source_map["tarih"] = "system.datetime.now"
 
     # 3. Konu: doğrulanmış extraction alanı, ardından WritingAgent taslağı.
     extracted_subject = get_extracted_value(extraction, "subject")
@@ -296,16 +294,11 @@ def build_official_writing_context(
                 "extraction.fields.document_number.value"
             )
         else:
-            context["ilgi"] = [{
-                "tarih": incoming_date or PLACEHOLDER_ILGI_TARIHI,
-                "sayi": (
-                    str(incoming_number).strip()
-                    if incoming_number
-                    else PLACEHOLDER_ILGI_SAYISI
-                ),
-                "aciklama": "ilgi yazınız",
-            }]
             missing.append("ilgi")
+            warnings.append(
+                "Başvurunun doğrulanmış tarih ve sayısı birlikte bulunmadığı "
+                "için ilgi satırı uydurulmadan çıkarıldı."
+            )
 
     # 6. Gövde.
     body = str(draft.get("body") or "").strip()

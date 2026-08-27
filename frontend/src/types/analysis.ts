@@ -132,6 +132,7 @@ export interface AnalysisResponse {
 
 export interface AnalysisListItem {
   analysis_id: string;
+  institution_id?: string;
   document_id: string;
   document_type?: string;
   process_intent?: string;

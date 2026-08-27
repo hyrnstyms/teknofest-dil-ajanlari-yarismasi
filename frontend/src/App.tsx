@@ -133,7 +133,7 @@ function AppShell() {
               <Route path="/" element={<HomePage institution={institution} />} />
               <Route path="/yeni-evrak" element={<NewDocumentPage institution={institution} onAnalysisLoaded={handleAnalysisLoaded} />} />
               <Route path="/evrak/:id" element={<DocumentWorkspacePage onAnalysisLoaded={handleAnalysisLoaded} externallyUpdatedDraft={chatDraft} />} />
-              <Route path="/gelen-evraklar" element={<IncomingDocumentsPage onOpenAnalysis={handleOpenAnalysis} />} />
+              <Route path="/gelen-evraklar" element={<IncomingDocumentsPage institution={institution} onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/taslaklar" element={<DraftsPage onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/inceleme-bekleyenler" element={<ReviewQueuePage onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/yonetici" element={<AdminDashboard onOpenAnalysis={handleOpenAnalysis} />} />

@@ -900,6 +900,10 @@ KESİN KURALLAR:
     söyleme. Yalnızca "incelenmektedir" veya "değerlendirilecektir" gibi
     sonuca dair olmayan süreç ifadelerini kullan.
 
+12. Başvurunun tarihi veya sayısı doğrulanmış verilerde YOKSA bu bilgiye
+    hiç değinme. 00.00.0000, 00000000-..., köşeli placeholder ya da
+    tahmini/sahte tarih ve referans numarası üretme.
+
 SADECE ŞU JSON FORMATINI DÖNDÜR:
 
 {
@@ -1016,6 +1020,8 @@ eksik bırakıldı.
 
 Yalnızca verilen olguları kullan.
 Yeni kurum, tarih, sayı, süre, mevzuat veya sonuç uydurma.
+Başvurunun tarihi veya sayısı doğrulanmış verilerde yoksa bu bilgiye hiç
+değinme; sahte tarih, referans numarası veya placeholder üretme.
 Doğrulanmış işlem sonucu yoksa başvurunun işleme alındığını, kabul
 edildiğini, onaylandığını, tamamlandığını veya sonuçlandığını söyleme.
 Yalnızca süreç belirten ve sonucu kesinleştirmeyen ifade kullan.

@@ -103,11 +103,14 @@ class AnalysisRepository:
     def list_analyses(
         self,
         *,
+        institution_id: str | None = None,
         status: str | None = None,
         document_type: str | None = None,
         process_intent: str | None = None,
     ) -> list[dict[str, Any]]:
         statement: Select = select(Analysis).order_by(Analysis.created_at.desc())
+        if institution_id:
+            statement = statement.where(Analysis.institution_id == institution_id)
         if status:
             statement = statement.where(Analysis.status == status)
         if document_type:

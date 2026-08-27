@@ -100,7 +100,7 @@ Konu: {{ konu }}
 {%- endif %}
 {# ── 6. METİN / GÖVDE (Madde 16) ──────────────────────────────────────── #}
 {# İlgi varsa 1 satır, yoksa muhataptan 2 satır sonra başlar.              #}
-{# Paragraf 1,25 cm içeriden (düz metinde TAB ile temsil edilir).          #}
+{# Paragraf 1,25 cm içeriden (renderer sabit boşlukla temsil eder).         #}
 {# İki yana hizalı, paragraflar arası boşluk YOK.                         #}
 {%- for paragraf in metin_paragraflari %}
 	{{ paragraf }}

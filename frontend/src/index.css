@@ -395,7 +395,7 @@ textarea:focus {
   min-height: 297mm;
   border: 1px solid #ddd;
   font-family: "Times New Roman", Times, serif;
-  line-height: 1.5;
+  line-height: 1.0;
   color: black;
   white-space: pre-wrap;
   margin: 0 auto;
@@ -1615,6 +1615,10 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.official-document {
+  line-height: 1.0;
+}
+
 .a4-document h1,
 .a4-document h2,
 .a4-document h3,
@@ -2397,7 +2401,7 @@ textarea:focus, input:focus, select:focus { border-color:#2b9fc5 !important; box
   box-shadow:0 14px 34px rgba(29, 48, 59, .11);
 }
 .workspace-document-paper .official-document::after { display:none; }
-.workspace-document-paper .official-document { color:#1f3038; font-family:Georgia, "Times New Roman", serif; line-height:1.7; white-space:pre-wrap; }
+.workspace-document-paper .official-document { color:#1f3038; font-family:Georgia, "Times New Roman", serif; line-height:1.0; white-space:pre-wrap; }
 .workspace-document-paper .draft-edit-form label { color:#344c58; font-weight:650; }
 .workspace-document-paper .draft-edit-form input,
 .workspace-document-paper .draft-edit-form textarea { border-color:#d5dee2; background:#fff; font-family:Georgia, "Times New Roman", serif; line-height:1.65; }

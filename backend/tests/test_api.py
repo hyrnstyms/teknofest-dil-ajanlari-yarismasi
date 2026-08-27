@@ -220,6 +220,57 @@ def test_analyze_text(monkeypatch):
     assert data["document"]["document_type"] == "dilekce"
     assert len(telemetry_service.records) == 1
 
+
+def test_analyse_and_list_records_are_isolated_by_institution(monkeypatch):
+    class MockWorkflow:
+        def __init__(self, institution):
+            self.institution = institution
+
+        def run(self, text, document_id=None):
+            return {
+                "document_id": document_id,
+                "kurum_profili_id": self.institution,
+                "document": {
+                    "document_type": "dilekce",
+                    "subject_excerpt": text,
+                },
+                "human_review": {"required": True, "status": "pending_review"},
+                "draft": {"draft_text": text},
+            }
+
+    monkeypatch.setattr(
+        "backend.app.main.get_workflow",
+        lambda institution="kaymakamlik": MockWorkflow(institution),
+    )
+
+    kaymakamlik = client.post(
+        "/api/documents/analyze-text",
+        json={"text": "Kaymakamlık evrakı", "institution": "kaymakamlik"},
+    )
+    belediye = client.post(
+        "/api/documents/analyze-text",
+        json={"text": "Belediye evrakı", "institution": "belediye"},
+    )
+    assert kaymakamlik.status_code == 200
+    assert belediye.status_code == 200
+
+    all_records = client.get("/api/analyses").json()
+    assert all_records["total"] == 2
+
+    kaymakamlik_records = client.get(
+        "/api/analyses?institution_id=kaymakamlik"
+    ).json()
+    assert kaymakamlik_records["total"] == 1
+    assert kaymakamlik_records["items"][0]["analysis_id"] == kaymakamlik.json()["analysis_id"]
+    assert kaymakamlik_records["items"][0]["institution_id"] == "kaymakamlik"
+
+    belediye_records = client.get(
+        "/api/analyses?institution_id=belediye"
+    ).json()
+    assert belediye_records["total"] == 1
+    assert belediye_records["items"][0]["analysis_id"] == belediye.json()["analysis_id"]
+    assert belediye_records["items"][0]["institution_id"] == "belediye"
+
 def test_get_analysis_not_found():
     res = client.get("/api/analysis/invalid_id")
     assert res.status_code == 404
@@ -263,6 +314,49 @@ def test_roi_summary_empty():
     res = client.get("/api/roi/summary")
     assert res.status_code == 200
     assert res.json()["processed_documents"] == 0
+
+
+def test_roi_summary_isolated_by_institution(monkeypatch):
+    class MockWorkflow:
+        def __init__(self, institution):
+            self.institution = institution
+
+        def run(self, text, document_id=None):
+            return {
+                "document_id": document_id,
+                "kurum_profili_id": self.institution,
+                "document": {"document_type": "dilekce"},
+                "node_timings": {"document_agent": {"duration_ms": 1000}},
+                "human_review": {"required": True, "status": "pending_review"},
+            }
+
+    monkeypatch.setattr(
+        "backend.app.main.get_workflow",
+        lambda institution="kaymakamlik": MockWorkflow(institution),
+    )
+
+    for institution in ("kaymakamlik", "kaymakamlik", "belediye"):
+        response = client.post(
+            "/api/documents/analyze-text",
+            json={"text": "test", "institution": institution},
+        )
+        assert response.status_code == 200
+
+    assert client.get("/api/roi/summary").json()["processed_documents"] == 3
+    assert client.get(
+        "/api/roi/summary?institution_id=kaymakamlik"
+    ).json()["processed_documents"] == 2
+    assert client.get(
+        "/api/roi/summary?institution_id=belediye"
+    ).json()["processed_documents"] == 1
+
+    telemetry_service.records.clear()
+    assert client.get(
+        "/api/roi/summary?institution_id=kaymakamlik"
+    ).json()["processed_documents"] == 2
+    assert client.get(
+        "/api/roi/summary?institution_id=belediye"
+    ).json()["processed_documents"] == 1
     
 def test_system_status():
     res = client.get("/api/system/status")

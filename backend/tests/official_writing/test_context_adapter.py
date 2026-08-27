@@ -3,6 +3,7 @@ backend/tests/official_writing/test_context_adapter.py
 """
 
 import pytest
+from datetime import datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +11,6 @@ from backend.app.official_writing.context_adapter import (
     PLACEHOLDER_IMZA_AD_SOYAD,
     PLACEHOLDER_IMZA_UNVAN,
     PLACEHOLDER_SAYI,
-    PLACEHOLDER_TARIH,
     build_official_writing_context,
 )
 from backend.app.institutions.profile_loader import InstitutionProfile
@@ -60,9 +60,21 @@ def test_context_adapter_sayi_tarih_missing():
     missing = res["missing_required_fields"]
     
     assert ctx["sayi"] == PLACEHOLDER_SAYI
-    assert ctx["tarih"] == PLACEHOLDER_TARIH
+    assert ctx["tarih"] == datetime.now().strftime("%d.%m.%Y")
     assert "sayi" in missing
-    assert "tarih" in missing
+    assert "tarih" not in missing
+
+def test_context_adapter_cevap_yazisi_omits_unverified_reference():
+    state = mock_state()
+    state["extraction"]["fields"].pop("document_date")
+    state["extraction"]["fields"].pop("document_number")
+
+    res = build_official_writing_context(mock_draft(), state, "cevap_yazisi")
+
+    assert res["context"]["ilgi"] == []
+    assert "ilgi" in res["missing_required_fields"]
+    assert "[İLGİ TARİHİ]" not in str(res)
+    assert "[İLGİ SAYISI]" not in str(res)
 
 def test_context_adapter_cevap_yazisi_ilgi_mapping():
     # Kural 3: Cevap yazısında incoming evrak sayı/tarihi ilgi'ye map edilir
