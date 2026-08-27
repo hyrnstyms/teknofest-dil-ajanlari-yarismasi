@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any
+from typing import Any, TypedDict, List, Optional, Dict
 
 from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
@@ -26,6 +26,32 @@ ALLOWED_DRAFT_TYPES = {
     "eksik_bilgi_talebi",
     "diger",
 }
+
+class WritingContext(TypedDict, total=False):
+    institution_id: str
+    document_type: str
+    document_subtype: Optional[str]
+    process_intent: str
+    document_summary: str
+    requested_action: Optional[str]
+
+    extracted_fields: Dict[str, Any]
+
+    verified_facts: List[str]
+
+    missing_fields: List[str]
+    uncertain_fields: List[str]
+
+    legal_evidence: List[Dict[str, Any]]
+    legal_context: str
+    document_legal_references: List[str]
+
+    routing: Dict[str, Any]
+
+    sender_unit: Optional[str]
+    recipient: Optional[str]
+
+    institution_profile: Any
 
 
 class WritingAgent:
@@ -57,7 +83,9 @@ class WritingAgent:
 
     def draft(
         self,
-        document_summary: str,
+        context: WritingContext = None,
+        # backward compatibility:
+        document_summary: str = "",
         requested_action: str | None = None,
         missing_fields: list[str] | None = None,
         verified_facts: list[str] | None = None,
@@ -69,47 +97,68 @@ class WritingAgent:
         state: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
 
-        missing_fields = (
-            missing_fields
-            or []
-        )
-
-        verified_facts = [
+        if context is None:
+            context = {
+                "document_summary": document_summary,
+                "requested_action": requested_action,
+                "missing_fields": missing_fields or [],
+                "uncertain_fields": [],
+                "verified_facts": verified_facts or [],
+                "legal_context": legal_context or "",
+                "document_legal_references": document_legal_references or [],
+                "recipient": recipient,
+                "sender_unit": sender_unit,
+                "process_intent": "",
+                "document_subtype": None,
+                "routing": {},
+            }
+        
+        c_document_summary = context.get("document_summary", "")
+        c_requested_action = context.get("requested_action")
+        c_missing_fields = context.get("missing_fields") or []
+        c_uncertain_fields = context.get("uncertain_fields") or []
+        c_verified_facts = [
             str(fact).strip()
-            for fact in (verified_facts or [])
+            for fact in (context.get("verified_facts") or [])
             if str(fact).strip()
         ]
-
-        legal_context = str(legal_context or "").strip()
-        document_legal_references = [
+        c_legal_context = str(context.get("legal_context") or "").strip()
+        c_document_legal_references = [
             str(reference).strip()
-            for reference in (document_legal_references or [])
+            for reference in (context.get("document_legal_references") or [])
             if str(reference).strip()
         ]
+        c_recipient = context.get("recipient")
+        c_sender_unit = context.get("sender_unit")
 
         # -------------------------------------------------
         # 1. Hangi resmî yazı hazırlanmalı?
         # -------------------------------------------------
 
-        type_result = (
-            self._decide_draft_type(
-                document_summary=(
-                    document_summary
-                ),
-                requested_action=(
-                    requested_action
-                ),
-                missing_fields=(
-                    missing_fields
-                ),
-            )
-        )
+        type_result = self._decide_draft_type(context)
 
-        draft_type = (
-            type_result[
-                "draft_type"
-            ]
-        )
+        draft_type = type_result.get("draft_type", "diger")
+        mode = type_result.get("mode", "")
+        
+        if draft_type == "blocked" or mode.startswith("blocked"):
+            return {
+                "draft_type": "diger" if draft_type == "blocked" else draft_type,
+                "draft_type_reason": type_result.get("reason"),
+                "draft_generation_mode": mode or "blocked",
+                "draft": None,
+                "rendered_text": None,
+                "process_explanation": type_result.get("reason"),
+                "applied_rules": [],
+                "supporting_rules": [],
+                "rule_validation": {"proposed": 0, "validated": 0},
+                "sources": [],
+                "retrieval_score": 0.0,
+                "llm": self._llm_info(),
+                "verified_facts_used": c_verified_facts,
+                "requires_human_approval": True,
+                "needs_additional_context": True,
+                "warning": type_result.get("reason"),
+            }
 
         # -------------------------------------------------
         # 2. Resmî Yazışma Kılavuzu retrieval
@@ -119,7 +168,7 @@ class WritingAgent:
             self._build_retrieval_query(
                 draft_type=draft_type,
                 document_summary=(
-                    document_summary
+                    c_document_summary
                 ),
             )
         )
@@ -152,7 +201,7 @@ class WritingAgent:
                             draft_type
                         ),
                         missing_fields=(
-                            missing_fields
+                            c_missing_fields
                         ),
                     )
                 ),
@@ -194,21 +243,21 @@ class WritingAgent:
         generated = (
             self._generate_draft(
                 document_summary=(
-                    document_summary
+                    c_document_summary
                 ),
                 requested_action=(
-                    requested_action
+                    c_requested_action
                 ),
                 missing_fields=(
-                    missing_fields
+                    c_missing_fields
                 ),
                 verified_facts=(
-                    verified_facts
+                    c_verified_facts
                 ),
-                legal_context=legal_context,
-                document_legal_references=document_legal_references,
-                recipient=recipient,
-                sender_unit=sender_unit,
+                legal_context=c_legal_context,
+                document_legal_references=c_document_legal_references,
+                recipient=c_recipient,
+                sender_unit=c_sender_unit,
                 draft_type=draft_type,
                 context=context,
             )
@@ -224,49 +273,25 @@ class WritingAgent:
             generated
         ):
 
-            if (
-                draft_type
-                == "eksik_bilgi_talebi"
-            ):
-
-                generated = (
-                    self._build_missing_info_fallback(
-                        missing_fields=(
-                            missing_fields
-                        )
-                    )
+            if draft_type == "eksik_bilgi_talebi":
+                generated = self._build_missing_info_fallback(
+                    missing_fields=c_missing_fields
                 )
-
-                generation_mode = (
-                    "deterministic_fallback"
-                )
-
+                generation_mode = "deterministic_fallback"
             else:
-
-                generated = (
-                    self._repair_draft(
-                        generated=generated,
-                        document_summary=(
-                            document_summary
-                        ),
-                        requested_action=(
-                            requested_action
-                        ),
-                        verified_facts=(
-                            verified_facts
-                        ),
-                        legal_context=legal_context,
-                        document_legal_references=document_legal_references,
-                        recipient=recipient,
-                        sender_unit=sender_unit,
-                        draft_type=draft_type,
-                        context=context,
-                    )
+                generated = self._repair_draft(
+                    generated=generated,
+                    document_summary=c_document_summary,
+                    requested_action=c_requested_action,
+                    verified_facts=c_verified_facts,
+                    legal_context=c_legal_context,
+                    document_legal_references=c_document_legal_references,
+                    recipient=c_recipient,
+                    sender_unit=c_sender_unit,
+                    draft_type=draft_type,
+                    context=context,
                 )
-
-                generation_mode = (
-                    "llm_repair"
-                )
+                generation_mode = "llm_repair"
 
         # -------------------------------------------------
         # 6. Son kontrol
@@ -275,18 +300,10 @@ class WritingAgent:
         if not self._is_draft_complete(
             generated
         ):
-            if (
-                verified_facts
-                and draft_type in {
-                    "cevap_yazisi",
-                    "bilgilendirme_metni",
-                }
-            ):
-                generated = (
-                    self._build_verified_facts_fallback(
-                        draft_type=draft_type,
-                        verified_facts=verified_facts,
-                    )
+            if c_verified_facts and draft_type in {"cevap_yazisi", "bilgilendirme_metni"}:
+                generated = self._build_verified_facts_fallback(
+                    draft_type=draft_type,
+                    verified_facts=c_verified_facts,
                 )
 
                 generation_mode = (
@@ -354,7 +371,7 @@ class WritingAgent:
                 ),
 
                 "verified_facts_used": (
-                    verified_facts
+                    c_verified_facts
                 ),
 
                 "requires_human_approval": True,
@@ -378,7 +395,7 @@ class WritingAgent:
 
         generated = self._ensure_document_legal_references(
             generated,
-            document_legal_references,
+            c_document_legal_references,
         )
 
         # -------------------------------------------------
@@ -411,21 +428,15 @@ class WritingAgent:
         # 9. Muhatap/gönderen bilgisini güvene al.
         # -------------------------------------------------
 
-        draft = (
-            self._sanitize_draft(
-                generated=generated,
-                recipient=recipient,
-                sender_unit=sender_unit,
-            )
+        draft = self._sanitize_draft(
+            generated=generated,
+            recipient=c_recipient,
+            sender_unit=c_sender_unit,
         )
 
-        process_explanation = (
-            self._build_process_explanation(
-                draft_type=draft_type,
-                missing_fields=(
-                    missing_fields
-                ),
-            )
+        process_explanation = self._build_process_explanation(
+            draft_type=draft_type,
+            missing_fields=c_missing_fields,
         )
 
         retrieval_score = (
@@ -507,7 +518,7 @@ class WritingAgent:
             ),
 
             "verified_facts_used": (
-                verified_facts
+                c_verified_facts
             ),
 
             # Kamu personeli onayı zorunlu.
@@ -524,210 +535,77 @@ class WritingAgent:
 
     def _decide_draft_type(
         self,
-        document_summary: str,
-        requested_action: str | None,
-        missing_fields: list[str],
+        context: WritingContext,
     ) -> dict[str, str]:
         """
-        Açık durumlarda deterministik karar verir.
-        Yalnızca belirsiz durumda LLM kullanılır.
+        Tamamen deterministik kurallarla yazı türüne karar verir.
+        LLM çağrısı yapılmaz.
         """
+        uncertain_fields = context.get("uncertain_fields") or []
+        missing_fields = context.get("missing_fields") or []
+        process_intent = context.get("process_intent") or ""
+        routing = context.get("routing") or {}
+        recipient = context.get("recipient")
 
+        # 1) CONTENT-CRITICAL UNCERTAINTY blokajı.
+        critical_uncertain = [
+            f for f in uncertain_fields 
+            if f not in ["signature_present", "authority_document_present"]
+        ]
+        
+        # Eğer muhatap belli değilse cevap yazısı / üst yazı tehlikeli
+        if not recipient and process_intent in ["basvuru", "sikayet", "itiraz", "bilgi_talebi"]:
+            if "recipient" not in missing_fields and "recipient" not in critical_uncertain:
+                critical_uncertain.append("recipient")
+                
+        if critical_uncertain:
+            return {
+                "draft_type": "blocked",
+                "mode": "blocked_uncertain_fields",
+                "reason": (
+                    f"Kritik alanlarda belirsizlik ({', '.join(critical_uncertain)}) "
+                    "olduğu için otomatik taslak üretimi durduruldu."
+                ),
+            }
+
+        # 2) Eksik kritik alan
         if missing_fields:
             return {
                 "draft_type": "eksik_bilgi_talebi",
-                "reason": (
-                    "Evrakta eksik bilgi bulunduğu için "
-                    "eksik bilgi talebi taslağı seçildi."
-                ),
+                "reason": "Evrakta zorunlu eksik bilgiler bulunduğu için eksik bilgi talebi seçildi."
             }
 
-        summary_lower = self._normalize_text(
-            document_summary
-        )
+        # 3) process_intent üzerinden karar
+        intent_map = {
+            "basvuru": "cevap_yazisi",
+            "sikayet": "cevap_yazisi",
+            "itiraz": "cevap_yazisi",
+            "bilgi_talebi": "cevap_yazisi",
+            "sevk": "ust_yazi",
+            "ihbar": "ust_yazi",
+            "iletisim": "ust_yazi",
+            "bildirim": "bilgilendirme_metni",
+        }
+        
+        if process_intent in intent_map:
+            return {
+                "draft_type": intent_map[process_intent],
+                "reason": f"İşlem amacı ({process_intent}) kurallarına göre {intent_map[process_intent]} seçildi."
+            }
 
-        action_lower = self._normalize_text(
-            requested_action or ""
-        )
-
-        combined = (
-            f"{summary_lower} {action_lower}"
-        )
-
-        # Başka kurum/birime evrak iletimi açıkça isteniyorsa.
-        forwarding_markers = [
-            "üst yazı",
-            "başka birime iletil",
-            "başka kuruma iletil",
-            "ilgili birime iletil",
-            "ilgili kuruma iletil",
-            "ekli olarak gönder",
-            "ekleriyle gönder",
-        ]
-
-        if any(
-            marker in combined
-            for marker in forwarding_markers
-        ):
+        # 4) Routing hedefi var mı?
+        if routing.get("recommended_unit") and not recipient:
+            # Internal forwarding
             return {
                 "draft_type": "ust_yazi",
-                "reason": (
-                    "Evrakın başka bir kurum veya birime "
-                    "iletilmesi gerektiği için üst yazı seçildi."
-                ),
+                "reason": "Evrakın iç birime sevk edileceği anlaşıldığı için üst yazı seçildi."
             }
 
-        # Gelen bir başvuru/talebe kişi veya başvuru sahibi
-        # yönünde dönüş yapılıyorsa bu bir cevap yazısıdır.
-        incoming_markers = [
-            "başvuru sahibi",
-            "başvuru",
-            "dilekçe",
-            "talep",
-            "müracaat",
-        ]
-
-        response_markers = [
-            "başvuru sahibine",
-            "cevap verilmesi",
-            "yanıt verilmesi",
-            "cevaplanması",
-            "bildirilmesi",
-        ]
-
-        has_incoming_request = any(
-            marker in summary_lower
-            for marker in incoming_markers
-        )
-
-        has_response_action = any(
-            marker in action_lower
-            for marker in response_markers
-        )
-
-        if (
-            has_incoming_request
-            and has_response_action
-        ):
-            return {
-                "draft_type": "cevap_yazisi",
-                "reason": (
-                    "Gelen başvuru veya talebe doğrudan "
-                    "geri dönüş yapılacağı için cevap yazısı seçildi."
-                ),
-            }
-
-        information_markers = [
-            "bilgilendirme",
-            "bilgi verilmesi",
-            "duyurulması",
-            "duyuru",
-        ]
-
-        if any(
-            marker in action_lower
-            for marker in information_markers
-        ):
-            return {
-                "draft_type": "bilgilendirme_metni",
-                "reason": (
-                    "İşlem doğrudan bir başvuruya cevap vermekten "
-                    "çok bilgilendirme amacı taşıdığı için "
-                    "bilgilendirme metni seçildi."
-                ),
-            }
-
-        # Belirsiz durumlarda LLM karar verir.
-        action_text = (
-            requested_action
-            or "Belirtilmedi"
-        )
-
-        system_prompt = """
-Sen kamu evrak süreçlerinde hangi resmî yazı türünün
-hazırlanması gerektiğini belirleyen bir karar destek
-bileşenisin.
-
-SADECE aşağıdaki değerlerden birini seç:
-
-ust_yazi
-cevap_yazisi
-bilgilendirme_metni
-diger
-
-ust_yazi:
-Bir evrakın veya ekin başka bir kurum ya da birime
-resmî olarak iletilmesi için hazırlanır.
-
-cevap_yazisi:
-Bir başvuru, talep veya resmî yazıya doğrudan cevap
-vermek için hazırlanır.
-
-bilgilendirme_metni:
-Bir kişi veya ilgili tarafa süreç ya da durum hakkında
-genel bilgi vermek için hazırlanır.
-
-diger:
-Yukarıdaki türlere açık şekilde girmeyen durumlarda
-kullanılır.
-
-Yeni olay, kurum veya mevzuat uydurma.
-JSON dışında hiçbir şey döndürme.
-
-{
-    "draft_type": "cevap_yazisi",
-    "reason": "kısa gerekçe"
-}
-"""
-
-        user_prompt = f"""
-EVRAK ÖZETİ:
-
-{document_summary}
-
-ÖNERİLEN İŞLEM:
-
-{action_text}
-
-En uygun resmî yazı türünü seç.
-"""
-
-        raw = self.llm.chat(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=0.0,
-            max_tokens=120,
-            json_mode=True,
-        )
-
-        try:
-            result = json.loads(raw)
-        except json.JSONDecodeError:
-            return {
-                "draft_type": "diger",
-                "reason": (
-                    "Model geçerli karar formatı üretemedi."
-                ),
-            }
-
-        draft_type = str(
-            result.get(
-                "draft_type",
-                "diger",
-            )
-        ).strip()
-
-        if draft_type not in ALLOWED_DRAFT_TYPES:
-            draft_type = "diger"
-
+        # 5) Ambiguous / Belirsiz
         return {
-            "draft_type": draft_type,
-            "reason": str(
-                result.get(
-                    "reason",
-                    "",
-                )
-            ).strip(),
+            "draft_type": "diger",
+            "mode": "blocked_ambiguous_draft_type",
+            "reason": "İşlem amacı ve bağlamından resmî yazı türü kesin olarak belirlenemedi."
         }
 
     # =====================================================
@@ -869,16 +747,17 @@ KESİN KURALLAR:
 
 1. subject ve body alanları boş olamaz.
 
-2. Öncelikli gerçek kaynağın DOĞRULANMIŞ İŞLEM
-   BİLGİLERİ bölümüdür.
+2. Öncelikli gerçek kaynağı DOĞRULANMIŞ İŞLEM
+   BİLGİLERİ (VERIFIED FACTS) bölümüdür.
 
 3. DOĞRULANMIŞ İŞLEM BİLGİLERİ verilmişse cevap
    metnindeki işlem durumu veya sonuç yalnızca bu
    bilgilerden oluşturulmalıdır.
 
 4. Verilmeyen kurum, kişi, tarih, belge sayısı,
-   dosya numarası, süre, kanun, yönetmelik veya
-   hukuki sonuç uydurma.
+   dosya numarası, süre, kanun, yönetmelik, sonuç, 
+   gönderici (sender) veya muhatap (recipient) KESİNLİKLE UYDURMA.
+   Unknown / bilinmeyen bir alanı biliniyormuş gibi yazma.
 
 5. Evrakın anlamını değiştirme.
 
@@ -896,9 +775,21 @@ KESİN KURALLAR:
 
 11. DOĞRULANMIŞ İŞLEM BİLGİLERİ işlem sonucunu açıkça doğrulamıyorsa
     "başvurunuz işleme alınmıştır", "kabul edilmiştir", "onaylanmıştır",
-    "verilmiştir" veya "tamamlanmıştır" gibi kesin sonuç/başvuru durumu
-    söyleme. Yalnızca "incelenmektedir" veya "değerlendirilecektir" gibi
+    "verilmiştir", "uygun görülmüştür", "sonuçlandırılmıştır" veya "tamamlanmıştır"
+    gibi kesin sonuç/başvuru durumu söyleme. 
+    Yalnızca "incelenmektedir" veya "değerlendirilecektir" gibi
     sonuca dair olmayan süreç ifadelerini kullan.
+
+12. KILAVUZ KAYNAKLARI (Official Writing Rules) YALNIZCA resmî yazışmanın nasıl düzenleneceğini (biçim/şekil kurallarını) belirler. Başvuruya ilişkin kişi, olay, tarih, sayı, karar veya işlem sonucu bu kaynaklardan TÜRETİLEMEZ.
+
+13. Çıktıya asla (basvuru, dilekce, ust_yazi, process_intent, signature_present vb.) geliştirici değişken / enum key sızdırma. Türkçe metin ("başvuru", "dilekçe", "üst yazı") kullan.
+
+Hiyerarşi (Önem sırası):
+1. VERIFIED FACTS (Doğrulanmış Olgular)
+2. EXTRACTED/VALIDATED CONTEXT (Evrak Özeti, Eksik Alanlar)
+3. ROUTING/INSTITUTION CONTEXT (Muhatap, Gönderen)
+4. VALIDATED LEGAL EVIDENCE (Hukuki Bağlam)
+5. OFFICIAL WRITING RULES (Kılavuz Biçim Kuralları)
 
 SADECE ŞU JSON FORMATINI DÖNDÜR:
 
@@ -1012,13 +903,14 @@ Sadece verilen gerçeklere dayanarak subject ve body üret.
 
         system_prompt = """
 Önceki resmî yazı taslağında subject veya body alanı
-eksik bırakıldı.
+eksik bırakıldı veya geçersiz bir sonuç üretildi.
 
 Yalnızca verilen olguları kullan.
-Yeni kurum, tarih, sayı, süre, mevzuat veya sonuç uydurma.
+Yeni kurum, tarih, sayı, süre, mevzuat, sonuç, gönderen veya muhatap uydurma.
 Doğrulanmış işlem sonucu yoksa başvurunun işleme alındığını, kabul
-edildiğini, onaylandığını, tamamlandığını veya sonuçlandığını söyleme.
+edildiğini, onaylandığını, uygun görüldüğünü, tamamlandığını veya sonuçlandığını KESİNLİKLE söyleme.
 Yalnızca süreç belirten ve sonucu kesinleştirmeyen ifade kullan.
+Yazı türü ("basvuru", "dilekce", "ust_yazi" gibi) developer key'lerini çıktıya SIZDIRMA (Türkçe: başvuru, dilekçe, üst yazı kullan).
 
 JSON dışında hiçbir şey döndürme.
 
