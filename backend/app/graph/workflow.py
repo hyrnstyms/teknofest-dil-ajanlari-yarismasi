@@ -49,7 +49,7 @@ class KamuaiWorkflow:
         self.summary_agent = SummaryAgent(llm=self.llm)
         self.routing_agent = RoutingAgent(institution=institution)
         self.writing_agent = WritingAgent(llm=self.llm)
-        self.quality_agent = QualityAgent()
+        self.quality_agent = QualityAgent(institution=institution)
 
         self.graph = self._build_graph()
 

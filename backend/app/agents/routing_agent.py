@@ -8,7 +8,7 @@ from backend.app.institutions.profile_loader import (
 
 # Yarışma demosunda aktif kurum
 _DEFAULT_INSTITUTION = "kaymakamlik"
-_GENERIC_KEYWORDS = {"ruhsat"}
+_GENERIC_KEYWORDS = {"ruhsat", "yardım", "yardim", "itiraz", "şikayet", "sikayet", "başvuru", "basvuru", "talep", "istek", "dilekçe", "dilekce"}
 _EXEMPLAR_MIN_SCORE = 0.55
 _EXEMPLAR_MIN_GAP = 0.04
 
@@ -113,6 +113,7 @@ class RoutingAgent:
         request_text: str,
         extracted_fields: Dict[str, Any],
         retrieved_documents: list[dict[str, Any]] | None = None,
+        document_subtype: str = None,
     ) -> Dict[str, Any]:
 
         result: Dict[str, Any] = {
@@ -128,6 +129,7 @@ class RoutingAgent:
                 "intent_score": 0,
                 "keyword_score": 0,
                 "doc_type_score": 0,
+                "subtype_score": 0,
                 "details": []
             },
             "registry_source": self._profile_source,
@@ -200,6 +202,7 @@ class RoutingAgent:
                 "intent_score": 0,
                 "keyword_score": 0,
                 "doc_type_score": 0,
+                "subtype_score": 0,
                 "details": []
             }
 
@@ -215,10 +218,25 @@ class RoutingAgent:
                     }
                 )
 
-            # 2. Document Type eşleşmesi
-            if document_type and document_type in self._doc_type_mapping:
-                if unit["unit_id"] in self._doc_type_mapping[document_type]:
-                    score += 30
+            # 2. Document Type / Subtype eşleşmesi
+            matched_type = None
+            if document_subtype and document_subtype in self._doc_type_mapping:
+                matched_type = document_subtype
+            elif document_type and document_type in self._doc_type_mapping:
+                matched_type = document_type
+            
+            if matched_type and unit["unit_id"] in self._doc_type_mapping[matched_type]:
+                score += 30
+                if matched_type == document_subtype:
+                    breakdown["subtype_score"] += 30
+                    breakdown["details"].append(
+                        {
+                            "signal": "subtype_match",
+                            "value": 30,
+                            "evidence": document_subtype,
+                        }
+                    )
+                else:
                     breakdown["doc_type_score"] += 30
                     breakdown["details"].append(
                         {
@@ -348,7 +366,9 @@ class RoutingAgent:
 
                 if process_intent:
                     result["evidence"].append(f"İşlem Türü: {process_intent}")
-                if document_type:
+                if document_subtype:
+                    result["evidence"].append(f"Evrak Alt Türü: {document_subtype}")
+                elif document_type:
                     result["evidence"].append(f"Evrak Türü: {document_type}")
                 if best["matched_keywords"]:
                     result["evidence"].append(
