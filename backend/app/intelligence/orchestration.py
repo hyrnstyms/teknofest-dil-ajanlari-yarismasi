@@ -6,7 +6,7 @@ from typing import Any
 
 from backend.app.agents.missing_field_agent import MissingFieldAgent
 from backend.app.agents.priority_agent import PriorityAgent
-from backend.app.agents.routing_agent import RoutingAgent
+from backend.app.agents.routing_agent import RoutingAgent, legal_citations_from_analysis
 from backend.app.agents.summary_agent import SummaryAgent
 from backend.app.intelligence.case_writing import CaseWritingService
 from backend.app.intelligence.clarification import ClarificationAgent
@@ -122,6 +122,7 @@ class CaseAwareOrchestrator:
             document.get("request_excerpt") or "",
             extracted_fields,
             document_subtype=document.get("document_subtype"),
+            legal_evidence=legal_citations_from_analysis(ctx.legal_analysis),
         )
         routing = dict(routing)
         routing["assigned"] = False

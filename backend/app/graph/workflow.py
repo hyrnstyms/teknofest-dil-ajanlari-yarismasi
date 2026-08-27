@@ -10,7 +10,7 @@ from backend.app.agents.legal_agent import LegalAgent
 from backend.app.agents.missing_field_agent import MissingFieldAgent
 from backend.app.agents.priority_agent import PriorityAgent
 from backend.app.agents.quality_agent import QualityAgent
-from backend.app.agents.routing_agent import RoutingAgent
+from backend.app.agents.routing_agent import RoutingAgent, legal_citations_from_analysis
 from backend.app.agents.summary_agent import SummaryAgent
 from backend.app.agents.writing_agent import WritingAgent, WritingContext
 
@@ -228,6 +228,7 @@ class KamuaiWorkflow:
                 req,
                 ext,
                 retrieved_documents=retrieved_documents,
+                legal_evidence=legal_citations_from_analysis(s.legal_analysis),
             )
             if retrieval_warning:
                 res.setdefault("warnings", []).append(retrieval_warning)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from backend.app.agents.missing_field_agent import MissingFieldAgent
-from backend.app.agents.routing_agent import RoutingAgent
+from backend.app.agents.routing_agent import RoutingAgent, legal_citations_from_analysis
 from backend.app.intelligence.clarification import ClarificationAgent
 from backend.app.intelligence.contracts import CaseIntelligenceContext, CitizenResponse
 from backend.app.intelligence.process_profiles import (
@@ -153,6 +153,7 @@ def resume_after_citizen_info(
             request,
             extracted_fields,
             document_subtype=document.get("document_subtype"),
+            legal_evidence=legal_citations_from_analysis(context.legal_analysis),
         )
         if candidate:
             unit = next(

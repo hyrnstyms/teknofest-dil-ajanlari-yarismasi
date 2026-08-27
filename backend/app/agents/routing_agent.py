@@ -45,6 +45,35 @@ def _has_explicit_target(norm_text: str, unit_name: str) -> bool:
         if re.search(suffixed_target, norm_text) or re.search(by_unit, norm_text):
             return True
     return False
+def legal_citations_from_analysis(legal_analysis: Dict[str, Any] | None) -> list[str]:
+    """Resolve validated LegalAgent evidence references to short citations."""
+    analysis = legal_analysis if isinstance(legal_analysis, dict) else {}
+    sources = analysis.get("sources") or []
+    source_map = {
+        f"K{index}": source
+        for index, source in enumerate(sources, start=1)
+        if isinstance(source, dict)
+    }
+    citations: list[str] = []
+    for item in analysis.get("evidence") or []:
+        if not isinstance(item, dict) or not str(item.get("evidence") or "").strip():
+            continue
+        source = source_map.get(str(item.get("source") or "").strip())
+        if not source:
+            continue
+        law_number = str(source.get("law_number") or "").strip()
+        article = str(source.get("madde_no") or source.get("article") or "").strip()
+        title = str(source.get("title") or source.get("source") or "").strip()
+        citation = f"{law_number} sayılı Kanun" if law_number else title
+        if not citation:
+            continue
+        if article:
+            citation = f"{citation}, Madde {article}"
+        if citation not in citations:
+            citations.append(citation)
+    return citations
+
+
 
 
 class RoutingAgent:
@@ -154,6 +183,7 @@ class RoutingAgent:
         extracted_fields: Dict[str, Any],
         retrieved_documents: list[dict[str, Any]] | None = None,
         document_subtype: str = None,
+        legal_evidence: list[str] | None = None,
     ) -> Dict[str, Any]:
 
         result: Dict[str, Any] = {
@@ -403,6 +433,13 @@ class RoutingAgent:
                     f"'{best['unit']['name']}' birimine yönlendirilmesi "
                     f"önerilmektedir."
                 )
+                citations = list(dict.fromkeys(
+                    citation.strip()
+                    for citation in (legal_evidence or [])
+                    if isinstance(citation, str) and citation.strip()
+                ))
+                if citations:
+                    result["reason"] += f" İlgili mevzuat: {'; '.join(citations)}."
 
                 if process_intent:
                     result["evidence"].append(f"İşlem Türü: {process_intent}")
