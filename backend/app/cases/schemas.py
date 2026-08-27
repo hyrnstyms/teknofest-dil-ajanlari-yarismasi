@@ -58,6 +58,24 @@ class CitizenRequestCreate(VersionedAction):
     resume_target: str = "READY_TO_ROUTE"
 
 
+class TaskAssignmentRequest(VersionedAction):
+    assigned_user_id: str = Field(min_length=1)
+    reason: str | None = None
+
+
+class TaskStatusRequest(VersionedAction):
+    status: Literal["ASSIGNED", "IN_PROGRESS", "WAITING_INFO", "DONE"]
+    reason: str | None = None
+
+
+class InformationRequestCreate(VersionedAction):
+    requested_fields: list[str] = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    target_type: Literal["VATANDAS", "DIS_KURUM", "KURUM_ICI"] | None = None
+    target_name: str | None = None
+    target_department: str | None = None
+
+
 class SaveDraftRequest(VersionedAction):
     draft_type: str
     content: dict[str, Any] = Field(default_factory=dict)

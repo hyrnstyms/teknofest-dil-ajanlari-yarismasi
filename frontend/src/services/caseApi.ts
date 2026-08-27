@@ -1,19 +1,32 @@
 import type {
   CaseActionResult,
+  CaseAssignment,
   CaseDraft,
   CaseEvent,
   CaseInboxResponse,
   CaseRecord,
+  CaseTask,
   Department,
   DepartmentAction,
+  InformationRequest,
   OfficialWritingListItem,
 } from "../types/case";
 import { caseRequest } from "./caseHttp";
 
+type CaseEventWire = Omit<CaseEvent, "label"> & { label?: string };
+
 interface CaseAggregateWire {
   case: Omit<CaseRecord, "title" | "current_department_name" | "timeline" | "department_actions" | "drafts" | "permissions"> & { current_department_name?: string };
   permissions: string[];
-  events: Array<CaseEvent & { actor_user_id?: string | null; payload?: Record<string, unknown> }>;
+  assignments?: CaseAssignment[];
+  tasks?: CaseTask[];
+  assignment?: CaseTask | null;
+  information_requests?: InformationRequest[];
+  events: CaseEventWire[];
+  timeline?: CaseEventWire[];
+  ai_operation?: CaseRecord["ai_operation"];
+  clarification?: CaseRecord["clarification"] | Record<string, never>;
+  priority_assessment?: CaseRecord["priority_assessment"];
   department_actions: DepartmentAction[];
   drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
   analysis?: {
@@ -23,6 +36,8 @@ interface CaseAggregateWire {
       question_type: "free_text" | "choice" | "single_choice";
       options: Array<string | { value: string; label: string }>;
     };
+    ai_operation?: CaseRecord["ai_operation"];
+    operational_priority?: CaseRecord["priority_assessment"];
     document?: Record<string, unknown>;
     extraction?: { fields?: Record<string, { value?: unknown; validated?: boolean }> };
     missing_fields?: { missing_fields?: string[]; blocking_fields?: string[] };
@@ -30,6 +45,65 @@ interface CaseAggregateWire {
     raw_text?: string;
   } | null;
   deadline?: CaseRecord["deadline"];
+}
+
+const departmentNames: Record<string, string> = {
+  yazi_isleri: "Yazı İşleri Müdürlüğü",
+  fen_isleri: "Fen İşleri Müdürlüğü",
+  imar_sehircilik: "İmar ve Şehircilik Müdürlüğü",
+  zabita: "Zabıta Müdürlüğü",
+  temizlik_isleri: "Temizlik İşleri Müdürlüğü",
+};
+
+function readableCode(value: unknown): string {
+  const code = String(value || "").trim();
+  if (!code) return "";
+  return departmentNames[code] || code.replaceAll("_", " ").replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase("tr-TR"));
+}
+
+function eventLabel(event: CaseEventWire): string {
+  if (event.label) return event.label;
+  const payload = event.payload || {};
+  const target = (payload.target && typeof payload.target === "object" ? payload.target : {}) as Record<string, unknown>;
+  const recommendation = (payload.ai_recommendation && typeof payload.ai_recommendation === "object" ? payload.ai_recommendation : {}) as Record<string, unknown>;
+  const taskType = readableCode(recommendation.task_type);
+  const labels: Record<string, string> = {
+    CASE_RECEIVED: "Evrak sisteme alındı",
+    ANALYSIS_STARTED: "EVRAG analizi başlatıldı",
+    ANALYSIS_COMPLETED: "EVRAG analizi tamamlandı",
+    ROUTING_CONFIRMED: "Kurumsal havale insan tarafından onaylandı",
+    CASE_STARTED: "Birim işlemi başlatıldı",
+    DEPARTMENT_ACTION_RECORDED: "Birim işlem sonucu kaydedildi",
+    DRAFT_SAVED: "Resmî yazı taslağı oluşturuldu",
+    DRAFT_SUBMITTED: "Resmî yazı onaya gönderildi",
+    DRAFT_APPROVED: "Resmî yazı onaylandı",
+    CASE_COMPLETED: "Dosya tamamlandı",
+    CASE_CLOSED: "Dosya kapatıldı",
+    CITIZEN_INFO_REQUESTED: "Vatandaştan eksik bilgi talep edildi",
+    CITIZEN_INFO_COMPLETED: "Vatandaşın eksik bilgi yanıtı alındı",
+    TASK_ASSIGNED: "Görev ilgili personele atandı",
+  };
+  if (event.event_type === "CASE_ROUTED") {
+    const from = readableCode(payload.from_department);
+    const to = readableCode(payload.to_department || payload.department_code);
+    return from && to ? `${from} → ${to} havalesi tamamlandı` : "Dosya ilgili birime havale edildi";
+  }
+  if (event.event_type === "TASK_CREATED") return taskType ? `${taskType} görevi oluşturuldu` : "Birim içi görev oluşturuldu";
+  if (event.event_type === "TASK_STATUS_CHANGED") {
+    const status = String(payload.to_status || "");
+    return status === "IN_PROGRESS" ? "Görev işleme alındı" : status === "DONE" ? "Görev tamamlandı" : "Görev durumu güncellendi";
+  }
+  if (event.event_type === "INTERNAL_INFORMATION_REQUESTED") {
+    return `${readableCode(target.target_department || target.target_name) || "Gönderen iç birim"} biriminden eksik bilgi talep edildi`;
+  }
+  if (event.event_type === "EXTERNAL_INFORMATION_REQUESTED") {
+    return target.target_type === "VATANDAS" ? "Vatandaştan eksik bilgi talep edildi" : "Gönderen kurumdan eksik bilgi talep edildi";
+  }
+  return labels[event.event_type] || readableCode(event.event_type) || "Dosya işlemi kaydedildi";
+}
+
+function normalizeEvent(event: CaseEventWire): CaseEvent {
+  return { ...event, label: eventLabel(event) };
 }
 
 function summaryTitle(aggregate: CaseAggregateWire): string {
@@ -41,7 +115,13 @@ function summaryTitle(aggregate: CaseAggregateWire): string {
 
 function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
   const routing = aggregate.analysis?.routing;
-  const clarification = aggregate.analysis?.clarification;
+  const topLevelClarification = aggregate.clarification && Object.keys(aggregate.clarification).length
+    ? aggregate.clarification as CaseRecord["clarification"]
+    : undefined;
+  const clarification = topLevelClarification || aggregate.analysis?.clarification;
+  const aiOperation = aggregate.ai_operation || aggregate.analysis?.ai_operation;
+  const priorityAssessment = aggregate.priority_assessment || aggregate.analysis?.operational_priority;
+  const events = aggregate.timeline || aggregate.events || [];
   return {
     ...aggregate.case,
     title: summaryTitle(aggregate),
@@ -62,7 +142,13 @@ function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
     analysis_summary: aggregate.analysis?.summary?.short_summary
       || aggregate.analysis?.summary?.structured_summary?.request,
     deadline: aggregate.deadline,
-    timeline: aggregate.events.map((event) => ({ ...event, actor_name: event.actor_name })),
+    ai_operation: aiOperation,
+    priority_assessment: priorityAssessment,
+    assignments: aggregate.assignments || [],
+    tasks: aggregate.tasks || [],
+    assignment: aggregate.assignment || aggregate.tasks?.at(-1) || null,
+    information_requests: aggregate.information_requests || [],
+    timeline: events.map(normalizeEvent),
     department_actions: aggregate.department_actions,
     drafts: aggregate.drafts.map((draft) => ({
       id: draft.id,
@@ -139,7 +225,16 @@ export const caseApi = {
     token,
     item,
     `/api/cases/${item.id}/route`,
-    { department_code: departmentCode, expected_version: item.version, confirmed: true },
+    {
+      department_code: departmentCode,
+      expected_version: item.version,
+      confirmed: true,
+      routing_snapshot: {
+        routing: item.routing_recommendation,
+        ai_operation: item.ai_operation,
+        priority_assessment: item.priority_assessment,
+      },
+    },
     "Dosya ilgili birime yönlendirildi.",
   ),
   start: (token: string, item: CaseRecord) => mutate(
@@ -167,6 +262,27 @@ export const caseApi = {
     { ...item.clarification, expected_version: item.version, confirmed: true },
     "Eksik bilgi talebi kaydedildi.",
   ),
+  requestInformation: (token: string, item: CaseRecord) => {
+    const clarification = item.clarification;
+    const targetType = clarification?.target_type === "INTERNAL_DEPARTMENT"
+      ? "KURUM_ICI"
+      : clarification?.target_type || item.source_type;
+    return mutate(
+      token,
+      item,
+      `/api/cases/${item.id}/information-requests`,
+      {
+        requested_fields: clarification?.requested_fields || [],
+        reason: clarification?.reason || clarification?.question || "Sürecin devamı için eksik bilgi gereklidir.",
+        target_type: targetType,
+        target_name: clarification?.target_name,
+        target_department: clarification?.target_department,
+        expected_version: item.version,
+        confirmed: true,
+      },
+      "Eksik bilgi talebi doğru muhataba kaydedildi.",
+    );
+  },
   approveDraft: (token: string, item: CaseRecord, draftId: string) => mutate(
     token, item, `/api/cases/${item.id}/drafts/${draftId}/approve`,
     { expected_version: item.version, confirmed: true }, "Resmî cevap taslağı onaylandı.",

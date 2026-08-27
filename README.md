@@ -1,10 +1,43 @@
-# KAMUAI
+# KAMUAI — EVRAG
 
-## Proje Nedir?
-KAMUAI, kamu evrakları için geliştirilmiş yapay zekâ tabanlı bir karar destek sistemidir. Gelen resmi evrakların analiz edilmesi, eksik bilgilerin tespiti, uygun birime yönlendirilmesi ve taslak metin oluşturulması süreçlerini otonom agent'lar yardımıyla gerçekleştirir.
+## EVRAG Nedir?
 
-Ana Akış:
-Belge → Ingestion/OCR → Document Agent → Extraction Agent → Legal Agent → Missing Field Agent → Summary Agent → Routing Agent → Writing Agent → Quality Agent → Personel İncelemesi
+**EVRAG**, belediyeye ulaşan evrakları kurumsal iş akışlarına dönüştüren AI destekli evrak operasyon platformudur.
+
+Sistem evrakı yalnız okumaz:
+
+```
+Gelen Evrak
+  → Ön İnceleme (AI analiz + eksik bilgi tespiti)
+  → Havale (Yazı İşleri → doğru birim, insan onayı)
+  → Görev (Ekip + rol önerisi, birim personeli onayı)
+  → İşlem (Saha/kurum işlemi, doğrulanmış sonuç kaydı)
+  → Eksik Bilgi (doğru muhatap: vatandaş / kurum / iç birim)
+  → Resmî Cevap (grounded taslak, personel düzenleme)
+  → Onay (human confirmation zorunlu)
+  → Kapanış
+```
+
+## Sistem Özgünlüğü
+
+**EVRAG yalnızca evrakı analiz etmez;**
+evrakı **doğru birime havale edilebilir**,
+**ilgili göreve dönüştürülebilir**,
+**eksik bilgisi doğru muhataptan istenebilir**
+ve **sonuçlandırılabilir** bir kurumsal işe dönüştürür.
+
+| Özellik | Açıklama |
+|---|---|
+| **Akıllı Routing** | AI, belge türü + kurum profili + süreç semantiğine göre birim önerir; insan onayı olmadan sahiplik değişmez |
+| **Process-based Missing Field** | Eksik bilgi belge türünden değil süreç profili semantiğinden çıkar (saha şikayeti → konum zorunlu; bilgi edinme → adres zorunlu değil) |
+| **Doğru Muhatap Tespiti** | Eksik bilginin vatandaştan mı, iç birimden mi, yoksa gönderen kurumdan mı isteneceğine sistem karar verir |
+| **Birim İçi Görev Dönüşümü** | Evrak → Fen İşleri → Saha Bakım Ekibi → Tekniker → Saha İncelemesi zinciri backend tarafından üretilir |
+| **Rol-Bazlı UI** | Yazı İşleri routing/havale odaklı; Fen İşleri task/işlem odaklı görünüm alır — aynı başlık değiştirme değil |
+| **Grounded Cevap** | Yazı taslağı yalnız doğrulanmış işlem sonucunu kaynak alır; uydurma içeremez |
+| **Resmî Yazı Motoru** | Jinja2 tabanlı deterministik format doğrulama, DOCX+PDF çıktısı, QR takip kodu |
+| **İnsan Onayı Zorunlu** | Havale, görev atama, resmi yazı gönderme, final onay — hiçbiri AI tarafından otomatik yapılmaz |
+
+## Teknik Mimari
 
 ## Resmî Yazışma Format Motoru
 

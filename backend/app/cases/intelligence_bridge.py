@@ -91,6 +91,14 @@ def persist_initial_intelligence(
     updated["case_id"] = case["id"]
     updated["tracking_code"] = case["tracking_code"]
     AnalysisRepository(engine=engine.engine).update_analysis(analysis_id, updated)
+    # The priority assessment remains immutable in the Analysis snapshot, and
+    # its compact level is mirrored onto Case for department inbox consumers.
+    priority = (outcome.get("operational_priority") or {}).get("priority")
+    if priority:
+        with engine.session_factory.begin() as session:
+            row = session.get(CaseRecord, case["id"])
+            if row is not None:
+                row.priority = str(priority)
     state.clear()
     state.update(updated)
     return outcome

@@ -3,6 +3,10 @@ import { Bot, Building2, CalendarClock, Route, Save, UserRound } from "lucide-re
 import { Link, useParams } from "react-router-dom";
 import { CaseTimeline, ConfirmAction, StatusBadge } from "../components/case/CasePrimitives";
 import { CaseProductPanels } from "../components/case/CaseProductPanels";
+import { CaseOperationPlan } from "../components/case/CaseOperationPlan";
+import { MissingInformationSolution } from "../components/case/MissingInformationSolution";
+import { OperationalNextAction, type OperationalAction } from "../components/case/OperationalNextAction";
+import { WritingGroundingSummary } from "../components/case/WritingGroundingSummary";
 import { useAuth } from "../contexts/AuthContext";
 import { caseApi } from "../services/caseApi";
 import type { CaseRecord, DepartmentAction } from "../types/case";
@@ -48,7 +52,7 @@ export function CaseWorkspacePage() {
           ? await caseApi.route(token, item, item.routing_recommendation!.recommended_department_code)
           : pending === "start"
             ? await caseApi.start(token, item)
-            : await caseApi.requestCitizenInfo(token, item);
+            : await caseApi.requestInformation(token, item);
       setItem(result.case);
       setNotice(result.message);
       setPending(null);
@@ -80,15 +84,19 @@ export function CaseWorkspacePage() {
     }
   }
 
+  function handleOperationalAction(action: OperationalAction) {
+    if (action === "assignment") return document.getElementById("case-assignment")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (action === "result") return document.getElementById("department-action")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (action === "draft") return document.querySelector(".official-writing-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setPending(action);
+  }
+
   if (loading) return <div className="case-loading">Dosya ve yetkiler yükleniyor…</div>;
   if (error && !item) return <div className="case-page"><div className="case-error" role="alert">{error}</div></div>;
   if (!item) return null;
 
-  const canAccept = item.permissions.includes("ACCEPT_REVIEW") && user?.role === "EVRAK_KAYIT";
   const canRoute = item.permissions.includes("ROUTE_CASE") && user?.role === "EVRAK_KAYIT";
-  const canStart = item.permissions.includes("START_CASE") && user?.role === "BIRIM_PERSONELI";
   const canAction = item.permissions.includes("RECORD_DEPARTMENT_ACTION") && user?.role === "BIRIM_PERSONELI";
-  const closed = item.workflow_status === "CLOSED";
 
   return <div className="case-page case-workspace">
     <nav className="case-breadcrumb"><Link to="/dosyalar">Dosyalar</Link><span>›</span><span>{item.tracking_code}</span></nav>
@@ -102,21 +110,19 @@ export function CaseWorkspacePage() {
     </header>
     {notice && <div className="case-success" role="status">{notice}</div>}
     {error && <div className="case-error" role="alert">{error}</div>}
+    <CaseOperationPlan item={item} onRoute={() => setPending("route")}/>
     <div className="case-workspace-grid">
       <main>
         <section className="case-panel"><span className="eyebrow">AI ANALİZİ</span><h2>Başvuru özeti</h2><p>{item.analysis_summary || "Analiz özeti henüz hazır değil."}</p></section>
-        {item.clarification?.needs_clarification && <section className="case-panel clarification-panel">
-          <span className="eyebrow">BLOKE EDİCİ EKSİK BİLGİ</span><h2>Eksik bilgi nedeniyle bekliyor</h2>
-          <blockquote>{item.clarification.question}</blockquote>
-          {item.permissions.includes("REQUEST_CITIZEN_INFO") && <button className="btn btn-primary" disabled={closed} onClick={() => setPending("clarification")}>Vatandaştan Bilgi İste</button>}
-        </section>}
+        <MissingInformationSolution item={item} onRequest={() => setPending("clarification")}/>
+        <WritingGroundingSummary item={item}/>
         {item.routing_recommendation && <section className="case-panel routing-decision">
           <header><div><span className="eyebrow">AI ÖNERİSİ · İNSAN KARARI GEREKİR</span><h2>{item.routing_recommendation.recommended_unit}</h2></div><Route/></header>
           <h3>Gerekçe</h3><p>{item.routing_recommendation.reason}</p>
           {item.routing_recommendation.evidence.length > 0 && <ul>{item.routing_recommendation.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul>}
           {canRoute && <button className="btn btn-primary" onClick={() => setPending("route")}>{item.routing_recommendation.recommended_unit} birimine yönlendir</button>}
         </section>}
-        {canAction && <section className="case-panel">
+        {canAction && <section className="case-panel" id="department-action">
           <span className="eyebrow">İNSAN TARAFINDAN DOĞRULANAN KAYNAK</span><h2>Kurum işlem sonucunu kaydet</h2>
           <form className="department-action-form" onSubmit={(event) => void saveAction(event)}>
             <label>İşlem Türü<input required value={form.action_type} onChange={(event) => setForm({ ...form, action_type: event.target.value })}/></label>
@@ -130,11 +136,7 @@ export function CaseWorkspacePage() {
         {token && <CaseProductPanels item={item} token={token} onRefresh={async () => setItem(await caseApi.get(token, id))} onNotice={setNotice}/>}
       </main>
       <aside>
-        <section className="case-panel next-action"><span className="eyebrow">SONRAKİ ADIM</span>
-          <h2>{closed ? "Dosya kapatıldı" : canAccept ? "İlk incelemeyi onaylayın" : canRoute ? "Yönlendirmeyi doğrulayın" : canStart ? "Dosyayı işleme alın" : canAction ? "Kurum işlemini kaydedin" : "Mevcut aşamayı inceleyin"}</h2>
-          {canAccept && <button className="btn btn-primary" onClick={() => setPending("review")}>İncelemeyi Onayla</button>}
-          {canStart && <button className="btn btn-primary" onClick={() => setPending("start")}>İşleme Al</button>}
-        </section>
+        <OperationalNextAction item={item} user={user} onAction={handleOperationalAction}/>
         {item.deadline?.applicable && item.deadline.legal_basis?.verified
           ? <section className="case-panel deadline-card"><span><CalendarClock/> Yasal Süre</span><strong>{item.deadline.deadline_days} gün</strong><p>{item.deadline.due_at ? new Date(item.deadline.due_at).toLocaleDateString("tr-TR") : "Son tarih hesaplanamadı"}</p><small>{item.deadline.legal_basis.citation}</small></section>
           : <section className="case-panel"><p>Bu dosya için doğrulanmış bir yasal süre bulunamadı.</p></section>}

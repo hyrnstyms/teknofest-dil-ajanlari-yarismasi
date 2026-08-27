@@ -54,6 +54,20 @@ def _originator_recipient(originator: dict[str, Any] | Any, extraction: dict[str
     return None
 
 
+def _recipient_kind(originator: dict[str, Any] | Any) -> str:
+    if originator is None:
+        return "VATANDAS"
+    originator_type = (
+        getattr(originator, "originator_type", None)
+        if hasattr(originator, "originator_type")
+        else originator.get("originator_type")
+    )
+    return {
+        "KURUM_ICI": "INTERNAL_UNIT",
+        "DIS_KURUM": "KURUM",
+    }.get(str(originator_type or "VATANDAS"), "VATANDAS")
+
+
 def _action_payload(action: Any) -> dict[str, Any]:
     if action is None:
         return {}
@@ -118,6 +132,7 @@ class CaseWritingService:
         clarification = clarification or {}
         missing_fields = missing_fields or {}
         recipient = _originator_recipient(originator, extraction or {})
+        recipient_kind = _recipient_kind(originator)
         if clarification.get("blocking") or missing_fields.get("has_blocking_missing"):
             body = _missing_request_body(clarification, missing_fields)
             return self._result(
@@ -125,6 +140,7 @@ class CaseWritingService:
                 subject="Eksik Bilginin Tamamlanması",
                 body=body,
                 recipient=recipient,
+                recipient_kind=recipient_kind,
             )
         return self._result(
             "INTERIM_INFORMATION",
@@ -135,6 +151,7 @@ class CaseWritingService:
                 "bildirilmemiştir."
             ),
             recipient=recipient,
+            recipient_kind=recipient_kind,
         )
 
     def draft_official_response(
@@ -168,6 +185,7 @@ class CaseWritingService:
             }
             
         recipient = _originator_recipient(originator, extraction or {})
+        recipient_kind = _recipient_kind(originator)
         body = _grounded_official_body(action)
         
         doc = document or {}
@@ -186,6 +204,7 @@ class CaseWritingService:
             document_legal_references=[],
             routing=routing or {},
             recipient=recipient,
+            recipient_kind=recipient_kind,
         )
         
         draft_result = self.writing_agent.draft(context=context) if self.writing_agent else {}
@@ -200,6 +219,7 @@ class CaseWritingService:
             subject=generated_draft.get("subject") or "Başvurunuz Hk.",
             body=generated_draft.get("body") or body,
             recipient=recipient,
+            recipient_kind=recipient_kind,
             grounded_in_action=True,
             department_action_id=action.get("id"),
         )
@@ -221,7 +241,13 @@ class CaseWritingService:
                 extraction=extraction,
             )
         recipient = _originator_recipient(originator, extraction or {})
-        return self._result(draft_type, subject=subject, body=body, recipient=recipient)
+        return self._result(
+            draft_type,
+            subject=subject,
+            body=body,
+            recipient=recipient,
+            recipient_kind=_recipient_kind(originator),
+        )
 
     @staticmethod
     def _result(
@@ -230,6 +256,7 @@ class CaseWritingService:
         subject: str,
         body: str,
         recipient: str | None,
+        recipient_kind: str = "VATANDAS",
         grounded_in_action: bool = False,
         department_action_id: str | None = None,
     ) -> dict[str, Any]:
@@ -237,9 +264,10 @@ class CaseWritingService:
             "draft_type": _LEGACY_BY_CANONICAL.get(canonical, "diger"),
             "canonical_draft_type": canonical,
             "draft_generation_mode": "case_aware_deterministic",
-            "draft": {"subject": subject, "body": body, "recipient": recipient},
+            "draft": {"subject": subject, "body": body, "recipient": recipient, "recipient_kind": recipient_kind},
             "body": body,
             "recipient": recipient,
+            "recipient_kind": recipient_kind,
             "requires_human_approval": True,
             "grounded_in_action": grounded_in_action,
             "department_action_id": department_action_id,

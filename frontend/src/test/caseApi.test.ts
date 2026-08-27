@@ -78,6 +78,7 @@ describe('caseApi.route', () => {
     expect(body.department_code).toBe('fen_isleri');
     expect(body.expected_version).toBe(3);
     expect(body.confirmed).toBe(true);
+    expect(body.routing_snapshot.routing.recommended_department_code).toBe('fen_isleri');
   });
 
   it('does NOT include role or institution_id in request body', async () => {
@@ -96,6 +97,82 @@ describe('caseApi.route', () => {
     expect(body.role).toBeUndefined();
     expect(body.institution_id).toBeUndefined();
     expect(body.user_id).toBeUndefined();
+  });
+});
+
+describe('caseApi aggregate integration', () => {
+  it('maps Person 1 structured operation, task, priority and timeline fields', async () => {
+    const task = {
+      id: 'task-1', case_id: MINIMAL_CASE.id, source_case_id: MINIMAL_CASE.id,
+      task_type: 'YOL_BAKIM_INCELEME', department_code: 'fen_isleri',
+      team_code: 'saha_bakim_ekibi', recommended_role: 'SAHA_EKIBI',
+      assigned_user_id: null, status: 'ASSIGNMENT_PENDING',
+      created_at: MINIMAL_CASE.created_at, updated_at: MINIMAL_CASE.updated_at,
+    };
+    vi.stubGlobal('fetch', makeFetch(200, {
+      case: { ...MINIMAL_CASE, current_department_code: 'fen_isleri', workflow_status: 'IN_DEPARTMENT' },
+      permissions: ['START_CASE'], assignments: [], tasks: [task], assignment: task,
+      information_requests: [],
+      ai_operation: { task_type: 'YOL_BAKIM_INCELEME', department_code: 'fen_isleri', team_code: 'saha_bakim_ekibi', recommended_role: 'SAHA_EKIBI', requires_field_visit: true },
+      priority_assessment: { priority: 'HIGH', priority_reason: 'Acil ifadesi bulundu.' },
+      clarification: {},
+      events: [{ id: 'e1', event_type: 'CASE_ROUTED', actor_type: 'USER', actor_user_id: 'u1', created_at: MINIMAL_CASE.updated_at, from_status: 'READY_TO_ROUTE', to_status: 'IN_DEPARTMENT', payload: { from_department: 'yazi_isleri', to_department: 'fen_isleri' } }],
+      timeline: [{ id: 'e1', event_type: 'CASE_ROUTED', actor_type: 'USER', actor_user_id: 'u1', created_at: MINIMAL_CASE.updated_at, from_status: 'READY_TO_ROUTE', to_status: 'IN_DEPARTMENT', payload: { from_department: 'yazi_isleri', to_department: 'fen_isleri' } }],
+      department_actions: [], drafts: [], analysis: null,
+      deadline: { applicable: false, due_at: null, risk_level: 'UNKNOWN' },
+    }));
+
+    const result = await caseApi.get(TOKEN, MINIMAL_CASE.id);
+
+    expect(result.ai_operation?.team_code).toBe('saha_bakim_ekibi');
+    expect(result.assignment?.status).toBe('ASSIGNMENT_PENDING');
+    expect(result.priority_assessment?.priority_reason).toBe('Acil ifadesi bulundu.');
+    expect(result.timeline[0].label).toBe('Yazı İşleri Müdürlüğü → Fen İşleri Müdürlüğü havalesi tamamlandı');
+    expect(result.timeline[0].actor_name).toBeUndefined();
+  });
+
+  it('posts clarification metadata to the real information-request endpoint', async () => {
+    const clarificationCase: CaseRecord = {
+      ...MINIMAL_CASE,
+      clarification: {
+        needs_clarification: true, blocking: true, requested_fields: ['location'],
+        question_type: 'free_text', question: 'Konumu paylaşınız.', options: [], resume_target: 'missing_field',
+        reason: 'Saha incelemesi için konum gerekir.', target_type: 'VATANDAS', target_name: 'Ali Yılmaz',
+        recommended_action: 'CITIZEN_INFORMATION_REQUESTED', required_for_process: true, missing_field: 'location',
+      },
+    };
+    const mockFetch = makeFetch(200, { case: clarificationCase, information_request: { id: 'ir1' } });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await caseApi.requestInformation(TOKEN, clarificationCase);
+
+    const [url, init] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(url).toContain(`/api/cases/${MINIMAL_CASE.id}/information-requests`);
+    expect(body.requested_fields).toEqual(['location']);
+    expect(body.target_type).toBe('VATANDAS');
+    expect(body.reason).toBe('Saha incelemesi için konum gerekir.');
+    expect(body.confirmed).toBe(true);
+  });
+
+  it('maps INTERNAL_DEPARTMENT to the backend KURUM_ICI request contract', async () => {
+    const internal: CaseRecord = {
+      ...MINIMAL_CASE, source_type: 'KURUM_ICI', originator_type: 'KURUM_ICI',
+      clarification: {
+        needs_clarification: true, blocking: true, requested_fields: ['attachment'],
+        question_type: 'free_text', question: 'Eksik eki iletiniz.', options: [], resume_target: 'missing_field',
+        target_type: 'INTERNAL_DEPARTMENT', target_name: 'Yazı İşleri', target_department: 'yazi_isleri',
+      },
+    };
+    const mockFetch = makeFetch(200, { case: internal, information_request: { id: 'ir2' } });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await caseApi.requestInformation(TOKEN, internal);
+
+    const [, init] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.target_type).toBe('KURUM_ICI');
+    expect(body.target_department).toBe('yazi_isleri');
   });
 });
 
