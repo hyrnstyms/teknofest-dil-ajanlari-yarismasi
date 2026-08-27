@@ -24,28 +24,31 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       setLoading(true);
+      setRoi(null);
       try {
         const [analysesRes, roiRes] = await Promise.allSettled([
-          api.getAnalyses({ limit: 5 }),
-          api.getRoiSummary(),
+          api.getAnalyses({ limit: 5, institution: institution?.id }),
+          api.getRoiSummary(institution?.id),
         ]);
 
-        if (analysesRes.status === 'fulfilled') {
+        if (!cancelled && analysesRes.status === 'fulfilled') {
           setRecentAnalyses(analysesRes.value.items);
         }
-        if (roiRes.status === 'fulfilled') {
+        if (!cancelled && roiRes.status === 'fulfilled') {
           setRoi(roiRes.value);
         }
       } catch {
         // silently fail — homepage should still render
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    void fetchData();
+    return () => { cancelled = true; };
+  }, [institution?.id]);
 
   const getStatusBadge = (status?: string) => {
     switch (status) {

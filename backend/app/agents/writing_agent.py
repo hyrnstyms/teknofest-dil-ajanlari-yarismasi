@@ -782,7 +782,11 @@ KESİN KURALLAR:
 
 12. KILAVUZ KAYNAKLARI (Official Writing Rules) YALNIZCA resmî yazışmanın nasıl düzenleneceğini (biçim/şekil kurallarını) belirler. Başvuruya ilişkin kişi, olay, tarih, sayı, karar veya işlem sonucu bu kaynaklardan TÜRETİLEMEZ.
 
-13. Çıktıya asla (basvuru, dilekce, ust_yazi, process_intent, signature_present vb.) geliştirici değişken / enum key sızdırma. Türkçe metin ("başvuru", "dilekçe", "üst yazı") kullan.
+13. Başvurunun tarihi veya sayısı doğrulanmış verilerde YOKSA bu bilgiye
+    hiç değinme. 00.00.0000, 00000000-..., köşeli placeholder ya da
+    tahmini/sahte tarih ve referans numarası üretme.
+
+14. Çıktıya asla (basvuru, dilekce, ust_yazi, process_intent, signature_present vb.) geliştirici değişken / enum key sızdırma. Türkçe metin ("başvuru", "dilekçe", "üst yazı") kullan.
 
 Hiyerarşi (Önem sırası):
 1. VERIFIED FACTS (Doğrulanmış Olgular)
@@ -907,6 +911,8 @@ eksik bırakıldı veya geçersiz bir sonuç üretildi.
 
 Yalnızca verilen olguları kullan.
 Yeni kurum, tarih, sayı, süre, mevzuat, sonuç, gönderen veya muhatap uydurma.
+Başvurunun tarihi veya sayısı doğrulanmış verilerde yoksa bu bilgiye hiç
+değinme; sahte tarih, referans numarası veya placeholder üretme.
 Doğrulanmış işlem sonucu yoksa başvurunun işleme alındığını, kabul
 edildiğini, onaylandığını, uygun görüldüğünü, tamamlandığını veya sonuçlandığını KESİNLİKLE söyleme.
 Yalnızca süreç belirten ve sonucu kesinleştirmeyen ifade kullan.

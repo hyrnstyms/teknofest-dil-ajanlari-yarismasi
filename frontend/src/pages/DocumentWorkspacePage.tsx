@@ -186,7 +186,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
       ? state.draft.rendered_text
       : state.draft?.draft_text || state.draft?.draft?.body || '');
 
-  const title = state.draft?.edited_draft?.subject || state.draft?.draft?.subject || state.document?.subject_excerpt || "Evrak Detayı";
+  const title = state.summary?.structured_summary?.subject || state.document?.subject_excerpt || state.draft?.edited_draft?.subject || state.draft?.draft?.subject || "Evrak Detayı";
   const evidenceCount = Array.isArray(state.legal_analysis?.evidence) ? state.legal_analysis.evidence.length : 0;
   const missingCount = (state.missing_fields?.missing_fields || []).length + (state.missing_fields?.uncertain_fields || []).length;
   const compactStages = [

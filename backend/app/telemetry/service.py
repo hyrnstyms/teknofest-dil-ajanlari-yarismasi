@@ -6,8 +6,19 @@ class TelemetryService:
     def __init__(self):
         self.records: Dict[str, TelemetryRecord] = {}
 
-    def extract_from_state(self, analysis_id: str, state: Dict[str, Any]) -> TelemetryRecord:
-        record = TelemetryRecord(analysis_id=analysis_id)
+    def build_record_from_state(
+        self,
+        analysis_id: str,
+        state: Dict[str, Any],
+    ) -> TelemetryRecord:
+        """Kalıcı analiz state'inden ROI için telemetry kaydı oluştur."""
+        record = TelemetryRecord(
+            analysis_id=analysis_id,
+            institution_id=(
+                state.get("institution_id")
+                or state.get("kurum_profili_id")
+            ),
+        )
         
         # We don't have processing_started_at in state but let's assume it was passed or just recorded now
         record.processing_finished_at = datetime.utcnow()
@@ -50,6 +61,10 @@ class TelemetryService:
         if record.human_review_required:
             record.review_started_at = datetime.utcnow()
             
+        return record
+
+    def extract_from_state(self, analysis_id: str, state: Dict[str, Any]) -> TelemetryRecord:
+        record = self.build_record_from_state(analysis_id, state)
         self.records[analysis_id] = record
         return record
 
@@ -65,7 +80,17 @@ class TelemetryService:
     def get_record(self, analysis_id: str) -> TelemetryRecord:
         return self.records.get(analysis_id)
 
-    def get_all_records(self) -> List[TelemetryRecord]:
-        return list(self.records.values())
+    def get_all_records(
+        self,
+        institution_id: str | None = None,
+    ) -> List[TelemetryRecord]:
+        records = list(self.records.values())
+        if institution_id:
+            return [
+                record
+                for record in records
+                if record.institution_id == institution_id
+            ]
+        return records
 
 telemetry_service = TelemetryService()

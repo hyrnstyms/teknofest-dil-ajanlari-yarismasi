@@ -112,6 +112,27 @@ def test_list_analyses_and_pending_reviews(repository):
     ]
 
 
+def test_list_analyses_filters_by_institution_and_keeps_unfiltered_compatibility(repository):
+    kaymakamlik = _state("kaymakamlik-analysis")
+    belediye = _state("belediye-analysis")
+    belediye["kurum_profili_id"] = "belediye"
+    repository.save_analysis("kaymakamlik-analysis", kaymakamlik)
+    repository.save_analysis("belediye-analysis", belediye)
+
+    assert {item["analysis_id"] for item in repository.list_analyses()} == {
+        "kaymakamlik-analysis",
+        "belediye-analysis",
+    }
+    assert [
+        item["analysis_id"]
+        for item in repository.list_analyses(institution_id="kaymakamlik_v1")
+    ] == ["kaymakamlik-analysis"]
+    assert [
+        item["analysis_id"]
+        for item in repository.list_analyses(institution_id="belediye")
+    ] == ["belediye-analysis"]
+
+
 def test_review_event_is_recorded_with_state_update(repository):
     state = _state()
     repository.save_analysis("analysis-1", state)

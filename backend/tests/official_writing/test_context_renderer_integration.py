@@ -159,9 +159,10 @@ def test_missing_official_metadata_still_renders_preview():
 
     assert draft["draft_type"] == "bilgilendirme_metni"
     assert draft["official_render"]["success"] is True
-    assert {"sayi", "tarih", "muhatap", "imza.ad_soyad", "imza.unvan"}.issubset(
+    assert {"sayi", "muhatap", "imza.ad_soyad", "imza.unvan"}.issubset(
         set(draft["official_render"]["missing_fields"])
     )
+    assert "tarih" not in draft["official_render"]["missing_fields"]
     assert "[SAYI]" in draft["official_rendered_text"]
     assert "[MUHATAP]" in draft["official_rendered_text"]
     assert "[AD SOYAD]" in draft["official_rendered_text"]

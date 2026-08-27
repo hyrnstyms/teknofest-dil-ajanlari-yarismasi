@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Response
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
@@ -11,6 +12,7 @@ from pathlib import Path
 from datetime import datetime
 from functools import lru_cache
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ from backend.app.agents.chat_agent import handle_draft_edit
 from backend.app.agents.chat_agent import (
     handle_chat_message,
     resolve_chat_mode,
+    stream_copilot_response,
 )
 from backend.app.institutions.profile_loader import (
     list_available_profiles,
@@ -154,6 +157,12 @@ class ChatMessageRequest(BaseModel):
     analysis_id: Optional[str] = None
     institution: Optional[str] = None
 
+class ChatStreamRequest(BaseModel):
+    message: str
+    analysis_id: Optional[str] = None
+    institution: Optional[str] = None
+    history: Optional[list[dict]] = None
+
 
 @app.get("/health")
 def health_check():
@@ -261,11 +270,15 @@ def readiness_check():
         services["postgres"]["status"] = "unavailable"
         ready = False
 
-    return {
+    response_data = {
         "ready": ready,
         "services": services,
         "message": "Sistem servise hazır." if ready else "Bazı servisler hazır değil."
     }
+    return JSONResponse(
+        status_code=200,
+        content=response_data
+    )
 
 
 @app.post("/api/documents/analyze-text")
@@ -288,6 +301,9 @@ def analyze_text(req: AnalyzeRequest):
         ]
         
         final_state["analysis_id"] = analysis_id
+        if req.institution:
+            final_state.setdefault("institution_id", req.institution)
+            final_state.setdefault("kurum_profili_id", req.institution)
         final_state["audit_history"] = audit_history
         final_state["created_at"] = datetime.utcnow().isoformat()
         
@@ -663,6 +679,33 @@ def chat_message(req: ChatMessageRequest):
     return response_data
 
 
+@app.post("/api/copilot/stream")
+def copilot_stream(req: ChatStreamRequest):
+    """Copilot streaming endpoint with history and true SSE."""
+    current_state = None
+    current_draft = None
+    if req.analysis_id is not None:
+        try:
+            stored_state = _get_stored_analysis(req.analysis_id)
+            state_institution = stored_state.get("kurum_profili_id")
+            if not req.institution or state_institution == req.institution:
+                current_state = stored_state
+                current_draft = stored_state.get("draft")
+        except HTTPException:
+            pass
+
+    return StreamingResponse(
+        stream_copilot_response(
+            message=req.message,
+            history=req.history or [],
+            analysis_state=current_state,
+            institution_id=req.institution,
+            current_draft=current_draft,
+        ),
+        media_type="text/event-stream"
+    )
+
+
 @app.get("/api/system/status")
 def system_status():
     from backend.app.llm.settings import LLMSettings
@@ -738,9 +781,37 @@ def system_status():
     }
 
 
+@app.get("/api/evaluation/summary")
+def get_evaluation_summary():
+    """Son tamamlanmış offline evaluation artifact'ını model çağrısı yapmadan döndürür."""
+    report_path = Path("reports/evaluation/final_evaluation.json")
+    if not report_path.exists():
+        return {
+            "available": False,
+            "message": "Tamamlanmış final offline değerlendirme raporu bulunmuyor.",
+        }
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        logger.warning("Evaluation summary okunamadı: %s", exc)
+        return {"available": False, "message": "Offline değerlendirme raporu okunamadı."}
+    return {"available": True, "report": payload}
+
 @app.get("/api/roi/summary")
-def roi_summary():
-    records = telemetry_service.get_all_records()
+def roi_summary(institution_id: Optional[str] = None):
+    if institution_id:
+        states = get_analysis_repository().list_analyses(
+            institution_id=institution_id,
+        )
+        records = [
+            telemetry_service.build_record_from_state(
+                state["analysis_id"],
+                state,
+            )
+            for state in states
+        ]
+    else:
+        records = telemetry_service.get_all_records()
     summary = calculate_roi_summary(records)
     
     if not records:
@@ -792,12 +863,14 @@ def _analysis_list_subject(state: Dict[str, Any]) -> str:
 def get_analyses(
     limit: int = 20, 
     offset: int = 0, 
+    institution_id: Optional[str] = None,
     status: Optional[str] = None, 
     document_type: Optional[str] = None, 
     process_intent: Optional[str] = None
 ):
     items = []
     states = get_analysis_repository().list_analyses(
+        institution_id=institution_id,
         status=status,
         document_type=document_type,
         process_intent=process_intent,
@@ -812,6 +885,7 @@ def get_analyses(
         
         items.append({
             "analysis_id": analysis_id,
+            "institution_id": state.get("institution_id") or state.get("kurum_profili_id"),
             "document_id": state.get("document_id", ""),
             "document_type": doc.get("document_type"),
             "process_intent": doc.get("process_intent"),

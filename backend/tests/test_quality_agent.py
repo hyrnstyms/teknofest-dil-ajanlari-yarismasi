@@ -58,6 +58,21 @@ def test_quality_flags_unverified_outcome_claim_for_human_review(agent):
     assert res["requires_human_review"] is True
     assert res["decision"] == "block"
 
+
+def test_quality_flags_fake_reference_when_source_fields_are_missing(agent):
+    res = agent.check_quality(
+        document={"document_type": "dilekce", "process_intent": "basvuru"},
+        extraction={"fields": {"name": {"value": "test", "evidence": "text"}}},
+        legal_analysis={"evidence": ["valid evidence"]},
+        missing_fields={"present_fields": ["name"], "missing_fields": [], "uncertain_fields": [], "needs_human_review": False},
+        summary={"short_summary": "test"},
+        routing={"recommended_unit": _VALID_UNIT, "needs_human_review": False},
+        draft={"draft_generation_mode": "normal", "draft": {"body": "00.00.0000 tarihli ve 00000000-000.00-000000 sayılı başvurunuz incelenmiştir."}},
+    )
+
+    assert res["checks"]["unverified_reference_claim"]["status"] == "warning"
+    assert res["requires_human_review"] is True
+
 def test_quality_contradictory_missing_statuses(agent):
     res = agent.check_quality(
         document={"document_type": "dilekce", "process_intent": "basvuru"},

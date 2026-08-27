@@ -6,12 +6,8 @@
           Madde 14-19 (temel biçim — üst yazıyla aynı çekirdek).
 
   Üst yazıdan farklar:
-    - ilgi ZORUNLUDUR.
-      [TASARIM KARARI] Cevap yazısı için ilgi zorunluluğu yönetmelikte
-      kaynaklı değildir; tekit yazısı için Madde 34'te kaynaklıdır.
-      Cevap yazısı bağlamında zorunluluk ekip kararıdır — cevap verilen
-      yazıya atıf yapılmadan cevap yazısı düzenlenmesinin anlamsız olduğu
-      değerlendirilmiştir.
+    - ilgi yalnız doğrulanmış başvuru tarihi ve sayısı birlikte varsa yazılır.
+      Kaynakta yoksa sahte tarih/sayı veya placeholder üretilmez.
     - yanit_turu: "belge_talebi" (5 iş günü) veya
                   "bilgi_goruş_talebi" (15 iş günü)  — Madde 33
     - uygunsuz_belge_uyarisi (opsiyonel) — Madde 35
@@ -25,7 +21,7 @@
     muhatap_turu   : str   "kurum_alt" | "kurum_ust" | "kurum_ayni" |
                            "kurum_karisik" | "gercek_kisi"
     kapalis_ifadesi: str   muhatap_turu'ndan adapter tarafından türetilir
-    ilgi           : list  ZORUNLU — [TASARIM KARARI] — cevap verilen yazının
+    ilgi           : list  Opsiyonel — cevap verilen yazının doğrulanmış
                            tarih/sayısı. { tarih, sayi, aciklama }
     yanit_turu     : str   "belge_talebi" (5 iş günü, Madde 33) |
                            "bilgi_goruş_talebi" (15 iş günü, Madde 33)
@@ -71,10 +67,7 @@ Konu: {{ konu }}
 {%- endif %}
 
 
-{# ── 5. İLGİ — ZORUNLU (Madde 15 + [TASARIM KARARI]) ─────────────────── #}
-{# [TASARIM KARARI] Cevap yazısında ilgi zorunludur; cevap verilen yazının  #}
-{# tarih ve sayısı mutlaka belirtilmelidir. Yönetmelikte cevap yazısı için  #}
-{# ilgi zorunluluğu açıkça belirtilmemiştir; bu ekip kararıdır.            #}
+{# ── 5. İLGİ — YALNIZ DOĞRULANMIŞSA (Madde 15) ───────────────────────── #}
 {%- for ilgi_item in ilgi %}
 İlgi: {{ ilgi_item.tarih }} tarihli ve {{ ilgi_item.sayi }} sayılı {{ ilgi_item.aciklama }}.
 {%- endfor %}
@@ -91,7 +84,7 @@ Konu: {{ konu }}
 {# yanit_turu="{{ yanit_turu }}" #}
 
 {# ── 6. METİN / GÖVDE (Madde 16) ──────────────────────────────────────── #}
-{# İlgi varsa 1 satır sonra başlar (ilgi bu şablonda her zaman vardır).   #}
+{# İlgi varsa 1 satır sonra başlar.                                      #}
 {%- for paragraf in metin_paragraflari %}
 	{{ paragraf }}
 {%- endfor %}

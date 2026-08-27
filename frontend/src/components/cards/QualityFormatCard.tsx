@@ -11,9 +11,20 @@ export const QualityFormatCard: React.FC<Props> = ({ quality }) => {
     return null; // Don't show if not processed yet
   }
 
-  const isPass = quality.status === "PASS";
-  const isWarning = quality.status === "WARNING";
-  const isFail = quality.status === "FAIL";
+  const formatStatuses = [
+    quality.checks?.official_format?.status,
+    quality.checks?.official_writing_format?.status,
+  ].filter(Boolean).map((value) => String(value).toLocaleLowerCase("tr-TR"));
+  const normalizedStatus = formatStatuses.includes("fail")
+    ? "fail"
+    : formatStatuses.includes("warning")
+      ? "warning"
+      : formatStatuses.includes("pass")
+        ? "pass"
+        : String(quality.status || "").toLocaleLowerCase("tr-TR");
+  const isPass = normalizedStatus === "pass";
+  const isWarning = normalizedStatus === "warning";
+  const isFail = normalizedStatus === "fail";
 
   let statusText = "Bilinmiyor";
   let badgeClass = "badge-neutral";

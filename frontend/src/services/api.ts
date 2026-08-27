@@ -66,7 +66,17 @@ export interface SystemStatus {
   };
 }
 
-type AnalysisQuery = number | { limit?: number; offset?: number; status?: string };
+export interface EvaluationSummary {
+  available: boolean;
+  message?: string;
+  report?: Record<string, unknown>;
+}
+type AnalysisQuery = number | {
+  limit?: number;
+  offset?: number;
+  status?: string;
+  institution?: string;
+};
 type ReviewQuery = number | { limit?: number; offset?: number };
 
 export class ApiRequestError extends Error {
@@ -189,6 +199,7 @@ export const api = {
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.offset) searchParams.set('offset', String(params.offset));
     if (params?.status) searchParams.set('status', params.status);
+    if (params?.institution) searchParams.set('institution_id', params.institution);
 
     const response = await apiFetch(`${API_BASE_URL}/api/analyses?${searchParams}`);
     if (!response.ok) {
@@ -205,8 +216,18 @@ export const api = {
     return response.json();
   },
 
-  async getRoiSummary(): Promise<ROISummaryResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/api/roi/summary`);
+  async getEvaluationSummary(): Promise<EvaluationSummary> {
+    const response = await apiFetch(`${API_BASE_URL}/api/evaluation/summary`);
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+    return response.json();
+  },
+  async getRoiSummary(institution?: string): Promise<ROISummaryResponse> {
+    const searchParams = new URLSearchParams();
+    if (institution) searchParams.set('institution_id', institution);
+    const queryString = searchParams.toString();
+    const response = await apiFetch(
+      `${API_BASE_URL}/api/roi/summary${queryString ? `?${queryString}` : ''}`,
+    );
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }

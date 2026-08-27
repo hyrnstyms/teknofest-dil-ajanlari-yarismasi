@@ -24,6 +24,15 @@ _UNVERIFIED_OUTCOME_PATTERNS = (
     r"\bverilmiştir\b",
     r"\btamamlanmıştır\b",
 )
+_FAKE_REFERENCE_PATTERNS = (
+    r"\b00[./]00[./]0000\b",
+    r"\b0{6,}(?:[-/.][0-9A-ZÇĞİÖŞÜ]+)+\b",
+    r"\[(?:İLGİ\s+)?(?:TARİHİ|SAYISI)\]",
+)
+_REFERENCE_CLAIM_PATTERN = (
+    r"\b\d{2}[./]\d{2}[./]\d{4}\s+tarihli(?:\s+ve\s+"
+    r"[0-9A-ZÇĞİÖŞÜ][0-9A-ZÇĞİÖŞÜ./-]{3,}\s+sayılı)?"
+)
 
 
 def _normalize_claim_text(value: Any) -> str:
@@ -38,6 +47,29 @@ def find_unverified_outcome_claims(value: Any) -> list[str]:
         for pattern in _UNVERIFIED_OUTCOME_PATTERNS
         if re.search(pattern, text)
     ]
+
+
+def find_unverified_reference_claims(
+    value: Any,
+    extraction: Dict[str, Any] | None = None,
+) -> list[str]:
+    text = str(value or "")
+    matches = [
+        pattern
+        for pattern in _FAKE_REFERENCE_PATTERNS
+        if re.search(pattern, text, re.IGNORECASE)
+    ]
+    fields = (extraction or {}).get("fields", {})
+    date_field = fields.get("document_date", {}) if isinstance(fields, dict) else {}
+    number_field = fields.get("document_number", {}) if isinstance(fields, dict) else {}
+    date_value = date_field.get("value") if isinstance(date_field, dict) else date_field
+    number_value = number_field.get("value") if isinstance(number_field, dict) else number_field
+    if (
+        (not date_value or not number_value)
+        and re.search(_REFERENCE_CLAIM_PATTERN, text, re.IGNORECASE)
+    ):
+        matches.append(_REFERENCE_CLAIM_PATTERN)
+    return list(dict.fromkeys(matches))
 
 
 class QualityAgent:
@@ -200,6 +232,19 @@ class QualityAgent:
                     "unverified_outcome_claim",
                     "fail",
                     "Olası doğrulanmamış sonuç iddiası bulundu; güvenli olmayan taslak metni engellendi.",
+                )
+                result["requires_human_review"] = True
+
+            reference_claims = find_unverified_reference_claims(
+                draft_payload.get("body", "") if isinstance(draft_payload, dict) else "",
+                extraction,
+            )
+            if reference_claims:
+                add_check(
+                    "unverified_reference_claim",
+                    "warning",
+                    "Doğrulanmamış veya sahte görünümlü tarih/referans numarası "
+                    "bulundu; taslak insan incelemesine işaretlendi.",
                 )
                 result["requires_human_review"] = True
                 

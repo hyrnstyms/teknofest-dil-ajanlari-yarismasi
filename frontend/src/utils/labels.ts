@@ -54,6 +54,16 @@ export const FIELD_LABELS: Record<string, string> = {
   email: "E-posta",
   attachments: "Ekler",
   national_id: "T.C. Kimlik Numarası",
+  institution: "Kurum",
+  other_entities: "Diğer Varlıklar",
+  name: "Ad",
+  value: "Değer",
+  text: "Metin",
+  type: "Tür",
+  evidence: "Kanıt",
+  status: "Durum",
+  validated: "Doğrulandı",
+  confidence: "Güven Skoru",
 };
 
 export const PRIORITY_LABELS: Record<string, string> = {

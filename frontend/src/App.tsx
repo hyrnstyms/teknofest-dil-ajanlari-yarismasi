@@ -28,6 +28,10 @@ function readStoredInstitution(): InstitutionOption | null {
   }
 }
 
+function canonicalInstitutionId(value: unknown): string {
+  return String(value || "").trim().replace(/_v\d+$/i, "");
+}
+
 function App() {
   return <BrowserRouter><AppShell /></BrowserRouter>;
 }
@@ -44,6 +48,7 @@ function AppShell() {
   const [activeAnalysisId, setActiveAnalysisId] = useState<string>();
   const [activeDraft, setActiveDraft] = useState<DocumentState["draft"]>();
   const [contextNotice, setContextNotice] = useState<string | null>(null);
+  const [copilotOpenSignal, setCopilotOpenSignal] = useState(0);
 
   const enterApplication = useCallback((target = "/") => {
     window.sessionStorage.setItem(ENTRY_SESSION_KEY, "true");
@@ -55,7 +60,7 @@ function AppShell() {
     setActiveAnalysisId(state.analysis_id || state.document_id);
     setActiveDraft(state.draft);
 
-    const institutionId = String(state.kurum_profili_id || "").trim();
+    const institutionId = canonicalInstitutionId(state.kurum_profili_id);
     if (!institutionId) return;
     void api.listInstitutionOptions()
       .then((options) => {
@@ -113,7 +118,7 @@ function AppShell() {
   return (
     <>
       <div className="app-layout">
-        <Sidebar />
+        <Sidebar onOpenCopilot={() => setCopilotOpenSignal((value) => value + 1)} />
         <div className="app-main">
           <TopBar institutionSelector={(
             <InstitutionSelector
@@ -133,7 +138,7 @@ function AppShell() {
               <Route path="/" element={<HomePage institution={institution} />} />
               <Route path="/yeni-evrak" element={<NewDocumentPage institution={institution} onAnalysisLoaded={handleAnalysisLoaded} />} />
               <Route path="/evrak/:id" element={<DocumentWorkspacePage onAnalysisLoaded={handleAnalysisLoaded} externallyUpdatedDraft={chatDraft} />} />
-              <Route path="/gelen-evraklar" element={<IncomingDocumentsPage onOpenAnalysis={handleOpenAnalysis} />} />
+              <Route path="/gelen-evraklar" element={<IncomingDocumentsPage institution={institution} onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/taslaklar" element={<DraftsPage onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/inceleme-bekleyenler" element={<ReviewQueuePage onOpenAnalysis={handleOpenAnalysis} />} />
               <Route path="/yonetici" element={<AdminDashboard onOpenAnalysis={handleOpenAnalysis} />} />
@@ -149,6 +154,7 @@ function AppShell() {
         institutionId={institution?.id}
         institutionLabel={institution?.label}
         onDraftUpdated={setActiveDraft}
+        openSignal={copilotOpenSignal}
       />
     </>
   );

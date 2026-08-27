@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { MissingFields } from "../../types";
+import { FIELD_LABELS, getLabel } from "../../utils/labels";
 
 interface Props {
   missingFields: MissingFields;
@@ -30,7 +31,7 @@ export const MissingFieldsCard: React.FC<Props> = ({ missingFields }) => {
       <div className="card-body">
         <ul style={{ listStyleType: "disc", paddingLeft: "1.5rem" }} className="mb-4 text-error">
           {fields.map((f, i) => (
-            <li key={i}>{f}</li>
+            <li key={i}>{getLabel(f, FIELD_LABELS)}</li>
           ))}
         </ul>
         {missingFields.needs_human_review && (

@@ -2,6 +2,11 @@
 
 import os
 from functools import lru_cache
+from pathlib import Path
+from dotenv import load_dotenv
+
+project_root = Path(__file__).parent.parent.parent.parent
+load_dotenv(project_root / ".env", override=False)
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
