@@ -33,6 +33,11 @@ from backend.app.institutions.profile_loader import (
 )
 from backend.app.agents.transfer_agent import TransferAgent
 from backend.app.db.repository import AnalysisRepository
+from backend.app.auth.router import router as auth_router
+from backend.app.cases.institution_router import router as case_institution_router
+from backend.app.cases.intake import maybe_create_case_for_analysis
+from backend.app.cases.public_router import router as public_case_router
+from backend.app.cases.router import router as case_router
 
 
 # Initialize FastAPI app
@@ -54,6 +59,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# The Case domain is additive: existing Analysis routes below keep their
+# original paths and response fields, while these routers expose the frozen
+# workflow contract.
+app.include_router(auth_router)
+app.include_router(case_router)
+app.include_router(public_case_router)
+app.include_router(case_institution_router)
 
 analysis_repository: AnalysisRepository | None = None
 
@@ -282,7 +295,7 @@ def readiness_check():
 
 
 @app.post("/api/documents/analyze-text")
-def analyze_text(req: AnalyzeRequest):
+def analyze_text(req: AnalyzeRequest, request: Request):
     try:
         doc_id = req.document_id or str(uuid.uuid4())
         wf = (
@@ -313,6 +326,12 @@ def analyze_text(req: AnalyzeRequest):
         telemetry_service.extract_from_state(analysis_id, final_state)
         
         get_analysis_repository().save_analysis(analysis_id, final_state)
+        case_link = maybe_create_case_for_analysis(request, analysis_id, final_state)
+        if case_link:
+            # Backward compatible additive fields for authenticated demo intake.
+            # The persisted Analysis remains the AI work product; Case owns the
+            # institutional lifecycle.
+            final_state.update(case_link)
         return final_state
         
     except Exception as e:
@@ -321,6 +340,7 @@ def analyze_text(req: AnalyzeRequest):
 
 @app.post("/api/documents/upload")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     institution: Optional[str] = Form(None),
 ):
@@ -383,7 +403,7 @@ async def upload_document(
             document_id=file.filename,
             institution=institution,
         )
-        return analyze_text(req)
+        return analyze_text(req, request)
         
     except HTTPException:
         raise
@@ -694,6 +714,13 @@ def copilot_stream(req: ChatStreamRequest):
         except HTTPException:
             pass
 
+    # Integration Note (Person 4): 
+    # This endpoint signature is defined here, so we must inject the user context 
+    # here to satisfy role-aware requirements until the auth branch merges.
+    # See backend/app/copilot/auth_adapter.py for the mock implementation.
+    from backend.app.copilot.auth_adapter import get_dummy_user_context
+    user_context = get_dummy_user_context()
+
     return StreamingResponse(
         stream_copilot_response(
             message=req.message,
@@ -701,6 +728,7 @@ def copilot_stream(req: ChatStreamRequest):
             analysis_state=current_state,
             institution_id=req.institution,
             current_draft=current_draft,
+            user_context=user_context,
         ),
         media_type="text/event-stream"
     )

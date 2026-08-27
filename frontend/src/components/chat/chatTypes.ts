@@ -38,6 +38,19 @@ export interface ChatApiResponse {
   validation_warnings: ChatValidationIssue[];
 }
 
+export interface PendingAction {
+  type: string;
+  case_id: string;
+  payload: Record<string, any>;
+  confirmation_required: boolean;
+  confirmation_text: string;
+}
+
+export interface ActionResult {
+  success: boolean;
+  message: string;
+}
+
 export interface ChatUiMessage {
   id: string;
   role: "user" | "bot";
@@ -47,4 +60,7 @@ export interface ChatUiMessage {
   validationErrors?: ChatValidationIssue[];
   isStreaming?: boolean;
   sources?: ChatSource[];
+  pendingAction?: PendingAction;
+  actionResult?: ActionResult;
+  actionStatus?: "idle" | "submitting" | "resolved";
 }

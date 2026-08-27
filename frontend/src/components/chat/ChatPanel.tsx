@@ -16,6 +16,7 @@ interface Props {
   onClose: () => void;
   onStop?: () => void;
   onClearHistory?: () => void;
+  onConfirmAction?: (action: import("./chatTypes").PendingAction) => void;
 }
 
 export const ChatPanel: React.FC<Props> = ({
@@ -30,6 +31,7 @@ export const ChatPanel: React.FC<Props> = ({
   onClose,
   onStop,
   onClearHistory,
+  onConfirmAction,
 }) => {
   const [input, setInput] = useState("");
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -119,7 +121,11 @@ export const ChatPanel: React.FC<Props> = ({
 
       <div className="kamuai-chat-messages" aria-live="polite">
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+          <ChatMessage 
+            key={message.id} 
+            message={message} 
+            onConfirmAction={onConfirmAction}
+          />
         ))}
 
         {isLoading && !isStreaming && (
