@@ -13,7 +13,6 @@ import { DemoLoginPage } from "./pages/DemoLoginPage";
 import { DocumentWorkspacePage } from "./pages/DocumentWorkspacePage";
 import { InstitutionDirectoryPage } from "./pages/InstitutionDirectoryPage";
 import { NewDocumentPage } from "./pages/NewDocumentPage";
-import { OfficialWritingsPage } from "./pages/OfficialWritingsPage";
 import { QrVerifyPage } from "./pages/QrVerifyPage";
 import { RoleOperationsPage } from "./pages/RoleOperationsPage";
 import type { InstitutionOption } from "./services/api";
@@ -73,7 +72,7 @@ function WorkspaceShell() {
               <Route path="/dosyalar" element={<CaseInboxPage />} />
               <Route path="/gecmis" element={<CaseInboxPage history />} />
               <Route path="/dosya/:id" element={<CaseWorkspacePage />} />
-              <Route path="/resmi-yazilar" element={<OfficialWritingsPage />} />
+              <Route path="/resmi-yazilar" element={<Navigate to="/dosyalar?status=WAITING_FINAL_APPROVAL" replace />} />
               <Route path="/kurum-rehberi" element={<InstitutionDirectoryPage />} />
               <Route path="/yeni-evrak" element={<NewDocumentPage institution={institution} onAnalysisLoaded={handleAnalysisLoaded} />} />
               <Route path="/evrak/:id" element={<DocumentWorkspacePage onAnalysisLoaded={handleAnalysisLoaded} externallyUpdatedDraft={activeDraft} />} />

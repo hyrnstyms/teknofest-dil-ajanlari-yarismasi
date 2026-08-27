@@ -5,6 +5,12 @@
  * that BIRIM_PERSONELI navigation does NOT include EVRAK_KAYIT-only items.
  * Also ensures that the roleLabel helper returns a human-readable string
  * and does NOT expose raw role enum values to the UI.
+ *
+ * Key product decision (Person 3 Final Cleanup):
+ *   - "Resmî Yazılar" is removed from both role navigations.
+ *   - Drafts/official replies live inside the case workspace (Cevap Taslağı tab).
+ *   - EVRAK_KAYIT gets "Giden Evraklar" (key: outgoing) for approved outgoing docs.
+ *   - BIRIM_PERSONELI has no separate writing entry.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -19,6 +25,12 @@ describe('navigationForRole', () => {
     expect(keys).toContain('clarification');
     expect(keys).toContain('routing');
     expect(keys).toContain('history');
+  });
+
+  it('EVRAK_KAYIT has Giden Evraklar (outgoing) entry', () => {
+    const items = navigationForRole('EVRAK_KAYIT');
+    const keys = items.map((i) => i.key);
+    expect(keys).toContain('outgoing');
   });
 
   it('returns BIRIM_PERSONELI navigation items', () => {
@@ -45,6 +57,19 @@ describe('navigationForRole', () => {
     const items = navigationForRole('EVRAK_KAYIT');
     const keys = items.map((i) => i.key);
     expect(keys).not.toContain('assigned');
+  });
+
+  it('neither role has a standalone "writings" (Resmî Yazılar) nav entry', () => {
+    for (const role of ['EVRAK_KAYIT', 'BIRIM_PERSONELI'] as const) {
+      const keys = navigationForRole(role).map((i) => i.key);
+      expect(keys).not.toContain('writings');
+    }
+  });
+
+  it('BIRIM_PERSONELI does not have an outgoing writings entry', () => {
+    // Drafts for Birim Personeli are accessed inside the case workspace only
+    const keys = navigationForRole('BIRIM_PERSONELI').map((i) => i.key);
+    expect(keys).not.toContain('outgoing');
   });
 
   it('all items have non-empty to and text', () => {
