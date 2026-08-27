@@ -6,7 +6,7 @@ import hashlib
 import hmac
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import delete, select
@@ -21,6 +21,7 @@ from backend.app.cases.enums import (
     ACTOR_SYSTEM,
     ACTOR_USER,
     DEPARTMENT_INBOX_STATUSES,
+    DURABLE_STATUSES,
     DRAFT_STATUS_APPROVED,
     DRAFT_STATUS_DRAFT,
     DRAFT_STATUS_EDITED,
@@ -178,6 +179,18 @@ class CaseEngine:
         to_status: str | None,
         payload: dict[str, Any] | None = None,
     ) -> CaseEvent:
+        created_at = _now()
+        latest_created_at = session.scalar(
+            select(CaseEvent.created_at)
+            .where(CaseEvent.case_id == case.id)
+            .order_by(CaseEvent.created_at.desc(), CaseEvent.id.desc())
+            .limit(1)
+        )
+        if latest_created_at is not None:
+            if latest_created_at.tzinfo is None:
+                latest_created_at = latest_created_at.replace(tzinfo=timezone.utc)
+            if created_at <= latest_created_at:
+                created_at = latest_created_at + timedelta(microseconds=1)
         event = CaseEvent(
             id=str(uuid.uuid4()),
             case_id=case.id,
@@ -187,9 +200,12 @@ class CaseEngine:
             from_status=from_status,
             to_status=to_status,
             payload=payload or {},
-            created_at=_now(),
+            created_at=created_at,
         )
         session.add(event)
+        # Make the event visible to the next append in the same transaction so
+        # monotonic ordering never depends on autoflush timing.
+        session.flush()
         return event
 
     def _bump(self, case: CaseRecord, new_status: str | None = None) -> None:
@@ -212,8 +228,18 @@ class CaseEngine:
             raise case_not_found()
         return row
 
-    def _scoped_case(self, session: Session, user: CurrentUser, case_id: str) -> CaseRecord:
-        row = session.get(CaseRecord, case_id)
+    def _scoped_case(
+        self,
+        session: Session,
+        user: CurrentUser,
+        case_id: str,
+        *,
+        for_update: bool = False,
+    ) -> CaseRecord:
+        statement = select(CaseRecord).where(CaseRecord.id == case_id)
+        if for_update:
+            statement = statement.with_for_update()
+        row = session.scalar(statement)
         if row is None or row.institution_id != user.institution_id:
             raise case_not_found()
         if not self.can_view(user, row):
@@ -369,7 +395,14 @@ class CaseEngine:
         cursor: str | None = None,
     ) -> dict[str, Any]:
         limit = max(1, min(limit, 100))
-        offset = int(cursor) if cursor else 0
+        if status is not None and status not in DURABLE_STATUSES:
+            raise validation_error("Geçersiz dosya durumu.", status=status)
+        try:
+            offset = int(cursor) if cursor else 0
+        except (TypeError, ValueError) as exc:
+            raise validation_error("Geçersiz sayfalama imleci.", cursor=cursor) from exc
+        if offset < 0:
+            raise validation_error("Geçersiz sayfalama imleci.", cursor=cursor)
         with self.session_factory() as session:
             statement = select(CaseRecord).where(
                 CaseRecord.institution_id == user.institution_id
@@ -585,19 +618,49 @@ class CaseEngine:
             payload=payload or {},
         )
 
-    def mark_analysis_started(self, case_id: str, user: CurrentUser | None) -> dict[str, Any]:
+    def mark_analysis_started(
+        self,
+        case_id: str,
+        user: CurrentUser | None,
+        *,
+        expected_version: int | None = None,
+        confirmed: bool | None = None,
+    ) -> dict[str, Any]:
         with self.session_factory.begin() as session:
-            case = self._load_case(session, case_id) if user is None else self._scoped_case(session, user, case_id)
+            case = (
+                self._load_case(session, case_id)
+                if user is None
+                else self._scoped_case(session, user, case_id, for_update=True)
+            )
             if user is not None:
                 self._require_role(user, ROLE_EVRAK_KAYIT)
+            if confirmed is not None:
+                self._require_confirmed(confirmed)
+            if expected_version is not None:
+                self._require_version(case, expected_version)
             self._transition(session, case, STATUS_ANALYZING, EVENT_ANALYSIS_STARTED, user, actor_type=ACTOR_USER if user else ACTOR_SYSTEM)
             return self.serialize_case(case)
 
-    def mark_analysis_completed(self, case_id: str, user: CurrentUser | None) -> dict[str, Any]:
+    def mark_analysis_completed(
+        self,
+        case_id: str,
+        user: CurrentUser | None,
+        *,
+        expected_version: int | None = None,
+        confirmed: bool | None = None,
+    ) -> dict[str, Any]:
         with self.session_factory.begin() as session:
-            case = self._load_case(session, case_id) if user is None else self._scoped_case(session, user, case_id)
+            case = (
+                self._load_case(session, case_id)
+                if user is None
+                else self._scoped_case(session, user, case_id, for_update=True)
+            )
             if user is not None:
                 self._require_role(user, ROLE_EVRAK_KAYIT)
+            if confirmed is not None:
+                self._require_confirmed(confirmed)
+            if expected_version is not None:
+                self._require_version(case, expected_version)
             self._transition(
                 session,
                 case,
@@ -609,10 +672,10 @@ class CaseEngine:
             return self.serialize_case(case)
 
     def accept_review(self, user: CurrentUser, case_id: str, expected_version: int, confirmed: bool) -> dict[str, Any]:
-        self._require_role(user, ROLE_EVRAK_KAYIT)
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_role(user, ROLE_EVRAK_KAYIT)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
             self._transition(session, case, STATUS_READY_TO_ROUTE, "REVIEW_ACCEPTED", user)
             return self.serialize_case(case)
@@ -628,12 +691,12 @@ class CaseEngine:
         reason: str | None,
         routing_snapshot: dict[str, Any],
     ) -> dict[str, Any]:
-        self._require_role(user, ROLE_EVRAK_KAYIT)
-        self._require_confirmed(confirmed)
-        assert_department(user.institution_id, department_code)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_role(user, ROLE_EVRAK_KAYIT)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
+            assert_department(case.institution_id, department_code)
             self.workflow.assert_transition(case.workflow_status, STATUS_IN_DEPARTMENT)
             active = session.scalars(
                 select(CaseAssignment).where(
@@ -696,10 +759,10 @@ class CaseEngine:
             return serialized
 
     def start_case(self, user: CurrentUser, case_id: str, expected_version: int, confirmed: bool) -> dict[str, Any]:
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
             self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
             case.assigned_user_id = user.id
             self._transition(session, case, STATUS_IN_PROGRESS, EVENT_CASE_STARTED, user)
@@ -713,10 +776,10 @@ class CaseEngine:
         expected_version: int,
         confirmed: bool,
     ) -> dict[str, Any]:
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
             self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
             if case.workflow_status != STATUS_IN_PROGRESS:
                 raise invalid_case_transition(case.workflow_status, STATUS_IN_PROGRESS)
@@ -754,21 +817,44 @@ class CaseEngine:
         expected_version: int,
         confirmed: bool,
     ) -> dict[str, Any]:
-        self._require_role(user, ROLE_EVRAK_KAYIT)
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_role(user, ROLE_EVRAK_KAYIT)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
+            requested_fields = [
+                field.strip()
+                for field in payload["requested_fields"]
+                if isinstance(field, str) and field.strip()
+            ]
+            if not requested_fields or len(requested_fields) != len(
+                set(requested_fields)
+            ):
+                raise validation_error(
+                    "İstenen alanlar boş veya tekrarlı olamaz."
+                )
+            resume_target = str(
+                payload.get("resume_target") or STATUS_READY_TO_ROUTE
+            ).upper()
+            if resume_target not in {
+                STATUS_ANALYZING,
+                STATUS_READY_TO_ROUTE,
+                "MISSING_FIELD",
+                "MISSING_INFORMATION",
+            }:
+                raise validation_error(
+                    "Geçersiz devam hedefi.", resume_target=resume_target
+                )
             request = CitizenRequest(
                 id=str(uuid.uuid4()),
                 case_id=case.id,
                 status="PENDING",
                 blocking=bool(payload.get("blocking", True)),
-                requested_fields=list(payload["requested_fields"]),
+                requested_fields=requested_fields,
                 question_type=payload.get("question_type") or "free_text",
                 question=payload["question"],
                 options=list(payload.get("options") or []),
-                resume_target=payload.get("resume_target") or STATUS_READY_TO_ROUTE,
+                resume_target=resume_target,
                 created_by_user_id=user.id,
                 created_at=_now(),
             )
@@ -804,13 +890,13 @@ class CaseEngine:
         expected_version: int,
         confirmed: bool,
     ) -> dict[str, Any]:
-        self._require_confirmed(confirmed)
-        if draft_type not in DRAFT_TYPES:
-            raise validation_error("Geçersiz taslak türü.", draft_type=draft_type)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
             self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
+            if draft_type not in DRAFT_TYPES:
+                raise validation_error("Geçersiz taslak türü.", draft_type=draft_type)
             if case.workflow_status not in {STATUS_IN_PROGRESS, STATUS_RESPONSE_DRAFTED, STATUS_WAITING_FINAL_APPROVAL}:
                 raise invalid_case_transition(case.workflow_status)
             verified_actions = list(
@@ -884,50 +970,53 @@ class CaseEngine:
         expected_version: int,
         confirmed: bool,
     ) -> dict[str, Any]:
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
             self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
+            if case.workflow_status != STATUS_RESPONSE_DRAFTED:
+                raise invalid_case_transition(
+                    case.workflow_status, STATUS_WAITING_FINAL_APPROVAL
+                )
             draft = session.get(CaseDraft, draft_id)
             if draft is None or draft.case_id != case.id:
                 raise validation_error("Taslak bulunamadı.", draft_id=draft_id)
-            if draft.draft_type == "OFFICIAL_RESPONSE" and not draft.grounded_action_id:
-                raise verified_department_action_required()
+            if draft.status not in {DRAFT_STATUS_DRAFT, DRAFT_STATUS_EDITED}:
+                raise invalid_case_transition(case.workflow_status)
+            if draft.draft_type == "OFFICIAL_RESPONSE":
+                grounded_action = (
+                    session.get(DepartmentAction, draft.grounded_action_id)
+                    if draft.grounded_action_id
+                    else None
+                )
+                if (
+                    grounded_action is None
+                    or grounded_action.case_id != case.id
+                    or not grounded_action.verified
+                ):
+                    raise verified_department_action_required()
             draft.status = DRAFT_STATUS_APPROVED
             draft.approved_by_user_id = user.id
             draft.approved_at = _now()
-            if case.workflow_status == STATUS_RESPONSE_DRAFTED:
-                self._transition(
-                    session,
-                    case,
-                    STATUS_WAITING_FINAL_APPROVAL,
-                    EVENT_DRAFT_SUBMITTED,
-                    user,
-                    payload={"draft_id": draft.id},
-                )
-                self._append_event(
-                    session,
-                    case,
-                    EVENT_DRAFT_APPROVED,
-                    actor_type=ACTOR_USER,
-                    actor_user_id=user.id,
-                    from_status=STATUS_WAITING_FINAL_APPROVAL,
-                    to_status=STATUS_WAITING_FINAL_APPROVAL,
-                    payload={"draft_id": draft.id},
-                )
-            else:
-                self._bump(case)
-                self._append_event(
-                    session,
-                    case,
-                    EVENT_DRAFT_APPROVED,
-                    actor_type=ACTOR_USER,
-                    actor_user_id=user.id,
-                    from_status=case.workflow_status,
-                    to_status=case.workflow_status,
-                    payload={"draft_id": draft.id},
-                )
+            self._transition(
+                session,
+                case,
+                STATUS_WAITING_FINAL_APPROVAL,
+                EVENT_DRAFT_SUBMITTED,
+                user,
+                payload={"draft_id": draft.id},
+            )
+            self._append_event(
+                session,
+                case,
+                EVENT_DRAFT_APPROVED,
+                actor_type=ACTOR_USER,
+                actor_user_id=user.id,
+                from_status=STATUS_WAITING_FINAL_APPROVAL,
+                to_status=STATUS_WAITING_FINAL_APPROVAL,
+                payload={"draft_id": draft.id},
+            )
             return {"draft": self._serialize_draft(draft), "case": self.serialize_case(case)}
 
     def complete_case(
@@ -938,10 +1027,10 @@ class CaseEngine:
         expected_version: int,
         confirmed: bool,
     ) -> dict[str, Any]:
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
             self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
             draft = session.get(CaseDraft, draft_id)
             if draft is None or draft.case_id != case.id or draft.status != DRAFT_STATUS_APPROVED:
@@ -971,10 +1060,10 @@ class CaseEngine:
             return {"case": self.serialize_case(case), "recipient": recipient}
 
     def close_case(self, user: CurrentUser, case_id: str, expected_version: int, confirmed: bool) -> dict[str, Any]:
-        self._require_role(user, ROLE_EVRAK_KAYIT)
-        self._require_confirmed(confirmed)
         with self.session_factory.begin() as session:
-            case = self._scoped_case(session, user, case_id)
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_role(user, ROLE_EVRAK_KAYIT)
+            self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
             case.closed_at = _now()
             self._transition(session, case, STATUS_CLOSED, EVENT_CASE_CLOSED, user)
@@ -1025,7 +1114,6 @@ class CaseEngine:
             return {
                 "tracking_code": case.tracking_code,
                 "public_status": PUBLIC_STATUS_LABELS.get(case.workflow_status, "İşlemde"),
-                "workflow_status": case.workflow_status,
                 "received_at": _iso(case.received_at),
                 "updated_at": _iso(case.updated_at),
                 "timeline": timeline,
@@ -1042,7 +1130,9 @@ class CaseEngine:
 
         with self.session_factory.begin() as session:
             case = session.scalar(
-                select(CaseRecord).where(CaseRecord.tracking_code == tracking_code)
+                select(CaseRecord)
+                .where(CaseRecord.tracking_code == tracking_code)
+                .with_for_update()
             )
             if case is None or not tokens_match(token, case.citizen_token_hash):
                 raise citizen_token_invalid()

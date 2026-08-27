@@ -13,11 +13,13 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -89,14 +91,27 @@ class CaseTrackingCounter(Base):
 
 class CaseAssignment(Base):
     __tablename__ = "case_assignments"
+    __table_args__ = (
+        Index(
+            "uq_case_assignments_one_active",
+            "case_id",
+            unique=True,
+            sqlite_where=text("ended_at IS NULL"),
+            postgresql_where=text("ended_at IS NULL"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     case_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
     )
     department_code: Mapped[str] = mapped_column(String(128), nullable=False)
-    assigned_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    assigned_by_user_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    assigned_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("case_users.id", ondelete="SET NULL"), nullable=True
+    )
+    assigned_by_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("case_users.id", ondelete="RESTRICT"), nullable=False
+    )
     assigned_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

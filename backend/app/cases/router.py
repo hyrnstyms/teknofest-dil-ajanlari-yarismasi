@@ -61,15 +61,12 @@ def start_analysis(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     try:
-        if not body.confirmed:
-            from backend.app.cases.errors import confirmation_required
-
-            raise confirmation_required()
-        engine = _engine()
-        with engine.session_factory() as session:
-            case = engine._scoped_case(session, current_user, case_id)
-            engine._require_version(case, body.expected_version)
-        return engine.mark_analysis_started(case_id, current_user)
+        return _engine().mark_analysis_started(
+            case_id,
+            current_user,
+            expected_version=body.expected_version,
+            confirmed=body.confirmed,
+        )
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 
@@ -81,15 +78,12 @@ def complete_analysis(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     try:
-        if not body.confirmed:
-            from backend.app.cases.errors import confirmation_required
-
-            raise confirmation_required()
-        engine = _engine()
-        with engine.session_factory() as session:
-            case = engine._scoped_case(session, current_user, case_id)
-            engine._require_version(case, body.expected_version)
-        return engine.mark_analysis_completed(case_id, current_user)
+        return _engine().mark_analysis_completed(
+            case_id,
+            current_user,
+            expected_version=body.expected_version,
+            confirmed=body.confirmed,
+        )
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 
