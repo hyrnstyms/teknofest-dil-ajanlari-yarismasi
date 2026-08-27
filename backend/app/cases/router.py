@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from backend.app.auth.dependencies import CurrentUser, get_current_user
-from backend.app.cases.errors import CaseError
+from backend.app.cases.errors import CaseError, verified_department_action_required, version_conflict
 from backend.app.cases.exports import approved_export_context, render_case_pdf
 from backend.app.official_writing.docx_renderer import render_to_docx
 from backend.app.cases.auto_draft import generate_official_response_after_action
@@ -45,6 +45,14 @@ def case_inbox(
 ) -> dict:
     try:
         return _engine().list_inbox(current_user, status=status, limit=limit, cursor=cursor)
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
+@router.get("/official-writings")
+def official_writings(current_user: CurrentUser = Depends(get_current_user)) -> dict:
+    try:
+        return _engine().list_official_writings(current_user)
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 
@@ -219,6 +227,22 @@ def approve_draft(
         return _engine().approve_draft(
             current_user, case_id, draft_id, body.expected_version, body.confirmed
         )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
+@router.post("/{case_id}/drafts/regenerate")
+def regenerate_draft(case_id: str, body: VersionedAction, current_user: CurrentUser = Depends(get_current_user)) -> dict:
+    try:
+        engine = _engine()
+        aggregate = engine.get_case_aggregate(current_user, case_id)
+        actions = aggregate.get("department_actions") or []
+        if not actions:
+            raise verified_department_action_required()
+        if aggregate["case"]["version"] != body.expected_version:
+            raise version_conflict(body.expected_version, aggregate["case"]["version"])
+        action = dict(actions[-1]) | {"case": aggregate["case"]}
+        return generate_official_response_after_action(engine=engine, user=current_user, case_id=case_id, action_result=action, force_revision=True)
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 

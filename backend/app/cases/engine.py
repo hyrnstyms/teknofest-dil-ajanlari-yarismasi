@@ -301,7 +301,7 @@ class CaseEngine:
             if case.workflow_status == STATUS_IN_DEPARTMENT:
                 actions.append("START_CASE")
             if case.workflow_status == STATUS_IN_PROGRESS:
-                actions.extend(["RECORD_DEPARTMENT_ACTION", "SAVE_DRAFT"])
+                actions.extend(["RECORD_DEPARTMENT_ACTION", "SAVE_DRAFT", "APPROVE_DRAFT"])
             if case.workflow_status == STATUS_RESPONSE_DRAFTED:
                 actions.extend(["SAVE_DRAFT", "APPROVE_DRAFT"])
             if case.workflow_status == STATUS_WAITING_FINAL_APPROVAL:
@@ -542,6 +542,37 @@ class CaseEngine:
             aggregate["case"]["current_department_code"],
         )
         return aggregate
+
+    def list_official_writings(self, user: CurrentUser) -> dict[str, Any]:
+        """Return drafts only for Cases visible to the caller's role scope."""
+        with self.session_factory() as session:
+            cases = list(session.scalars(select(CaseRecord).where(CaseRecord.institution_id == user.institution_id)))
+            visible: list[CaseRecord] = []
+            for case in cases:
+                if user.role == ROLE_BIRIM_PERSONELI:
+                    if case.current_department_code == user.department_code:
+                        visible.append(case)
+                elif case.current_department_code == user.department_code:
+                    visible.append(case)
+                else:
+                    routed_by_user = session.scalar(select(CaseAssignment.id).where(CaseAssignment.case_id == case.id, CaseAssignment.assigned_by_user_id == user.id).limit(1))
+                    if routed_by_user:
+                        visible.append(case)
+            case_map = {case.id: case for case in visible}
+            drafts = list(session.scalars(select(CaseDraft).where(CaseDraft.case_id.in_(case_map)).order_by(CaseDraft.updated_at.desc()))) if case_map else []
+            items = []
+            for draft in drafts:
+                case = case_map[draft.case_id]
+                items.append(self._serialize_draft(draft) | {
+                    "tracking_code": case.tracking_code,
+                    "institution_id": case.institution_id,
+                    "originator_name": case.originator_name,
+                    "current_department_code": case.current_department_code,
+                    "current_department_name": _department_name(case.institution_id, case.current_department_code),
+                    "case_status": case.workflow_status,
+                    "case_version": case.version,
+                })
+            return {"items": items, "count": len(items)}
 
     def _serialize_assignment(self, row: CaseAssignment) -> dict[str, Any]:
         return {
@@ -796,6 +827,22 @@ class CaseEngine:
                 template_key="CASE_ROUTED",
                 payload={"department_code": department_code},
             )
+            forwarding = CaseDraft(
+                id=str(uuid.uuid4()), case_id=case.id,
+                draft_type="FORWARDING_COVER_LETTER", status=DRAFT_STATUS_DRAFT,
+                revision=1,
+                content={
+                    "subject": "Dosyanın İlgili Birime Yönlendirilmesi",
+                    "recipient": _department_name(case.institution_id, department_code),
+                    "sender_unit": _department_name(case.institution_id, user.department_code),
+                    "recipient_kind": "INTERNAL_DEPARTMENT",
+                    "body": f"{case.tracking_code} takip numaralı başvuru, görev alanınız kapsamında değerlendirilmek ve gerekli işlemler yapılmak üzere biriminize yönlendirilmiştir.",
+                },
+                grounded_action_id=None, created_by_user_id=user.id,
+                created_at=_now(), updated_at=_now(),
+            )
+            session.add(forwarding)
+            self._append_event(session, case, EVENT_DRAFT_SAVED, actor_type=ACTOR_USER, actor_user_id=user.id, from_status=case.workflow_status, to_status=case.workflow_status, payload={"draft_id": forwarding.id, "draft_type": forwarding.draft_type})
             serialized = self.serialize_case(case)
             serialized["assignment_id"] = assignment.id
             return serialized
@@ -980,7 +1027,7 @@ class CaseEngine:
                 updated_at=_now(),
             )
             session.add(draft)
-            if case.workflow_status == STATUS_IN_PROGRESS:
+            if case.workflow_status == STATUS_IN_PROGRESS and draft_type == "OFFICIAL_RESPONSE":
                 self._transition(session, case, STATUS_RESPONSE_DRAFTED, EVENT_DRAFT_SAVED, user, payload={"draft_id": draft.id})
             elif case.workflow_status == STATUS_WAITING_FINAL_APPROVAL:
                 self._transition(
@@ -1018,16 +1065,14 @@ class CaseEngine:
             self._require_own_department(user, case)
             self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
-            if case.workflow_status != STATUS_RESPONSE_DRAFTED:
-                raise invalid_case_transition(
-                    case.workflow_status, STATUS_WAITING_FINAL_APPROVAL
-                )
             draft = session.get(CaseDraft, draft_id)
             if draft is None or draft.case_id != case.id:
                 raise validation_error("Taslak bulunamadı.", draft_id=draft_id)
             if draft.status not in {DRAFT_STATUS_DRAFT, DRAFT_STATUS_EDITED}:
                 raise invalid_case_transition(case.workflow_status)
             if draft.draft_type == "OFFICIAL_RESPONSE":
+                if case.workflow_status != STATUS_RESPONSE_DRAFTED:
+                    raise invalid_case_transition(case.workflow_status, STATUS_WAITING_FINAL_APPROVAL)
                 grounded_action = (
                     session.get(DepartmentAction, draft.grounded_action_id)
                     if draft.grounded_action_id
@@ -1042,22 +1087,18 @@ class CaseEngine:
             draft.status = DRAFT_STATUS_APPROVED
             draft.approved_by_user_id = user.id
             draft.approved_at = _now()
-            self._transition(
-                session,
-                case,
-                STATUS_WAITING_FINAL_APPROVAL,
-                EVENT_DRAFT_SUBMITTED,
-                user,
-                payload={"draft_id": draft.id},
-            )
+            if draft.draft_type == "OFFICIAL_RESPONSE":
+                self._transition(session, case, STATUS_WAITING_FINAL_APPROVAL, EVENT_DRAFT_SUBMITTED, user, payload={"draft_id": draft.id})
+            else:
+                self._bump(case)
             self._append_event(
                 session,
                 case,
                 EVENT_DRAFT_APPROVED,
                 actor_type=ACTOR_USER,
                 actor_user_id=user.id,
-                from_status=STATUS_WAITING_FINAL_APPROVAL,
-                to_status=STATUS_WAITING_FINAL_APPROVAL,
+                from_status=case.workflow_status,
+                to_status=case.workflow_status,
                 payload={"draft_id": draft.id},
             )
             return {"draft": self._serialize_draft(draft), "case": self.serialize_case(case)}

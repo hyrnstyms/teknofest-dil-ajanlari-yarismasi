@@ -6,13 +6,13 @@ from backend.app.auth.dependencies import CurrentUser
 from backend.app.intelligence.case_writing import CaseWritingService
 logger = logging.getLogger(__name__)
 
-def generate_official_response_after_action(*, engine: Any, user: CurrentUser, case_id: str, action_result: dict[str, Any]) -> dict[str, Any]:
+def generate_official_response_after_action(*, engine: Any, user: CurrentUser, case_id: str, action_result: dict[str, Any], force_revision: bool = False) -> dict[str, Any]:
     """Persist one grounded response; report failure without undoing human truth."""
     action_id = str(action_result.get("id") or "")
     try:
         aggregate = engine.get_case_aggregate(user, case_id)
         existing = next((draft for draft in aggregate.get("drafts", []) if draft.get("draft_type") == "OFFICIAL_RESPONSE" and draft.get("grounded_action_id") == action_id), None)
-        if existing:
+        if existing and not force_revision:
             return {"status": "ready", "draft": existing, "idempotent": True}
         case = aggregate["case"]
         analysis = aggregate.get("analysis") or {}

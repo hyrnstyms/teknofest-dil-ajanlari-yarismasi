@@ -59,6 +59,7 @@ def test_approved_case_draft_renders_docx_pdf_and_qr():
         "drafts": [{"id": "draft-1", "status": "APPROVED", "draft_type": "OFFICIAL_RESPONSE", "content": {"subject": "Başvurunuz Hk.", "recipient": "Ali Yılmaz", "body": "Başvurunuz incelenmiş ve bakım programına alınmıştır."}}],
     }
     context, _ = approved_export_context(aggregate, "draft-1")
+    assert context["konu"] == aggregate["drafts"][0]["content"]["subject"]
     docx = render_to_docx(context, evrak_id="EVR-TEST-001").getvalue()
     pdf = render_case_pdf(context, "EVR-TEST-001").getvalue()
     assert docx.startswith(b"PK")

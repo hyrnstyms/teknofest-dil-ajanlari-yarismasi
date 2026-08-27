@@ -20,10 +20,17 @@ def approved_export_context(aggregate: dict[str, Any], draft_id: str) -> tuple[d
     case = aggregate["case"]
     analysis = aggregate.get("analysis") or {}
     content = dict(draft.get("content") or {})
+    extraction = dict(analysis.get("extraction") or {})
+    extraction_fields = dict(extraction.get("fields") or {})
+    # An approved human revision is authoritative for editable outgoing
+    # document fields. Incoming extraction remains evidence, but must not
+    # overwrite the subject the reviewer explicitly approved.
+    extraction_fields.pop("subject", None)
+    extraction["fields"] = extraction_fields
     state = {
         "kurum_profili_id": case.get("institution_id"),
         "routing": analysis.get("routing") or {"recommended_unit": case.get("current_department_code")},
-        "extraction": analysis.get("extraction") or {},
+        "extraction": extraction,
         "muhatap": {"tur": "gercek_kisi" if case.get("originator_type") == "VATANDAS" else "kurum", "isim": case.get("originator_name")},
     }
     built = build_official_writing_context(content, state, "cevap_yazisi")

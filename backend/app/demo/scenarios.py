@@ -46,6 +46,11 @@ class DemoScenarioService:
         if existing:
             return self._result(existing, key, created=False)
         spec = SCENARIOS[key]; user = _user(spec["user_key"]); analysis_id = f"demo-analysis-{key}-{uuid.uuid4().hex[:8]}"
+        # PostgreSQL enforces cases.analysis_id immediately. Persist the
+        # analysis identity first, then enrich the same state after Case IDs
+        # and tracking metadata exist. SQLite tests must not be relied on to
+        # mask this production FK ordering requirement.
+        AnalysisRepository(engine=self.engine.engine).save_analysis(analysis_id, {"analysis_id": analysis_id, "institution_id": user.institution_id, "is_demo": True, "demo_scenario_key": key})
         created = self.engine.create_case(user, {"confirmed": True, "source_type": "VATANDAS", "source_channel": "EBYS", "originator_type": "VATANDAS", "originator_name": spec["originator"], "analysis_id": analysis_id, "priority": f"{DEMO_PREFIX}{key}", "received_at": datetime.now(timezone.utc)}, raw_citizen_token=self.token(key))
         self.engine.mark_analysis_started(created["id"], user)
         blocking = bool(spec.get("clarification"))
