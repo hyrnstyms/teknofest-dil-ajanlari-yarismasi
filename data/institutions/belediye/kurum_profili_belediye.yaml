@@ -54,6 +54,16 @@ birimler:
       - "cevap"
       - "iletim"
       - "diger"
+    teams:
+      - code: gelen_evrak_ve_yazisma
+        name: "Gelen Evrak ve Yazışma Ekibi"
+        roles: ["YAZI_ISLERI_UZMANI"]
+      - code: bilgi_edinme
+        name: "Bilgi Edinme Ekibi"
+        roles: ["YAZI_ISLERI_UZMANI"]
+      - code: sosyal_destek
+        name: "Sosyal Destek Ön İnceleme Ekibi"
+        roles: ["SOSYAL_INCELEME_UZMANI"]
 
   - id: hukuk_isleri
     ad: "Hukuk İşleri Müdürlüğü"
@@ -107,6 +117,13 @@ birimler:
       - "belge_talebi"
       - "itiraz"
       - "bilgi_talebi"
+    teams:
+      - code: imar_inceleme
+        name: "İmar İnceleme Ekibi"
+        roles: ["IMAR_UZMANI"]
+      - code: yapi_kontrol
+        name: "Yapı Kontrol Ekibi"
+        roles: ["YAPI_KONTROL_UZMANI"]
 
   - id: zabita
     ad: "Zabıta Müdürlüğü"
@@ -126,6 +143,13 @@ birimler:
       - "basvuru"
       - "izin_talebi"
       - "bilgi_talebi"
+    teams:
+      - code: denetim_ekibi
+        name: "Zabıta Denetim Ekibi"
+        roles: ["ZABITA_MEMURU"]
+      - code: ruhsat_inceleme
+        name: "İşyeri Ruhsat İnceleme Ekibi"
+        roles: ["RUHSAT_INCELEME_UZMANI"]
 
   - id: fen_isleri
     ad: "Fen İşleri Müdürlüğü"
@@ -144,6 +168,10 @@ birimler:
       - "bildirim"
       - "basvuru"
       - "bilgi_talebi"
+    teams:
+      - code: saha_bakim_ekibi
+        name: "Saha Bakım Ekibi"
+        roles: ["SAHA_EKIBI"]
 
   - id: temizlik_isleri
     ad: "Temizlik İşleri Müdürlüğü"
@@ -160,6 +188,10 @@ birimler:
       - "sikayet"
       - "bildirim"
       - "basvuru"
+    teams:
+      - code: temizlik_saha_ekibi
+        name: "Temizlik Saha Ekibi"
+        roles: ["SAHA_EKIBI"]
 
   - id: park_bahce
     ad: "Park ve Bahçeler Müdürlüğü"
@@ -194,6 +226,10 @@ birimler:
       - "bilgi_talebi"
       - "itiraz"
       - "bildirim"
+    teams:
+      - code: abonelik_tahakkuk
+        name: "Abonelik ve Tahakkuk Ekibi"
+        roles: ["ABONELIK_UZMANI"]
 
 # ---------------------------------------------------------------------------
 # 3. EVRAK TÜRLERİ

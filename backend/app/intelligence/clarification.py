@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from backend.app.intelligence.contracts import ClarificationPreview
+from backend.app.intelligence.municipal_workflow import ClarificationTargetResolver
 from backend.app.intelligence.process_profiles import (
     detect_permit_ambiguity,
     field_label,
@@ -28,11 +29,23 @@ class ClarificationAgent:
         document: dict[str, Any] | None = None,
         extracted_fields: dict[str, Any] | None = None,
         routing: dict[str, Any] | None = None,
+        originator: Any = None,
     ) -> dict[str, Any]:
         missing_fields = missing_fields or {}
         document = document or {}
         extracted_fields = extracted_fields or missing_fields.get("extracted_fields") or {}
         routing = routing or {}
+
+        def target(reason: str | None) -> dict[str, Any]:
+            resolved = ClarificationTargetResolver().resolve(
+                originator=originator,
+                document=document,
+                extracted_fields=extracted_fields,
+                reason=reason,
+            )
+            # ``reason`` is already the ClarificationPreview's own field.
+            # Return only recipient metadata to avoid duplicate keyword values.
+            return {key: value for key, value in resolved.items() if key != "reason"}
 
         permit = missing_fields.get("permit_ambiguity") or detect_permit_ambiguity(
             institution_id=institution_id,
@@ -50,6 +63,10 @@ class ClarificationAgent:
                 options=list(permit.get("options") or []),
                 resume_target="routing",
                 reason="Ruhsat türü farklı birim/süreçlere güvenli biçimde ayrılmalıdır.",
+                **target("Ruhsat türü netleştirilmelidir."),
+                required_for_process=True,
+                missing_field=permit["field"],
+                draft_available=True,
             )
             return preview.model_dump()
 
@@ -77,6 +94,10 @@ class ClarificationAgent:
                 options=[],
                 resume_target="missing_field",
                 reason=group.get("reason"),
+                **target(group.get("reason")),
+                required_for_process=True,
+                missing_field=field,
+                draft_available=True,
             )
             return preview.model_dump()
 
@@ -104,6 +125,10 @@ class ClarificationAgent:
                 options=[],
                 resume_target="missing_field",
                 reason=reason,
+                **target(reason),
+                required_for_process=True,
+                missing_field=field,
+                draft_available=True,
             )
             return preview.model_dump()
 

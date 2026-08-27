@@ -12,6 +12,7 @@ from backend.app.intelligence.case_writing import CaseWritingService
 from backend.app.intelligence.clarification import ClarificationAgent
 from backend.app.intelligence.contracts import CaseIntelligenceContext, IntakeOrchestrationResult
 from backend.app.intelligence.deadline import LegalDeadlineService
+from backend.app.intelligence.municipal_workflow import MunicipalOperationResolver
 from backend.app.institutions.profile_loader import load_institution_profile
 
 
@@ -35,6 +36,7 @@ class CaseAwareOrchestrator:
         self.deadline_service = LegalDeadlineService()
         self.priority_agent = PriorityAgent()
         self.summary_agent: SummaryAgent | None = None
+        self.operation_resolver = MunicipalOperationResolver(institution)
 
     def evaluate_first_stage(
         self,
@@ -73,6 +75,7 @@ class CaseAwareOrchestrator:
             document=document,
             extracted_fields=extracted_fields,
             routing=ctx.routing,
+            originator=ctx.originator,
         )
         blocking = bool(clarification.get("blocking") or missing.get("has_blocking_missing"))
 
@@ -125,6 +128,12 @@ class CaseAwareOrchestrator:
         routing["requires_human_review"] = bool(
             routing.get("requires_human_review", routing.get("needs_human_review", True))
         )
+        operation = self.operation_resolver.recommend(
+            document=document,
+            extracted_fields=extracted_fields,
+            raw_text=ctx.raw_text,
+            routing=routing,
+        )
 
         interim = self.writing.draft_for_intake(
             clarification=clarification,
@@ -150,4 +159,5 @@ class CaseAwareOrchestrator:
         payload["document"] = document
         payload["extraction"] = ctx.extraction
         payload["interim_information"] = interim
+        payload["ai_operation"] = operation
         return payload

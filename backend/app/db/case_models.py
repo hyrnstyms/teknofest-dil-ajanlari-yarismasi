@@ -121,6 +121,60 @@ class CaseAssignment(Base):
     routing_snapshot: Mapped[dict] = mapped_column(JsonType, nullable=False, default=dict)
 
 
+class CaseTask(Base):
+    """A department work item; distinct from the parent Case lifecycle."""
+
+    __tablename__ = "case_tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    case_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_case_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    task_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    department_code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    team_code: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    recommended_role: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    assigned_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("case_users.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ASSIGNMENT_PENDING")
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_recommendation: Mapped[dict] = mapped_column(JsonType, nullable=False, default=dict)
+    created_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class CaseInformationRequest(Base):
+    """Clarification records for citizens, external institutions and units."""
+
+    __tablename__ = "case_information_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    case_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    target_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    target_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    target_department: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    requested_fields: Mapped[list] = mapped_column(JsonType, nullable=False, default=list)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    recommended_action: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="PENDING")
+    created_by_user_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class CaseEvent(Base):
     __tablename__ = "case_events"
 

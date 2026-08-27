@@ -50,6 +50,13 @@ class ClarificationPreview(BaseModel):
     options: list[Any] = Field(default_factory=list)
     resume_target: str = "missing_field"
     reason: str | None = None
+    target_type: str | None = None
+    target_name: str | None = None
+    target_department: str | None = None
+    recommended_action: str | None = None
+    required_for_process: bool = False
+    missing_field: str | None = None
+    draft_available: bool = False
 
 
 class RoutingRecommendation(BaseModel):

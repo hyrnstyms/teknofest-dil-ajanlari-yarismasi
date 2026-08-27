@@ -62,9 +62,34 @@ class MissingFieldAgent:
         # 1. Find the rule
         rule = None
         req_source = ""
-        
+
+        # Municipal process profiles are more specific than the historical
+        # document-type fallback.  In particular, a generic petition does not
+        # automatically need an address unless its concrete process requires
+        # one (for example, a field inspection).
+        if institution_id:
+            from backend.app.intelligence.process_profiles import matching_profiles
+
+            profiles = matching_profiles(
+                institution_id=institution_id,
+                document_type=document_type,
+                process_intent=process_intent,
+                candidate_department=candidate_department,
+                raw_text=raw_text,
+                document=document or {
+                    "document_type": document_type,
+                    "process_intent": process_intent,
+                    "document_subtype": document_subtype,
+                },
+                extracted_fields=extracted_fields,
+            )
+            profile = next((item for item in profiles if item.get("required_fields")), None)
+            if profile:
+                rule = {"required_fields": list(profile["required_fields"])}
+                req_source = f"process_profile:{profile['id']}"
+
         # Profile lookup first
-        if institution_profile and getattr(institution_profile, "evrak_turleri", None):
+        if not rule and institution_profile and getattr(institution_profile, "evrak_turleri", None):
             # Try to match subtype
             if document_subtype and not rule:
                 for et in institution_profile.evrak_turleri:

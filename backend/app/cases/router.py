@@ -28,8 +28,11 @@ from backend.app.cases.schemas import (
     CreateCaseRequest,
     CitizenRequestCreate,
     DepartmentActionRequest,
+    InformationRequestCreate,
     RouteCaseRequest,
     SaveDraftRequest,
+    TaskAssignmentRequest,
+    TaskStatusRequest,
     VersionedAction,
 )
 from backend.app.db.case_models import CaseRecord
@@ -204,6 +207,65 @@ def route_case(
             confirmed=body.confirmed,
             reason=body.reason,
             routing_snapshot=body.routing_snapshot,
+        )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
+@router.post("/{case_id}/tasks/{task_id}/assign")
+def assign_task(
+    case_id: str,
+    task_id: str,
+    body: TaskAssignmentRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    try:
+        return _engine().assign_task(
+            current_user, case_id, task_id,
+            assigned_user_id=body.assigned_user_id,
+            expected_version=body.expected_version,
+            confirmed=body.confirmed,
+            reason=body.reason,
+        )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
+@router.post("/{case_id}/tasks/{task_id}/status")
+def update_task_status(
+    case_id: str,
+    task_id: str,
+    body: TaskStatusRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    try:
+        return _engine().update_task_status(
+            current_user, case_id, task_id,
+            status=body.status,
+            expected_version=body.expected_version,
+            confirmed=body.confirmed,
+            reason=body.reason,
+        )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
+@router.post("/{case_id}/information-requests")
+def create_information_request(
+    case_id: str,
+    body: InformationRequestCreate,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    try:
+        return _engine().create_information_request(
+            current_user, case_id,
+            requested_fields=body.requested_fields,
+            reason=body.reason,
+            expected_version=body.expected_version,
+            confirmed=body.confirmed,
+            target_type=body.target_type,
+            target_name=body.target_name,
+            target_department=body.target_department,
         )
     except CaseError as exc:
         raise exc.to_http_exception() from exc

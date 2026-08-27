@@ -40,6 +40,11 @@ from backend.app.cases.enums import (
     EVENT_DRAFT_SAVED,
     EVENT_DRAFT_SUBMITTED,
     EVENT_ROUTING_CONFIRMED,
+    EVENT_TASK_ASSIGNED,
+    EVENT_TASK_CREATED,
+    EVENT_TASK_STATUS_CHANGED,
+    EVENT_INTERNAL_INFORMATION_REQUESTED,
+    EVENT_EXTERNAL_INFORMATION_REQUESTED,
     PUBLIC_EVENT_LABELS,
     PUBLIC_STATUS_LABELS,
     REGISTRY_INBOX_STATUSES,
@@ -56,6 +61,12 @@ from backend.app.cases.enums import (
     STATUS_WAITING_CITIZEN_INFO,
     STATUS_WAITING_FINAL_APPROVAL,
     STATUS_WAITING_INITIAL_REVIEW,
+    TASK_ASSIGNED,
+    TASK_ASSIGNMENT_PENDING,
+    TASK_DONE,
+    TASK_IN_PROGRESS,
+    TASK_STATUSES,
+    TASK_WAITING_INFO,
 )
 from backend.app.cases.errors import (
     action_forbidden,
@@ -80,6 +91,8 @@ from backend.app.db.case_models import (
     CaseNotification,
     CaseRecord,
     CaseTrackingCounter,
+    CaseTask,
+    CaseInformationRequest,
     CaseUser,
     CitizenRequest,
     DepartmentAction,
@@ -163,7 +176,9 @@ class CaseEngine:
             session.execute(delete(CaseNotification))
             session.execute(delete(CaseDraft))
             session.execute(delete(DepartmentAction))
+            session.execute(delete(CaseInformationRequest))
             session.execute(delete(CitizenRequest))
+            session.execute(delete(CaseTask))
             session.execute(delete(CaseEvent))
             session.execute(delete(CaseAssignment))
             session.execute(delete(CaseRecord))
@@ -327,6 +342,7 @@ class CaseEngine:
             "originator_email": case.originator_email,
             "originator_phone": case.originator_phone,
             "current_department_code": case.current_department_code,
+            "current_department": case.current_department_code,
             "assigned_user_id": case.assigned_user_id,
             "workflow_status": case.workflow_status,
             "priority": case.priority,
@@ -458,6 +474,20 @@ class CaseEngine:
                     .order_by(CaseAssignment.assigned_at.asc(), CaseAssignment.id.asc())
                 )
             )
+            tasks = list(
+                session.scalars(
+                    select(CaseTask)
+                    .where(CaseTask.case_id == case.id)
+                    .order_by(CaseTask.created_at.asc(), CaseTask.id.asc())
+                )
+            )
+            information_requests = list(
+                session.scalars(
+                    select(CaseInformationRequest)
+                    .where(CaseInformationRequest.case_id == case.id)
+                    .order_by(CaseInformationRequest.created_at.asc(), CaseInformationRequest.id.asc())
+                )
+            )
             events = list(
                 session.scalars(
                     select(CaseEvent)
@@ -498,7 +528,14 @@ class CaseEngine:
                 "case": self.serialize_case(case),
                 "permissions": self.allowed_actions(user, case),
                 "assignments": [self._serialize_assignment(item) for item in assignments],
+                "tasks": [self._serialize_task(item) for item in tasks],
+                "assignment": self._serialize_task(tasks[-1]) if tasks else None,
+                "information_requests": [self._serialize_information_request(item) for item in information_requests],
                 "events": [self._serialize_event(item) for item in events],
+                "timeline": [self._serialize_event(item) for item in events],
+                "ai_operation": {},
+                "clarification": {},
+                "priority_assessment": {},
                 "citizen_requests": [self._serialize_citizen_request(item) for item in requests],
                 "department_actions": [self._serialize_action(item) for item in actions],
                 "drafts": [self._serialize_draft(item) for item in drafts],
@@ -528,6 +565,9 @@ class CaseEngine:
                         received_at=aggregate["case"]["received_at"],
                     )
                 aggregate["deadline"] = deadline
+                aggregate["clarification"] = clarification
+                aggregate["ai_operation"] = dict((stored.get("case_orchestration") or {}).get("ai_operation") or {})
+                aggregate["priority_assessment"] = dict((stored.get("case_orchestration") or {}).get("operational_priority") or {})
                 aggregate["analysis"] = {
                     "analysis_id": stored.get("analysis_id"),
                     "document_type": (stored.get("document") or {}).get("document_type"),
@@ -535,6 +575,8 @@ class CaseEngine:
                     "summary": summary,
                     "routing": routing,
                     "clarification": clarification,
+                    "ai_operation": dict((stored.get("case_orchestration") or {}).get("ai_operation") or {}),
+                    "operational_priority": dict((stored.get("case_orchestration") or {}).get("operational_priority") or {}),
                     "recommended_unit": routing.get("recommended_unit"),
                     "recommended_department_code": routing.get("recommended_department_code"),
                     "human_review_status": (stored.get("human_review") or {}).get("status"),
@@ -592,6 +634,40 @@ class CaseEngine:
             "ended_at": _iso(row.ended_at),
             "reason": row.reason,
             "routing_snapshot": row.routing_snapshot or {},
+        }
+
+    def _serialize_task(self, row: CaseTask) -> dict[str, Any]:
+        return {
+            "id": row.id,
+            "case_id": row.case_id,
+            "source_case_id": row.source_case_id,
+            "task_type": row.task_type,
+            "department_code": row.department_code,
+            "team_code": row.team_code,
+            "recommended_role": row.recommended_role,
+            "assigned_user_id": row.assigned_user_id,
+            "status": row.status,
+            "reason": row.reason,
+            "ai_recommendation": row.ai_recommendation or {},
+            "created_by_user_id": row.created_by_user_id,
+            "approved_by_user_id": row.approved_by_user_id,
+            "created_at": _iso(row.created_at),
+            "updated_at": _iso(row.updated_at),
+        }
+
+    def _serialize_information_request(self, row: CaseInformationRequest) -> dict[str, Any]:
+        return {
+            "id": row.id,
+            "case_id": row.case_id,
+            "target_type": row.target_type,
+            "target_name": row.target_name,
+            "target_department": row.target_department,
+            "requested_fields": row.requested_fields or [],
+            "reason": row.reason,
+            "recommended_action": row.recommended_action,
+            "status": row.status,
+            "created_by_user_id": row.created_by_user_id,
+            "created_at": _iso(row.created_at),
         }
 
     def _serialize_event(self, row: CaseEvent) -> dict[str, Any]:
@@ -808,13 +884,53 @@ class CaseEngine:
                 routing_snapshot=routing_snapshot or {},
             )
             session.add(assignment)
+            operation = dict((routing_snapshot or {}).get("ai_operation") or {})
+            if not operation and case.analysis_id:
+                analysis = session.get(Analysis, case.analysis_id)
+                if analysis is not None:
+                    operation = dict(
+                        (dict(analysis.state_json or {}).get("case_orchestration") or {}).get("ai_operation")
+                        or {}
+                    )
+            # A human may select a different Level-1 department than the AI.
+            # Preserve the recommendation for audit, but never carry its team
+            # into a department where it does not belong.
+            operation_department = str(operation.get("department_code") or "")
+            if operation_department and operation_department != department_code:
+                task_team_code = None
+                task_role = None
+            else:
+                task_team_code = operation.get("team_code")
+                task_role = operation.get("recommended_role")
+            task = CaseTask(
+                id=str(uuid.uuid4()),
+                case_id=case.id,
+                source_case_id=case.id,
+                task_type=str(operation.get("task_type") or "GENEL_INCELEME"),
+                department_code=department_code,
+                team_code=str(task_team_code) if task_team_code else None,
+                recommended_role=str(task_role) if task_role else "BIRIM_PERSONELI",
+                assigned_user_id=None,
+                status=TASK_ASSIGNMENT_PENDING,
+                reason=reason or operation.get("reason"),
+                ai_recommendation=operation,
+                created_by_user_id=user.id,
+                created_at=now,
+                updated_at=now,
+            )
+            session.add(task)
             from_status = case.workflow_status
             case.current_department_code = department_code
             self._bump(case, STATUS_IN_DEPARTMENT)
             payload = {
+                "from_department": before_routing["department_code"],
+                "to_department": department_code,
                 "department_code": department_code,
                 "assignment_id": assignment.id,
+                "task_id": task.id,
                 "routing_snapshot": routing_snapshot or {},
+                "ai_recommendation": operation,
+                "human_decision": {"actor_user_id": user.id, "reason": reason},
             }
             after_routing = {
                 "department_code": department_code,
@@ -832,6 +948,16 @@ class CaseEngine:
                 payload=payload,
                 before_value=before_routing,
                 after_value=after_routing,
+            )
+            self._append_event(
+                session,
+                case,
+                EVENT_TASK_CREATED,
+                actor_type=ACTOR_SYSTEM,
+                actor_user_id=None,
+                from_status=STATUS_IN_DEPARTMENT,
+                to_status=STATUS_IN_DEPARTMENT,
+                payload={"task_id": task.id, "status": task.status, "ai_recommendation": operation},
             )
             self._append_event(
                 session,
@@ -870,7 +996,148 @@ class CaseEngine:
             self._append_event(session, case, EVENT_DRAFT_SAVED, actor_type=ACTOR_USER, actor_user_id=user.id, from_status=case.workflow_status, to_status=case.workflow_status, payload={"draft_id": forwarding.id, "draft_type": forwarding.draft_type})
             serialized = self.serialize_case(case)
             serialized["assignment_id"] = assignment.id
+            serialized["task"] = self._serialize_task(task)
             return serialized
+
+    def assign_task(
+        self,
+        user: CurrentUser,
+        case_id: str,
+        task_id: str,
+        *,
+        assigned_user_id: str,
+        expected_version: int,
+        confirmed: bool,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Manager-approved task assignment within the receiving department.
+
+        The demo permission model has no separate manager principal.  A
+        ``BIRIM_PERSONELI`` in the receiving department is the deliberately
+        narrow approval authority; named personnel are never chosen by AI.
+        """
+        with self.session_factory.begin() as session:
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
+            self._require_version(case, expected_version)
+            task = session.scalar(
+                select(CaseTask).where(CaseTask.id == task_id, CaseTask.case_id == case.id)
+            )
+            if task is None:
+                raise validation_error("Görev bulunamadı.", task_id=task_id)
+            if task.department_code != user.department_code:
+                raise action_forbidden(department_code=user.department_code)
+            if task.status != TASK_ASSIGNMENT_PENDING:
+                raise validation_error("Görev atama onayı beklemiyor.", task_status=task.status)
+            assignee = session.get(CaseUser, assigned_user_id)
+            if assignee is None or not assignee.is_active or assignee.institution_id != case.institution_id:
+                raise validation_error("Atanacak kullanıcı bulunamadı veya aktif değil.")
+            if assignee.department_code != task.department_code:
+                raise validation_error("Kullanıcı hedef birimde değil.", department_code=task.department_code)
+            task.assigned_user_id = assignee.id
+            task.approved_by_user_id = user.id
+            task.status = TASK_ASSIGNED
+            task.reason = reason or task.reason
+            task.updated_at = _now()
+            self._bump(case)
+            self._append_event(
+                session, case, EVENT_TASK_ASSIGNED,
+                actor_type=ACTOR_USER, actor_user_id=user.id,
+                from_status=case.workflow_status, to_status=case.workflow_status,
+                payload={"task_id": task.id, "assigned_user_id": assignee.id, "reason": reason},
+            )
+            return {"case": self.serialize_case(case), "task": self._serialize_task(task)}
+
+    def update_task_status(
+        self,
+        user: CurrentUser,
+        case_id: str,
+        task_id: str,
+        *,
+        status: str,
+        expected_version: int,
+        confirmed: bool,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        with self.session_factory.begin() as session:
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_own_department(user, case)
+            self._require_confirmed(confirmed)
+            self._require_version(case, expected_version)
+            task = session.scalar(select(CaseTask).where(CaseTask.id == task_id, CaseTask.case_id == case.id))
+            if task is None:
+                raise validation_error("Görev bulunamadı.", task_id=task_id)
+            if task.department_code != user.department_code or task.status == TASK_ASSIGNMENT_PENDING:
+                raise validation_error("Atama onayı olmayan görev ilerletilemez.")
+            if status not in TASK_STATUSES or status == TASK_ASSIGNMENT_PENDING:
+                raise validation_error("Geçersiz görev durumu.", status=status)
+            before = task.status
+            task.status = status
+            task.reason = reason or task.reason
+            task.updated_at = _now()
+            self._bump(case)
+            self._append_event(
+                session, case, EVENT_TASK_STATUS_CHANGED,
+                actor_type=ACTOR_USER, actor_user_id=user.id,
+                from_status=case.workflow_status, to_status=case.workflow_status,
+                payload={"task_id": task.id, "from_status": before, "to_status": status, "reason": reason},
+            )
+            return {"case": self.serialize_case(case), "task": self._serialize_task(task)}
+
+    def create_information_request(
+        self,
+        user: CurrentUser,
+        case_id: str,
+        *,
+        requested_fields: list[str],
+        reason: str,
+        expected_version: int,
+        confirmed: bool,
+        target_type: str | None = None,
+        target_name: str | None = None,
+        target_department: str | None = None,
+    ) -> dict[str, Any]:
+        from backend.app.intelligence.municipal_workflow import ClarificationTargetResolver
+
+        with self.session_factory.begin() as session:
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            if user.role == ROLE_BIRIM_PERSONELI:
+                self._require_own_department(user, case)
+            else:
+                self._require_role(user, ROLE_EVRAK_KAYIT)
+            self._require_confirmed(confirmed)
+            self._require_version(case, expected_version)
+            target = ClarificationTargetResolver().resolve(
+                originator={
+                    "originator_type": target_type or case.originator_type,
+                    "originator_name": target_name or case.originator_name,
+                    "current_department_code": target_department,
+                },
+                document={"source_type": case.source_type, "source_department_code": target_department},
+                reason=reason,
+            )
+            request = CaseInformationRequest(
+                id=str(uuid.uuid4()), case_id=case.id,
+                target_type=target["target_type"], target_name=target["target_name"],
+                target_department=target["target_department"],
+                requested_fields=list(dict.fromkeys(requested_fields)), reason=target["reason"],
+                recommended_action=target["recommended_action"], status="PENDING",
+                created_by_user_id=user.id, created_at=_now(),
+            )
+            session.add(request)
+            self._bump(case)
+            event_type = (
+                EVENT_INTERNAL_INFORMATION_REQUESTED
+                if request.target_type == "INTERNAL_DEPARTMENT"
+                else EVENT_EXTERNAL_INFORMATION_REQUESTED
+            )
+            self._append_event(
+                session, case, event_type, actor_type=ACTOR_USER, actor_user_id=user.id,
+                from_status=case.workflow_status, to_status=case.workflow_status,
+                payload={"information_request_id": request.id, "target": target, "requested_fields": request.requested_fields},
+            )
+            return {"case": self.serialize_case(case), "information_request": self._serialize_information_request(request)}
 
     def start_case(self, user: CurrentUser, case_id: str, expected_version: int, confirmed: bool) -> dict[str, Any]:
         with self.session_factory.begin() as session:
