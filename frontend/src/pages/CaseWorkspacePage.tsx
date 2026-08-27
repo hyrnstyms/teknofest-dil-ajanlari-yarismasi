@@ -3,6 +3,10 @@ import { Bot, Building2, CalendarClock, Route, Save, UserRound } from "lucide-re
 import { Link, useParams } from "react-router-dom";
 import { CaseTimeline, ConfirmAction, StatusBadge } from "../components/case/CasePrimitives";
 import { CaseProductPanels } from "../components/case/CaseProductPanels";
+import { CaseOperationPlan } from "../components/case/CaseOperationPlan";
+import { MissingInformationSolution } from "../components/case/MissingInformationSolution";
+import { OperationalNextAction } from "../components/case/OperationalNextAction";
+import { WritingGroundingSummary } from "../components/case/WritingGroundingSummary";
 import { useAuth } from "../contexts/AuthContext";
 import { caseApi } from "../services/caseApi";
 import type { CaseRecord, DepartmentAction } from "../types/case";
@@ -102,10 +106,13 @@ export function CaseWorkspacePage() {
     </header>
     {notice && <div className="case-success" role="status">{notice}</div>}
     {error && <div className="case-error" role="alert">{error}</div>}
+    <CaseOperationPlan item={item} onRoute={() => setPending("route")}/>
     <div className="case-workspace-grid">
       <main>
         <section className="case-panel"><span className="eyebrow">AI ANALİZİ</span><h2>Başvuru özeti</h2><p>{item.analysis_summary || "Analiz özeti henüz hazır değil."}</p></section>
+        <MissingInformationSolution item={item} onRequest={() => setPending("clarification")}/>
         {item.clarification?.needs_clarification && <section className="case-panel clarification-panel">
+        <WritingGroundingSummary item={item}/>
           <span className="eyebrow">BLOKE EDİCİ EKSİK BİLGİ</span><h2>Eksik bilgi nedeniyle bekliyor</h2>
           <blockquote>{item.clarification.question}</blockquote>
           {item.permissions.includes("REQUEST_CITIZEN_INFO") && <button className="btn btn-primary" disabled={closed} onClick={() => setPending("clarification")}>Vatandaştan Bilgi İste</button>}
@@ -130,6 +137,7 @@ export function CaseWorkspacePage() {
         {token && <CaseProductPanels item={item} token={token} onRefresh={async () => setItem(await caseApi.get(token, id))} onNotice={setNotice}/>}
       </main>
       <aside>
+        <OperationalNextAction item={item} user={user} onAction={setPending}/>
         <section className="case-panel next-action"><span className="eyebrow">SONRAKİ ADIM</span>
           <h2>{closed ? "Dosya kapatıldı" : canAccept ? "İlk incelemeyi onaylayın" : canRoute ? "Yönlendirmeyi doğrulayın" : canStart ? "Dosyayı işleme alın" : canAction ? "Kurum işlemini kaydedin" : "Mevcut aşamayı inceleyin"}</h2>
           {canAccept && <button className="btn btn-primary" onClick={() => setPending("review")}>İncelemeyi Onayla</button>}
