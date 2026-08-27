@@ -5,6 +5,7 @@ from typing import Any
 from backend.app.llm.base import LLMClient
 from backend.app.llm.factory import create_llm_client
 from backend.app.agents.priority_agent import PriorityAgent
+from backend.app.institutions.profile_loader import InstitutionProfile
 
 
 ALLOWED_DOCUMENT_TYPES = {
@@ -39,6 +40,7 @@ class DocumentAgent:
     def __init__(
         self,
         llm: LLMClient | None = None,
+        institution_profile: InstitutionProfile | None = None,
     ):
         self.llm = (
             llm
@@ -47,11 +49,23 @@ class DocumentAgent:
             )
         )
         self.priority_agent = PriorityAgent()
+        # InstitutionProfile — allowed subtype listesi buradan türetilir.
+        # None ise subtype sınıflandırması atlanır; broad type davranışı korunur.
+        self.institution_profile = institution_profile
 
     def analyze(
         self,
         text: str,
     ) -> dict[str, Any]:
+        """
+        Evrakı sınıflandırır.
+
+        Çıktı (yeni alanlar italik):
+            document_type     — broad structural class (değişmez)
+            *document_subtype — institution profile'a özgü domain tipi
+            process_intent    — işlem amacı (değişmez)
+            ...
+        """
 
         text = str(
             text or ""
@@ -64,13 +78,20 @@ class DocumentAgent:
 
         priority = self.priority_agent.assess(text)
 
+        # Aktif profile'dan allowed subtypes listesi.
+        # Profile yoksa liste boş → subtype sınıflandırması atlanır.
+        allowed_subtypes = self._get_allowed_subtypes(
+            self.institution_profile
+        )
+
         # ---------------------------------------------
-        # 1. LLM classification
+        # 1. LLM classification (tek çağrı — subtype dahil)
         # ---------------------------------------------
 
         raw_result = (
             self._classify_with_llm(
-                text
+                text,
+                allowed_subtypes=allowed_subtypes,
             )
         )
 
@@ -120,6 +141,19 @@ class DocumentAgent:
                 "process_intent",
                 "diger",
             )
+        )
+
+        # ---------------------------------------------
+        # 2b. Subtype validation
+        # LLM'in döndürdüğü subtype allowlist ile kontrol edilir.
+        # Allowlist dışındaki değerler → None.
+        # Profile yoksa → None (broad type ile devam).
+        # ---------------------------------------------
+
+        raw_subtype = generated.get("document_subtype")
+        document_subtype = self._validate_subtype(
+            raw_subtype,
+            allowed_subtypes,
         )
 
         # ---------------------------------------------
@@ -179,9 +213,20 @@ class DocumentAgent:
             or process_intent == "diger"
         )
 
+        # Profile mevcutsa ama subtype belirlenemezse human review.
+        # Profile yoksa (None) subtype beklenmediğinden flag kaldırılmaz.
+        if allowed_subtypes and document_subtype is None:
+            needs_human_review = True
+
         return {
             "document_type": (
                 document_type
+            ),
+
+            # Yeni alan — canonical source: state.document["document_subtype"]
+            # Profile yoksa ya da subtype belirlenemezse None.
+            "document_subtype": (
+                document_subtype
             ),
 
             "process_intent": (
@@ -228,12 +273,94 @@ class DocumentAgent:
     # LLM
     # =====================================================
 
+    # =====================================================
+    # SUBTYPE HELPERS
+    # =====================================================
+
+    @staticmethod
+    def _get_allowed_subtypes(
+        profile: InstitutionProfile | None,
+    ) -> list[str]:
+        """
+        Institution profile'ından izin verilen subtype id listesini döndürür.
+
+        Profile yoksa veya evrak_turleri boşsa boş liste döner.
+        Boş liste → subtype sınıflandırması atlanır.
+        """
+        if profile is None:
+            return []
+        subtypes = [
+            str(e).strip()
+            for e in (profile.evrak_turleri or [])
+            if e
+        ]
+        return subtypes
+
+    @staticmethod
+    def _validate_subtype(
+        subtype: Any,
+        allowed_subtypes: list[str],
+    ) -> str | None:
+        """
+        LLM'in döndürdüğü subtype değerini allowlist ile doğrular.
+
+        Kurallar:
+        - allowed_subtypes boşsa (profile yok) → None
+        - subtype None / boş string / "null" → None
+        - allowed_subtypes içindeyse → subtype
+        - dışındaysa → None  (fuzzy match yok — güvenli taraf)
+        """
+        if not allowed_subtypes:
+            return None
+        if not subtype:
+            return None
+        candidate = str(subtype).strip().lower()
+        if candidate in ("null", "none", ""):
+            return None
+        if candidate in allowed_subtypes:
+            return candidate
+        return None
+
+    # =====================================================
+    # LLM
+    # =====================================================
+
     def _classify_with_llm(
         self,
         text: str,
+        allowed_subtypes: list[str] | None = None,
     ) -> dict[str, Any]:
 
-        system_prompt = """
+        # ── Subtype bölümü: yalnız profile mevcutsa eklenir ──────────────
+        if allowed_subtypes:
+            subtype_list = "\n".join(
+                f"  {s}" for s in allowed_subtypes
+            )
+            subtype_section = f"""
+
+DOCUMENT_SUBTYPE için SADECE aşağıdaki değerlerden birini seç
+(bunlar aktif kurum profilinin kabul ettiği evrak türleridir):
+
+{subtype_list}
+
+Belge bu türlerden hiçbirine güvenilir biçimde uymuyorsa null döndür.
+Tahmin etme. document_type ve process_intent ile semantik tutarlılığı gözet.
+Eğer evrak bilgi talebi içermiyorsa bilgi_edinme seçme.
+"""
+            subtype_field_example = '"document_subtype": "bilgi_edinme",'
+            subtype_evidence_comment = (
+                '\n        {\n'
+                '            "field": "document_subtype",\n'
+                '            "text": "kaynak metindeki destekleyici ifade"\n'
+                '        },'
+            )
+        else:
+            subtype_section = ""
+            subtype_field_example = '"document_subtype": null,'
+            subtype_evidence_comment = ""
+        # ─────────────────────────────────────────────────────────────────
+
+        system_prompt = f"""
 Sen kamu kurumlarına gelen evrakları sınıflandıran
 bir evrak analiz sistemisin.
 
@@ -260,7 +387,7 @@ izin_talebi
 bildirim
 cevap
 iletim
-diger
+diger{subtype_section}
 
 KESİN KURALLAR:
 
@@ -285,20 +412,21 @@ KESİN KURALLAR:
 
 SADECE:
 
-{
+{{
     "document_type": "dilekce",
+    {subtype_field_example}
     "process_intent": "bilgi_talebi",
-    "evidence": [
-        {
+    "evidence": [{subtype_evidence_comment}
+        {{
             "field": "subject",
             "text": "kaynak metindeki ifade"
-        },
-        {
+        }},
+        {{
             "field": "request",
             "text": "kaynak metindeki ifade"
-        }
+        }}
     ]
-}
+}}
 """
 
         user_prompt = f"""
@@ -551,6 +679,10 @@ Evrakı sınıflandır.
                 document_type
             ),
 
+            "document_subtype": (
+                result.get("document_subtype")
+            ),
+
             "process_intent": (
                 process_intent
             ),
@@ -711,6 +843,7 @@ Evrakı sınıflandır.
 
         allowed_fields = {
             "document_type",
+            "document_subtype",
             "process_intent",
             "subject",
             "request",
@@ -1145,6 +1278,7 @@ Evrakı sınıflandır.
 
         return {
             "document_type": "diger",
+            "document_subtype": None,
             "process_intent": "diger",
             "subject_excerpt": None,
             "request_excerpt": None,

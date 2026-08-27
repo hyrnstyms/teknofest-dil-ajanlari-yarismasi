@@ -14,6 +14,7 @@ from backend.app.agents.writing_agent import WritingAgent
 from backend.app.agents.quality_agent import QualityAgent
 
 from backend.app.llm.factory import create_llm_client
+from backend.app.institutions.profile_loader import load_institution_profile
 
 class KamuaiWorkflow:
     def __init__(self, institution: str = "kaymakamlik"):
@@ -30,7 +31,16 @@ class KamuaiWorkflow:
         self.legal_llm = create_llm_client(
             "legal_agent"
         )
-        self.doc_agent = DocumentAgent(llm=self.llm)
+
+        try:
+            profile = load_institution_profile(institution)
+        except Exception:
+            profile = None
+
+        self.doc_agent = DocumentAgent(
+            llm=self.llm,
+            institution_profile=profile,
+        )
         self.extract_agent = ExtractionAgent(llm=self.llm)
         self.legal_agent = LegalAgent(llm=self.legal_llm)
         self.document_retriever = self.legal_agent.retriever
@@ -156,6 +166,7 @@ class KamuaiWorkflow:
         def _run(s: DocumentState):
             doc_ctx = s.document
             dtype = doc_ctx.get("document_type", "")
+            dsubtype = doc_ctx.get("document_subtype", None)
             intent = doc_ctx.get("process_intent", "")
             ext = s.extraction.get("fields", {})
             leg = s.legal_analysis
@@ -164,7 +175,8 @@ class KamuaiWorkflow:
                 document_type=dtype,
                 process_intent=intent,
                 extracted_fields=ext,
-                legal_analysis=leg
+                legal_analysis=leg,
+                document_subtype=dsubtype
             )
             return {"missing_fields": res}
         return self._measure_time(_run, state, "missing_field_agent")

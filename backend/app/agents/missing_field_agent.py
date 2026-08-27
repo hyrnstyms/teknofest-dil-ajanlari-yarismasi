@@ -35,7 +35,8 @@ class MissingFieldAgent:
         document_type: str,
         process_intent: str,
         extracted_fields: Dict[str, Any],
-        legal_analysis: Dict[str, Any] = None
+        legal_analysis: Dict[str, Any] = None,
+        document_subtype: str | None = None
     ) -> Dict[str, Any]:
         
         result = {
@@ -53,7 +54,13 @@ class MissingFieldAgent:
         process_intent = process_intent or ""
         
         # 1. Find the rule
-        rule = REQUIREMENT_RULES.get((document_type, process_intent))
+        rule = None
+        if document_subtype:
+            rule = REQUIREMENT_RULES.get((document_subtype, process_intent))
+            if not rule:
+                rule = REQUIREMENT_RULES.get((document_subtype, "*"))
+        if not rule:
+            rule = REQUIREMENT_RULES.get((document_type, process_intent))
         if not rule:
             rule = REQUIREMENT_RULES.get((document_type, "*"))
         if not rule:
