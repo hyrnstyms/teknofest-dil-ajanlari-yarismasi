@@ -123,6 +123,7 @@ class CaseIntelligenceContext(BaseModel):
     missing_fields: dict[str, Any] = Field(default_factory=dict)
     summary: dict[str, Any] = Field(default_factory=dict)
     routing: dict[str, Any] = Field(default_factory=dict)
+    clarification: dict[str, Any] = Field(default_factory=dict)
     department_action: DepartmentActionContext | None = None
     workflow_status: str | None = None
     as_of: str | None = None

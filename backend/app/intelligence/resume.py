@@ -30,11 +30,29 @@ def _as_field_evidence(value: Any, source: str = "citizen_response") -> dict[str
 def merge_citizen_evidence(
     extraction: dict[str, Any],
     citizen: CitizenResponse,
+    requested_fields: list[str] | None = None,
 ) -> dict[str, Any]:
     merged = dict(extraction or {})
     fields = dict(merged.get("fields") or {})
     for key, value in (citizen.fields or {}).items():
+        if requested_fields is not None and key not in requested_fields:
+            continue
+        
+        existing = fields.get(key)
+        # Prevent silent overwrite of a contradictory validated field
+        if existing and isinstance(existing, dict) and existing.get("validated") and existing.get("value"):
+            if str(existing.get("value")).strip().lower() != str(value).strip().lower():
+                # Contradiction: do not overwrite silently. Mark for human review.
+                fields[key] = {
+                    "value": f"{existing['value']} (Vatandaş itirazı: {value})",
+                    "status": "uncertain",
+                    "validated": False,
+                    "source": "contradiction_review_required"
+                }
+                continue
+                
         fields[key] = _as_field_evidence(value)
+        
     if citizen.selected_option:
         option = citizen.selected_option
         if option in PERMIT_DEPARTMENT_BY_OPTION:
@@ -74,7 +92,10 @@ def resume_after_citizen_info(
     routing_agent = routing_agent or RoutingAgent(institution=institution_id)
     clarification_agent = clarification_agent or ClarificationAgent()
 
-    extraction = merge_citizen_evidence(context.extraction, citizen)
+    clarification_prior = context.clarification or {}
+    requested_fields = clarification_prior.get("requested_fields")
+    
+    extraction = merge_citizen_evidence(context.extraction, citizen, requested_fields)
     extracted_fields = extraction.get("fields") or {}
     document = dict(context.document or {})
     document_type = document.get("document_type") or ""
