@@ -69,6 +69,7 @@ from backend.app.cases.errors import (
     verified_department_action_required,
     version_conflict,
 )
+from backend.app.cases.chain_matching import assign_matching_chain
 from backend.app.cases.notifications import NotificationService
 from backend.app.cases.workflow import CaseWorkflowService
 from backend.app.db.case_models import (
@@ -190,6 +191,8 @@ class CaseEngine:
         from_status: str | None,
         to_status: str | None,
         payload: dict[str, Any] | None = None,
+        before_value: dict[str, Any] | None = None,
+        after_value: dict[str, Any] | None = None,
     ) -> CaseEvent:
         created_at = _now()
         latest_created_at = session.scalar(
@@ -213,6 +216,8 @@ class CaseEngine:
             to_status=to_status,
             payload=payload or {},
             created_at=created_at,
+            before_value=before_value,
+            after_value=after_value,
         )
         session.add(event)
         # Make the event visible to the next append in the same transaction so
@@ -314,6 +319,7 @@ class CaseEngine:
             "tracking_code": case.tracking_code,
             "analysis_id": case.analysis_id,
             "institution_id": case.institution_id,
+            "zincir_id": case.zincir_id,
             "source_type": case.source_type,
             "source_channel": case.source_channel,
             "originator_type": case.originator_type,
@@ -375,6 +381,7 @@ class CaseEngine:
             )
             session.add(case)
             session.flush()
+            assign_matching_chain(session, case)
             self._append_event(
                 session,
                 case,
@@ -598,6 +605,8 @@ class CaseEngine:
             "from_status": row.from_status,
             "to_status": row.to_status,
             "payload": row.payload or {},
+            "before_value": row.before_value,
+            "after_value": row.after_value,
         }
 
     def _serialize_citizen_request(self, row: CitizenRequest) -> dict[str, Any]:
@@ -679,6 +688,8 @@ class CaseEngine:
             from_status=from_status,
             to_status=target,
             payload=payload or {},
+            before_value={"workflow_status": from_status},
+            after_value={"workflow_status": target},
         )
 
     def mark_analysis_started(
@@ -777,6 +788,11 @@ class CaseEngine:
                     CaseAssignment.ended_at.is_(None),
                 )
             ).all()
+            before_routing = {
+                "department_code": case.current_department_code,
+                "workflow_status": case.workflow_status,
+                "active_assignment_ids": [item.id for item in active],
+            }
             now = _now()
             for item in active:
                 item.ended_at = now
@@ -800,6 +816,11 @@ class CaseEngine:
                 "assignment_id": assignment.id,
                 "routing_snapshot": routing_snapshot or {},
             }
+            after_routing = {
+                "department_code": department_code,
+                "workflow_status": STATUS_IN_DEPARTMENT,
+                "active_assignment_ids": [assignment.id],
+            }
             self._append_event(
                 session,
                 case,
@@ -809,6 +830,8 @@ class CaseEngine:
                 from_status=from_status,
                 to_status=STATUS_IN_DEPARTMENT,
                 payload=payload,
+                before_value=before_routing,
+                after_value=after_routing,
             )
             self._append_event(
                 session,
@@ -819,6 +842,8 @@ class CaseEngine:
                 from_status=from_status,
                 to_status=STATUS_IN_DEPARTMENT,
                 payload=payload,
+                before_value=before_routing,
+                after_value=after_routing,
             )
             self.notifications.store(
                 session,
@@ -1084,9 +1109,19 @@ class CaseEngine:
                     or not grounded_action.verified
                 ):
                     raise verified_department_action_required()
+            before_draft = {
+                "status": draft.status,
+                "approved_by_user_id": draft.approved_by_user_id,
+                "approved_at": _iso(draft.approved_at),
+            }
             draft.status = DRAFT_STATUS_APPROVED
             draft.approved_by_user_id = user.id
             draft.approved_at = _now()
+            after_draft = {
+                "status": draft.status,
+                "approved_by_user_id": draft.approved_by_user_id,
+                "approved_at": _iso(draft.approved_at),
+            }
             if draft.draft_type == "OFFICIAL_RESPONSE":
                 self._transition(session, case, STATUS_WAITING_FINAL_APPROVAL, EVENT_DRAFT_SUBMITTED, user, payload={"draft_id": draft.id})
             else:
@@ -1100,6 +1135,8 @@ class CaseEngine:
                 from_status=case.workflow_status,
                 to_status=case.workflow_status,
                 payload={"draft_id": draft.id},
+                before_value=before_draft,
+                after_value=after_draft,
             )
             return {"draft": self._serialize_draft(draft), "case": self.serialize_case(case)}
 
