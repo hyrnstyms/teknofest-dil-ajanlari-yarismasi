@@ -215,9 +215,13 @@ class KamuaiWorkflow:
             if retrieval_warning:
                 res.setdefault("warnings", []).append(retrieval_warning)
 
-            # Transfer tespiti: iletim intent'i veya kurumlar arası evrak türü
+            # Transfer tespiti: hem process_intent=="iletim" HEM DE dtype=="kurumlar_arasi_yazi"
+            # olmalı (AND). OR kullanmak: intent=cevap + dtype=kurumlar_arasi_yazi gibi
+            # kombinasyonlarda transfer_required=True üretir — yanlış "Belediyeye Gönder"
+            # butonu gösterir. Orijinal görev tanımı: "process_intent=='iletim' VE
+            # evrak_turu=='kurumlar_arasi_yazi' ise" → AND zorunlu.
             transfer_routing: dict = {}
-            if intent == "iletim" or dtype == "kurumlar_arasi_yazi":
+            if intent == "iletim" and dtype == "kurumlar_arasi_yazi":
                 hedef = _detect_target_institution(s.raw_text)
                 try:
                     transfer_routing = TransferAgent().transfer(
@@ -225,7 +229,7 @@ class KamuaiWorkflow:
                         hedef_kurum=hedef,
                         konu=sub or dtype or "Bilinmiyor",
                         evrak_ozeti=req or sub or dtype or "Bilinmiyor",
-                        process_intent=intent or "iletim",
+                        process_intent=intent,
                     )
                 except Exception as exc:
                     transfer_routing = {

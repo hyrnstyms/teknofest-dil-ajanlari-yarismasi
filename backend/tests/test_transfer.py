@@ -142,13 +142,93 @@ class TestWorkflowTransferDetection:
         from backend.app.agents.transfer_agent import TransferAgent
 
         with patch.object(TransferAgent, "transfer", wraps=None) as mock_transfer:
-            # Dilekçe için workflow çalıştırmak yerine sadece tetikleyiciyi test edelim
-            # (document_type=dilekce, intent=basvuru → transfer bloğuna girmiyor)
+            # Dilekçe+başvuru: GUARD koşulu intent=="iletim" AND dtype=="kurumlar_arasi_yazi"
+            # İkisi de sağlanmıyor → transfer bloğuna girmiyor.
             dtype = "dilekce"
             intent = "basvuru"
-            should_trigger = intent == "iletim" or dtype == "kurumlar_arasi_yazi"
+            should_trigger = intent == "iletim" and dtype == "kurumlar_arasi_yazi"  # AND
             assert should_trigger is False
             mock_transfer.assert_not_called()
+
+    def test_and_guard_kurumlar_arasi_cevap_not_triggered(self):
+        """
+        EDGE CASE FIX (Madde 5): dtype=kurumlar_arasi_yazi + intent=cevap
+        → transfer TETIKLENMEMELI.
+        Önceki OR koşuluyla True dönüyordu → yanlış 'Belediyeye Gönder' butonu.
+        AND koşuluyla artık transfer_routing boş kalır.
+        """
+        from unittest.mock import MagicMock
+        from backend.app.graph.workflow import KamuaiWorkflow
+        from backend.app.graph.state import DocumentState
+
+        wf = KamuaiWorkflow.__new__(KamuaiWorkflow)
+        wf.institution = "kaymakamlik"
+        wf.document_retriever = MagicMock()
+        wf.document_retriever.search_documents.return_value = []
+
+        class FakeRoutingAgent:
+            def route(self, *a, retrieved_documents=None, **kw):
+                return {"recommended_unit": "Yazı İşleri"}
+
+        wf.routing_agent = FakeRoutingAgent()
+
+        result = wf.node_routing(DocumentState(
+            raw_text="Örenli Belediyesine cevap yazısı.",
+            document={
+                "document_type": "kurumlar_arasi_yazi",
+                "process_intent": "cevap",  # ← iletim DEĞİL
+                "subject_excerpt": "T", "request_excerpt": "T",
+            },
+            extraction={"fields": {}},
+        ))
+        tr = result.get("transfer_routing", {})
+        assert not tr.get("transfer_required"), (
+            "kurumlar_arasi_yazi+cevap yanlışlıkla transfer_required=True döndürüyor!"
+        )
+
+    def test_and_guard_kurumlar_arasi_iletim_triggered(self):
+        """
+        Pozitif senaryo regresyon: dtype=kurumlar_arasi_yazi + intent=iletim
+        → AND koşulundan sonra da hâlâ transfer_required=True.
+        """
+        from unittest.mock import MagicMock
+        from backend.app.graph.workflow import KamuaiWorkflow
+        from backend.app.graph.state import DocumentState
+
+        wf = KamuaiWorkflow.__new__(KamuaiWorkflow)
+        wf.institution = "kaymakamlik"
+        wf.document_retriever = MagicMock()
+        wf.document_retriever.search_documents.return_value = []
+
+        class FakeRoutingAgent:
+            def route(self, *a, retrieved_documents=None, **kw):
+                return {"recommended_unit": "Yazı İşleri"}
+
+        wf.routing_agent = FakeRoutingAgent()
+
+        result = wf.node_routing(DocumentState(
+            raw_text="Örenli Belediyesine iletilecek evrak.",
+            document={
+                "document_type": "kurumlar_arasi_yazi",
+                "process_intent": "iletim",  # ← doğru intent
+                "subject_excerpt": "Afet", "request_excerpt": "İletim",
+            },
+            extraction={"fields": {}},
+        ))
+        tr = result.get("transfer_routing", {})
+        assert tr.get("transfer_required") is True, (
+            f"Pozitif senaryo regresyonu: transfer_required={tr.get('transfer_required')}"
+        )
+
+    def test_and_guard_dilekce_iletim_not_triggered(self):
+        """
+        dtype=dilekce + intent=iletim → AND sağlanmıyor → transfer yok.
+        (dilekçeyi başka kuruma iletmek, kurumlar_arasi_yazi değil.)
+        """
+        dtype = "dilekce"
+        intent = "iletim"
+        should_trigger = intent == "iletim" and dtype == "kurumlar_arasi_yazi"
+        assert should_trigger is False
 
 
 # ---------------------------------------------------------------------------
