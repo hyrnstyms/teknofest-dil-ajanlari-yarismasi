@@ -21,6 +21,7 @@ def test_quality_pass(agent):
         human_review={"required": False}
     )
     assert res["status"] == "pass"
+    assert res["decision"] == "continue"
 
 def test_quality_sources_only_warning(agent):
     res = agent.check_quality(
@@ -35,6 +36,7 @@ def test_quality_sources_only_warning(agent):
     )
     assert res["status"] == "warning"
     assert res["checks"]["legal_evidence"]["status"] == "warning"
+    assert res["decision"] == "human_review"
 
 
 def test_quality_flags_unverified_outcome_claim_for_human_review(agent):
@@ -52,8 +54,9 @@ def test_quality_flags_unverified_outcome_claim_for_human_review(agent):
         human_review={"required": False},
     )
 
-    assert res["checks"]["unverified_outcome_claim"]["status"] == "warning"
+    assert res["checks"]["unverified_outcome_claim"]["status"] == "fail"
     assert res["requires_human_review"] is True
+    assert res["decision"] == "block"
 
 
 def test_quality_flags_fake_reference_when_source_fields_are_missing(agent):
@@ -88,6 +91,7 @@ def test_quality_contradictory_missing_statuses(agent):
     )
     assert res["status"] == "fail"
     assert res["checks"]["missing_fields_consistency"]["status"] == "fail"
+    assert res["decision"] == "block"
 
 def test_quality_ambiguous_routing(agent):
     res = agent.check_quality(
@@ -107,6 +111,7 @@ def test_quality_ambiguous_routing(agent):
     assert res["status"] == "warning"
     assert res["checks"]["routing"]["status"] == "warning"
     assert res["requires_human_review"] is True
+    assert res["decision"] == "human_review"
 
 def test_quality_summary_inconsistency(agent):
     res = agent.check_quality(
@@ -168,6 +173,42 @@ def test_quality_invalid_unit_fails(agent):
         human_review={"required": False}
     )
     assert res["checks"]["routing"]["status"] == "fail"
+    assert res["decision"] == "block"
+
+def test_quality_critical_uncertain_is_human_review(agent):
+    res = agent.check_quality(
+        document={"document_type": "dilekce", "process_intent": "basvuru"},
+        extraction={"fields": {"name": {"value": "test", "evidence": "text"}}},
+        legal_analysis={"evidence": ["valid evidence"]},
+        missing_fields={
+            "present_fields": ["person_name"],
+            "missing_fields": [],
+            "uncertain_fields": ["signature_present"],
+            "needs_human_review": False
+        },
+        summary={"short_summary": "test"},
+        routing={"recommended_unit": _VALID_UNIT, "needs_human_review": False},
+        draft={"draft_generation_mode": "normal"},
+        human_review={"required": False}
+    )
+    assert res["checks"]["missing_fields"]["status"] == "warning"
+    assert res["requires_human_review"] is True
+    assert res["decision"] == "human_review"
+
+def test_quality_belediye_isolation():
+    belediye_agent = QualityAgent(institution="belediye")
+    res = belediye_agent.check_quality(
+        document={"document_type": "dilekce", "process_intent": "basvuru"},
+        extraction={"fields": {"name": {"value": "test", "evidence": "text"}}},
+        legal_analysis={"evidence": ["valid evidence"]},
+        missing_fields={"present_fields": ["name"], "missing_fields": [], "uncertain_fields": [], "needs_human_review": False},
+        summary={"short_summary": "test"},
+        routing={"recommended_unit": "Zabıta Müdürlüğü", "needs_human_review": False},
+        draft={"draft_generation_mode": "normal"},
+        human_review={"required": False}
+    )
+    assert res["checks"]["routing"]["status"] == "pass"
+    assert res["decision"] == "continue"
 
 
 def test_quality_rendered_preview_with_placeholders_is_warning(agent):

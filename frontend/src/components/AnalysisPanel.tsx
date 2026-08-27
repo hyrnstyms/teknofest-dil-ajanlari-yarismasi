@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AlertTriangle, BookOpen, FileSearch, ListChecks, Route, Sparkles, UserCheck } from "lucide-react";
 import type { DocumentState, LegalEvidence } from "../types";
 import { HumanReviewPanel } from "./cards/HumanReviewPanel";
+import { formatDisplayName, formatFieldName, formatDocumentType, formatProcessIntent, formatReviewStatus } from "../utils/presentation";
 
 interface Props {
   state: DocumentState;
@@ -46,19 +47,19 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
           <>
             <section className="analysis-section">
               <div className="analysis-heading"><FileSearch size={17} /><h3>Evrak Analizi</h3></div>
-              <InfoRow label="Evrak türü" value={state.document?.document_type || "Belirlenemedi"} />
-              {state.document?.process_intent && <InfoRow label="İşlem niyeti" value={state.document.process_intent} />}
+              <InfoRow label="Evrak türü" value={formatDocumentType(state.document?.document_type)} />
+              {state.document?.process_intent && <InfoRow label="İşlem niyeti" value={formatProcessIntent(state.document.process_intent)} />}
               {state.summary?.short_summary && <div className="analysis-content-block"><span>Özet</span><p>{state.summary.short_summary}</p></div>}
             </section>
             <section className="analysis-section">
               <div className="analysis-heading"><ListChecks size={17} /><h3>Eksik Bilgiler</h3></div>
-              {missingFields.length > 0 ? <><span className="analysis-field-label">Eksik alanlar</span><ul className="compact-list warning-list">{missingFields.map((field) => <li key={field}>{humanize(field)}</li>)}</ul></> : <p className="panel-positive">Zorunlu eksik bilgi tespit edilmedi.</p>}
-              {uncertainFields.length > 0 && <><span className="analysis-field-label">Belirsiz alanlar</span><ul className="compact-list uncertain-list">{uncertainFields.map((field: string) => <li key={field}>{humanize(field)}</li>)}</ul></>}
+              {missingFields.length > 0 ? <><span className="analysis-field-label">Eksik alanlar</span><ul className="compact-list warning-list">{missingFields.map((field) => <li key={field}>{formatFieldName(field)}</li>)}</ul></> : <p className="panel-positive">Zorunlu eksik bilgi tespit edilmedi.</p>}
+              {uncertainFields.length > 0 && <><span className="analysis-field-label">Belirsiz alanlar</span><ul className="compact-list uncertain-list">{uncertainFields.map((field: string) => <li key={field}>{formatFieldName(field)}</li>)}</ul></>}
             </section>
             {extractedFields.length > 0 && (
               <section className="analysis-section">
                 <div className="analysis-heading"><Sparkles size={17} /><h3>Çıkarılan Bilgiler</h3></div>
-                <dl className="extracted-list">{extractedFields.map(([key, field]) => <React.Fragment key={key}><dt>{humanize(key)}</dt><dd>{formatField(field)}</dd></React.Fragment>)}</dl>
+                <dl className="extracted-list">{extractedFields.map(([key, field]) => <React.Fragment key={key}><dt>{formatFieldName(key)}</dt><dd>{formatField(field)}</dd></React.Fragment>)}</dl>
               </section>
             )}
           </>
@@ -96,7 +97,7 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
             <section className="analysis-section review-summary">
               <div className="analysis-heading"><UserCheck size={17} /><h3>Personel İncelemesi</h3></div>
               <InfoRow label="İnceleme gerekli" value={state.human_review?.required ? "Evet" : "Hayır"} />
-              <InfoRow label="Durum" value={state.human_review?.status || "Bilinmiyor"} />
+              <InfoRow label="Durum" value={formatReviewStatus(state.human_review?.status)} />
               <p className="review-disclaimer">AI tarafından oluşturulan taslak. Resmî işlem öncesinde personel kontrolü gerektirir.</p>
             </section>
             <HumanReviewPanel review={state.human_review} analysisId={state.analysis_id || state.document_id} onUpdate={onUpdate} />
@@ -107,7 +108,7 @@ export const AnalysisPanel: React.FC<Props> = ({ state, onUpdate }) => {
   );
 };
 
-const InfoRow: React.FC<{ label: string; value: string }> = ({ label, value }) => <div className="analysis-info-row"><span>{label}</span><strong>{humanize(value)}</strong></div>;
+const InfoRow: React.FC<{ label: string; value: string }> = ({ label, value }) => <div className="analysis-info-row"><span>{label}</span><strong>{value}</strong></div>;
 
 function getLegalEvidence(state: DocumentState): LegalEvidence[] {
   const analysis = state.legal_analysis as Record<string, unknown>;
@@ -134,5 +135,3 @@ function formatScore(value: unknown): string {
   if (!Number.isFinite(numeric)) return String(value);
   return numeric <= 1 ? `%${Math.round(numeric * 100)}` : String(Math.round(numeric));
 }
-const FIELD_LABELS: Record<string, string> = { person_name: "Ad Soyad", gonderen_adi: "Ad Soyad", address: "Adres", adres: "Adres", signature_present: "İmza", imza: "İmza", date: "Tarih", tarih: "Tarih", subject: "Konu", konu: "Konu", request: "Talep", talep_metni: "Talep" };
-function humanize(value: string): string { return FIELD_LABELS[value] || value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }

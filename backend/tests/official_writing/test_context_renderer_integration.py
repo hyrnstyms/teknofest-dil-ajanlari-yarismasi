@@ -83,11 +83,12 @@ def _draft_via_workflow_node(
     routing: dict,
     summary: str,
     requested_action: str,
+    process_intent: str = None,
 ) -> dict:
     workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
     workflow.writing_agent = agent
     result = workflow.node_writing(DocumentState(
-        document={"process_intent": requested_action},
+        document={"process_intent": process_intent or requested_action},
         extraction=extraction,
         missing_fields={"missing_fields": []},
         summary={"short_summary": summary},
@@ -123,6 +124,7 @@ def test_normal_cevap_yazisi_full_chain():
         routing=state["routing"],
         summary="Mehmet Kaya bilgi edinme başvurusunda bulunmuştur.",
         requested_action="Başvuru sahibine cevap verilmesi",
+        process_intent="basvuru",
     )
     quality = _quality(extraction, state["routing"], draft)
 
@@ -151,6 +153,7 @@ def test_missing_official_metadata_still_renders_preview():
         routing=state["routing"],
         summary="İnceleme süreci hakkında genel bilgi verilecektir.",
         requested_action="Bilgilendirme yapılması",
+        process_intent="bildirim",
     )
     quality = _quality(extraction, state["routing"], draft)
 
@@ -189,6 +192,7 @@ def test_ust_yazi_uses_nested_recipient_and_routing_profile():
         routing=state["routing"],
         summary="Ekli sağlık raporu ilgili kuruma iletilecektir.",
         requested_action="Ekli olarak ilgili kuruma iletilmesi",
+        process_intent="sevk",
     )
     quality = _quality(extraction, state["routing"], draft)
 

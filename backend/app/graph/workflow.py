@@ -8,12 +8,14 @@ from backend.app.agents.document_agent import DocumentAgent
 from backend.app.agents.extraction_agent import ExtractionAgent
 from backend.app.agents.legal_agent import LegalAgent
 from backend.app.agents.missing_field_agent import MissingFieldAgent
-from backend.app.agents.summary_agent import SummaryAgent
-from backend.app.agents.routing_agent import RoutingAgent
-from backend.app.agents.writing_agent import WritingAgent
+from backend.app.agents.priority_agent import PriorityAgent
 from backend.app.agents.quality_agent import QualityAgent
+from backend.app.agents.routing_agent import RoutingAgent
+from backend.app.agents.summary_agent import SummaryAgent
+from backend.app.agents.writing_agent import WritingAgent, WritingContext
 
 from backend.app.llm.factory import create_llm_client
+from backend.app.institutions.profile_loader import load_institution_profile
 
 class KamuaiWorkflow:
     def __init__(self, institution: str = "kaymakamlik"):
@@ -30,7 +32,17 @@ class KamuaiWorkflow:
         self.legal_llm = create_llm_client(
             "legal_agent"
         )
-        self.doc_agent = DocumentAgent(llm=self.llm)
+
+        try:
+            profile = load_institution_profile(institution)
+        except Exception:
+            profile = None
+        self.institution_profile = profile
+
+        self.doc_agent = DocumentAgent(
+            llm=self.llm,
+            institution_profile=self.institution_profile,
+        )
         self.extract_agent = ExtractionAgent(llm=self.llm)
         self.legal_agent = LegalAgent(llm=self.legal_llm)
         self.document_retriever = self.legal_agent.retriever
@@ -38,7 +50,7 @@ class KamuaiWorkflow:
         self.summary_agent = SummaryAgent(llm=self.llm)
         self.routing_agent = RoutingAgent(institution=institution)
         self.writing_agent = WritingAgent(llm=self.llm)
-        self.quality_agent = QualityAgent()
+        self.quality_agent = QualityAgent(institution=institution)
 
         self.graph = self._build_graph()
 
@@ -156,6 +168,7 @@ class KamuaiWorkflow:
         def _run(s: DocumentState):
             doc_ctx = s.document
             dtype = doc_ctx.get("document_type", "")
+            dsubtype = doc_ctx.get("document_subtype", None)
             intent = doc_ctx.get("process_intent", "")
             ext = s.extraction.get("fields", {})
             leg = s.legal_analysis
@@ -164,7 +177,9 @@ class KamuaiWorkflow:
                 document_type=dtype,
                 process_intent=intent,
                 extracted_fields=ext,
-                legal_analysis=leg
+                legal_analysis=leg,
+                document_subtype=dsubtype,
+                institution_profile=self.institution_profile
             )
             return {"missing_fields": res}
         return self._measure_time(_run, state, "missing_field_agent")
@@ -228,38 +243,78 @@ class KamuaiWorkflow:
                 "bilgi_talebi": "bilgi verilmesi",
             }.get(req_act, req_act)
             mf = s.missing_fields.get("missing_fields", [])
+            uncertain = s.missing_fields.get("uncertain_fields", [])
             ext = s.extraction.get("fields", {})
             
             # Cevap yazısının muhatabı, evrakın hitap ettiği kurum değil,
             # başvuru sahibidir. Kurum muhatabı yalnızca başvuru sahibi
             # çıkarılamayan durumlar için fallback olarak kalır.
             sender = s.routing.get("recommended_unit", None)
-            recipient = (
-                ext.get("person_name", {}).get("value")
-                or ext.get("sender_unit", {}).get("value")
-                or ext.get("recipient", {}).get("value")
-                or ext.get("institution", {}).get("value")
-            )
             
-            # Gather verified facts
+            # Recipient hierarchy
+            recipient = None
+            if ext.get("person_name", {}).get("value") and ext.get("person_name", {}).get("validated"):
+                recipient = ext["person_name"]["value"]
+            elif ext.get("sender_unit", {}).get("value") and ext.get("sender_unit", {}).get("validated"):
+                recipient = ext["sender_unit"]["value"]
+            elif ext.get("recipient", {}).get("value") and ext.get("recipient", {}).get("validated"):
+                recipient = ext["recipient"]["value"]
+            elif ext.get("institution", {}).get("value") and ext.get("institution", {}).get("validated"):
+                recipient = ext["institution"]["value"]
+
+            # Gather verified facts from source-grounded extraction
             facts = []
-            if req_act:
-                facts.append(f"İşlem Türü: {req_act}")
+            
+            field_labels = {
+                "person_name": "Başvuru Sahibi",
+                "document_date": "Belge Tarihi",
+                "document_number": "Belge Sayısı",
+                "subject": "Konu",
+                "request": "Talep",
+                "institution": "Kurum",
+                "sender_unit": "Gönderen",
+                "recipient": "Muhatap",
+                "national_id": "TCKN",
+                "phone": "Telefon",
+                "email": "E-posta",
+                "address": "Adres",
+            }
+            
+            for key, meta in ext.items():
+                if isinstance(meta, dict) and meta.get("validated") and meta.get("value"):
+                    label = field_labels.get(key, key)
+                    facts.append(f"{label}: {meta['value']}")
+            
+            if sender:
+                facts.append(f"Doğrulanmış Hedef Birim: {sender}")
 
             legal_context = self._build_legal_context(s.legal_analysis)
             document_legal_references = self._extract_document_legal_references(
                 s.raw_text
             )
             
+            w_context: WritingContext = {
+                "institution_id": s.kurum_profili_id,
+                "document_type": s.document.get("document_type", ""),
+                "document_subtype": s.document.get("document_subtype"),
+                "process_intent": s.document.get("process_intent", ""),
+                "document_summary": summ or "Özet bulunamadı",
+                "requested_action": requested_action,
+                "extracted_fields": ext,
+                "verified_facts": facts,
+                "missing_fields": mf,
+                "uncertain_fields": uncertain,
+                "legal_evidence": s.legal_analysis.get("evidence_details", []),
+                "legal_context": legal_context,
+                "document_legal_references": document_legal_references,
+                "routing": s.routing,
+                "sender_unit": sender,
+                "recipient": recipient,
+                "institution_profile": None,
+            }
+            
             res = self.writing_agent.draft(
-                document_summary=summ or "Özet bulunamadı",
-                requested_action=requested_action,
-                missing_fields=mf,
-                verified_facts=facts,
-                legal_context=legal_context,
-                document_legal_references=document_legal_references,
-                recipient=recipient,
-                sender_unit=sender,
+                context=w_context,
                 state={
                     "extraction": s.extraction,
                     "routing": s.routing,
@@ -269,6 +324,7 @@ class KamuaiWorkflow:
                     "kurum_profili_id": s.kurum_profili_id,
                     "muhatap": s.muhatap,
                     "muhatap_turu": s.muhatap_turu,
+
                 }
             )
             return {"draft": res}

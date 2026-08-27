@@ -17,6 +17,7 @@ import json
 logger = logging.getLogger(__name__)
 
 from backend.app.graph.workflow import KamuaiWorkflow
+from backend.app.graph.state import build_legacy_state_view
 from backend.app.telemetry.service import telemetry_service
 from backend.app.telemetry.roi import calculate_roi_summary
 from backend.app.ingestion.document_loader import load_file
@@ -305,6 +306,8 @@ def analyze_text(req: AnalyzeRequest):
             final_state.setdefault("kurum_profili_id", req.institution)
         final_state["audit_history"] = audit_history
         final_state["created_at"] = datetime.utcnow().isoformat()
+        
+        final_state = build_legacy_state_view(final_state)
         
         # Telemetry extraction
         telemetry_service.extract_from_state(analysis_id, final_state)

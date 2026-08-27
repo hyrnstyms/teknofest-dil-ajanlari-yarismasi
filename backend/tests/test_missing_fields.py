@@ -1,9 +1,24 @@
 import pytest
 from backend.app.agents.missing_field_agent import MissingFieldAgent
 
+from backend.app.institutions.profile_loader import InstitutionProfile
+
 @pytest.fixture
 def agent():
     return MissingFieldAgent()
+
+@pytest.fixture
+def mock_profile():
+    return InstitutionProfile(
+        kurum_adi="Test Kurum",
+        kurum_turu="test",
+        evrak_turleri=[
+            {
+                "id": "bilgi_edinme",
+                "required_fields": ["person_name", "request"]
+            }
+        ]
+    )
 
 def test_missing_fields_happy_path(agent):
     # 1. bilgi edinme + adres mevcut
@@ -30,6 +45,23 @@ def test_missing_fields_happy_path(agent):
     assert res["needs_human_review"] is False
     assert res["field_results"]["signature_present"]["status"] == "present"
 
+def test_missing_fields_profile_driven(agent, mock_profile):
+    extracted = {
+        "person_name": {"value": "Mehmet Kaya"}
+    }
+    # For bilgi_edinme in mock_profile, required are person_name, request
+    res = agent.check_missing_fields("dilekce", "bilgi_talebi", extracted, document_subtype="bilgi_edinme", institution_profile=mock_profile)
+    assert res["requirement_source"] == "profile"
+    assert res["required_fields"] == ["person_name", "request"]
+    assert "request" in res["missing_fields"]
+    
+def test_missing_fields_profile_driven_fallback(agent, mock_profile):
+    extracted = {}
+    # sikayet not in mock_profile, so it should fallback to legacy dilekce + process_intent rules
+    res = agent.check_missing_fields("dilekce", "sikayet", extracted, document_subtype="sikayet", institution_profile=mock_profile)
+    assert res["requirement_source"] == "legacy_fallback"
+    assert "signature_present" in res["required_fields"]
+
 def test_missing_fields_address_missing(agent):
     # 2. bilgi edinme + adres eksik
     extracted = {
@@ -55,7 +87,7 @@ def test_missing_fields_signature_unknown(agent):
     assert res["needs_human_review"] is True
     assert res["warnings"] == []
     assert res["field_results"]["signature_present"]["status"] == "uncertain"
-    assert res["field_results"]["signature_present"]["reason"] == "Unknown status."
+    assert res["field_results"]["signature_present"]["reason"] == "Status is unknown."
 
 def test_missing_fields_signature_explicit_false(agent):
     # 4. signature explicitly false -> missing

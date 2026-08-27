@@ -42,9 +42,9 @@ class InstitutionProfile:
     """
     kurum_adi: str = ""
     kurum_turu: str = ""
-    birimler: list[str] = field(default_factory=list)
-    evrak_turleri: list[str] = field(default_factory=list)
-    yazi_turleri: list[str] = field(default_factory=list)
+    birimler: list[dict[str, Any]] = field(default_factory=list)
+    evrak_turleri: list[dict[str, Any]] = field(default_factory=list)
+    yazi_turleri: list[dict[str, Any]] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod

@@ -83,6 +83,8 @@ class TransferAgent:
               "yasal_dayanak": str,
               "warnings": list[str],
               "needs_human_review": bool,
+              "capability_type": str,
+              "execution_status": str,
             }
         """
         result: dict[str, Any] = {
@@ -98,6 +100,8 @@ class TransferAgent:
             "yasal_dayanak": "Resmî Yazışma Yönetmeliği",
             "warnings": [],
             "needs_human_review": False,
+            "capability_type": "recommendation",
+            "execution_status": "not_executed",
         }
 
         # 1. Hedef kurum profilini yükle

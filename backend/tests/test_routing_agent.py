@@ -367,10 +367,40 @@ def test_generic_ruhsat_does_not_force_health_routing():
         document_type="dilekce",
         process_intent="bilgi_talebi",
         subject="Ruhsat hakkında bilgi",
-        request_text="Ruhsat başvurumun durumunu öğrenmek istiyorum.",
+        request_text="Ruhsat başvurumun durumunu öğrenmek istiyorum. Şikayet ve itirazım yoktur.",
         extracted_fields={},
     )
 
     assert result["recommended_unit"] != "İlçe Sağlık Müdürlüğü"
     assert result["needs_human_review"] is True
     assert result["routing_score"] == 0
+
+def test_routing_subtype_beats_broad_type():
+    agent = RoutingAgent("belediye")
+    # Belediye profilinde "imar_talebi" -> İmar ve Şehircilik, "dilekce" -> Yazı İşleri (farz edelim)
+    res = agent.route(
+        document_type="dilekce",
+        process_intent="basvuru",
+        subject="İmar durumu",
+        request_text="İmar durumu belgesi",
+        extracted_fields={},
+        document_subtype="imar_talebi"
+    )
+    assert res["recommended_unit"] == "İmar ve Şehircilik Müdürlüğü"
+    assert res["score_breakdown"]["subtype_score"] == 30
+    assert res["score_breakdown"]["doc_type_score"] == 0
+
+def test_routing_subtype_none_uses_broad_type():
+    agent = RoutingAgent("belediye")
+    res = agent.route(
+        document_type="sikayet",
+        process_intent="sikayet",
+        subject="Çöp",
+        request_text="Çöp toplanmıyor",
+        extracted_fields={},
+        document_subtype=None
+    )
+    assert res["recommended_unit"] == "Temizlik İşleri Müdürlüğü"
+    assert res["score_breakdown"]["doc_type_score"] == 30
+    assert res["score_breakdown"]["subtype_score"] == 0
+

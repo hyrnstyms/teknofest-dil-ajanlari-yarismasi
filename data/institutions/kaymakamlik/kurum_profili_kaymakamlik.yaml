@@ -181,6 +181,12 @@ evrak_turleri:
     ad: "Vatandaş Dilekçesi"
     aciklama: "3071 sayılı Kanun kapsamında genel talep/şikayet dilekçesi"
     yasal_dayanak: "3071 sayılı Dilekçe Hakkının Kullanılmasına Dair Kanun"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - subject
+      - request
     tipik_hedef_birim:
       - "yazi_isleri"
       - "sydv"
@@ -190,6 +196,11 @@ evrak_turleri:
     ad: "Bilgi Edinme Başvurusu"
     aciklama: "4982 sayılı Kanun kapsamında bilgi/belge talebi"
     yasal_dayanak: "4982 sayılı Bilgi Edinme Hakkı Kanunu"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - request
     tipik_hedef_birim:
       - "yazi_isleri"
 
@@ -197,6 +208,13 @@ evrak_turleri:
     ad: "Kurumlar Arası Resmî Yazışma"
     aciklama: "Başka bir kamu kurumundan gelen üst yazı/talep"
     yasal_dayanak: "Resmî Yazışma Yönetmeliği"
+    required_fields:
+      - document_number
+      - document_date
+      - sender_unit
+      - recipient
+      - subject
+      - signature_present
     tipik_hedef_birim:
       - "yazi_isleri"
       - "tarim"
@@ -206,6 +224,13 @@ evrak_turleri:
     ad: "İhale İtiraz/Şikayet Dilekçesi"
     aciklama: "Kamu ihalesine ilişkin itiraz başvurusu"
     yasal_dayanak: "Kamu İhale Mevzuatı"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - subject
+      - request
+      - document_date
     tipik_hedef_birim:
       - "mal_mudurlugu"
       - "yazi_isleri"
@@ -214,6 +239,12 @@ evrak_turleri:
     ad: "Sosyal Yardım Başvurusu"
     aciklama: "Maddi destek / muhtaçlık başvurusu"
     yasal_dayanak: "SYDV mevzuatı"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - phone
+      - request
     tipik_hedef_birim:
       - "sydv"
 
@@ -221,6 +252,10 @@ evrak_turleri:
     ad: "Tapu/Kadastro İşlem Başvurusu"
     aciklama: "Taşınmaz işlemlerine ilişkin başvuru"
     yasal_dayanak: "Tapu Kanunu"
+    required_fields:
+      - person_name
+      - signature_present
+      - request
     tipik_hedef_birim:
       - "tapu"
 

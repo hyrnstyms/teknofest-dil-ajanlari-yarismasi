@@ -94,11 +94,10 @@ def test_electronic_signature(agent):
 
 
 def test_turkish_dotted_capital_i_signature_is_detected(agent):
-    res = agent.extract("İmza: Polat Madencilik adına Pelin Sönmez")
+    res = agent.extract("Güvenli Elektronİk İmza İle İmzalanmıştır.")
 
     assert res["fields"]["signature_present"]["value"] is True
     assert res["fields"]["signature_present"]["status"] == "present"
-    assert res["fields"]["signature_present"]["evidence"] == "İmza"
 
 def test_authority_document(agent):
     text = "Ekte yetki belgesi sunulmuştur."

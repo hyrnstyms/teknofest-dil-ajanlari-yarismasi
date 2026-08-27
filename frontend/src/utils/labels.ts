@@ -1,42 +1,60 @@
-export const STATUS_LABELS: Record<string, string> = {
-  pending_review: "İnceleme Bekliyor",
-  approved: "Onaylandı",
-  edited: "Düzenlendi",
-  rejected: "Reddedildi",
-  pass: "Başarılı",
-  warning: "Uyarı",
-  fail: "Başarısız",
-};
-
-export const DOC_TYPE_LABELS: Record<string, string> = {
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   dilekce: "Dilekçe",
   resmi_yazi: "Resmî Yazı",
+  form: "Form",
+  tutanak: "Tutanak",
+  rapor: "Rapor",
+  karar: "Karar",
+  tebligat: "Tebligat",
+  eposta: "E-posta",
+  diger: "Diğer",
+};
+
+export const DOCUMENT_SUBTYPE_LABELS: Record<string, string> = {
+  bilgi_edinme: "Bilgi Edinme Başvurusu",
+  sosyal_yardim_basvuru: "Sosyal Yardım Başvurusu",
+  tapu_kadastro_basvuru: "Tapu ve Kadastro Başvurusu",
+  ihale_itirazi: "İhale İtirazı",
+  kurumlar_arasi_yazi: "Kurumlar Arası Yazı",
+  ruhsat_basvurusu: "Ruhsat Başvurusu",
+  imar_talebi: "İmar Talebi",
+  sikayet: "Şikâyet",
+};
+
+export const PROCESS_INTENT_LABELS: Record<string, string> = {
+  basvuru: "Başvuru",
   bilgi_talebi: "Bilgi Talebi",
   belge_talebi: "Belge Talebi",
-  basvuru: "Başvuru",
-  sikayet: "Şikâyet",
   itiraz: "İtiraz",
-  eksik_bilgi_talebi: "Eksik Bilgi Talebi",
-  cevap_yazisi: "Cevap Yazısı",
+  izin_talebi: "İzin Talebi",
+  bildirim: "Bildirim",
+  cevap: "Cevap",
+  iletim: "İletim",
+};
+
+export const DRAFT_TYPE_LABELS: Record<string, string> = {
   ust_yazi: "Üst Yazı",
+  cevap_yazisi: "Cevap Yazısı",
+  bilgilendirme_metni: "Bilgilendirme Metni",
+  eksik_bilgi_talebi: "Eksik Bilgi Talebi",
 };
 
 export const FIELD_LABELS: Record<string, string> = {
-  person_name: "Ad Soyad",
-  national_id: "T.C. Kimlik Numarası",
-  address: "Adres",
-  phone: "Telefon",
-  email: "E-posta",
-  document_date: "Belge Tarihi",
+  signature_present: "İmza Durumu",
+  authority_document_present: "Yetki Belgesi",
+  person_name: "Başvuru Sahibi",
   document_number: "Belge Sayısı",
-  institution: "Kurum",
+  document_date: "Belge Tarihi",
   sender_unit: "Gönderen Birim",
   recipient: "Muhatap",
   subject: "Konu",
   request: "Talep",
+  address: "Adres",
+  phone: "Telefon",
+  email: "E-posta",
   attachments: "Ekler",
-  signature_present: "İmza Durumu",
-  authority_document_present: "Yetki Belgesi",
+  national_id: "T.C. Kimlik Numarası",
+  institution: "Kurum",
   other_entities: "Diğer Varlıklar",
   name: "Ad",
   value: "Değer",
@@ -48,14 +66,49 @@ export const FIELD_LABELS: Record<string, string> = {
   confidence: "Güven Skoru",
 };
 
-export const DRAFT_MODE_LABELS: Record<string, string> = {
-  deterministic_verified_facts_fallback: "Doğrulanmış bilgilerden güvenli taslak",
-  deterministic_fallback: "Kural tabanlı güvenli taslak",
-  llm: "Yapay zekâ destekli taslak",
-  blocked_insufficient_context: "Taslak için ek bilgi gerekli",
+export const PRIORITY_LABELS: Record<string, string> = {
+  high: "Yüksek",
+  medium: "Orta",
+  low: "Normal",
+  urgent: "Acil",
 };
 
-export function getLabel(key: string | undefined | null, map: Record<string, string>): string {
-  if (!key) return "Belirtilmedi";
-  return map[key] || key;
-}
+export const REVIEW_STATUS_LABELS: Record<string, string> = {
+  pending_review: "İnceleme Bekliyor",
+  approved: "Onaylandı",
+  approved_auto: "Otomatik Onaylandı",
+  rejected: "Reddedildi",
+  edited: "Düzenlendi",
+  not_required: "İnceleme Gerekmiyor",
+};
+
+export const QUALITY_STATUS_LABELS: Record<string, string> = {
+  pass: "Başarılı",
+  warning: "Uyarı",
+  fail: "Başarısız",
+};
+
+export const INSTITUTION_LABELS: Record<string, string> = {
+  kaymakamlik: "Kaymakamlık",
+  belediye: "Belediye",
+};
+
+export const GENERATION_MODE_LABELS: Record<string, string> = {
+  heuristic_fallback: "Kural Tabanlı Yedekleme",
+  deterministic_verified_facts_fallback: "Doğrulanmış Bilgilerden Güvenli Taslak",
+  deterministic_fallback: "Kural Tabanlı Güvenli Taslak",
+  llm: "Yapay Zekâ Destekli",
+  blocked_insufficient_context: "Taslak İçin Ek Bilgi Gerekli",
+};
+
+export const CLASSIFICATION_MODE_LABELS: Record<string, string> = {
+  heuristic_fallback: "Kural Tabanlı Yedekleme",
+  deterministic_validation: "Kural Tabanlı Doğrulama",
+  llm: "Yapay Zekâ Destekli",
+};
+
+export const EVIDENCE_MODE_LABELS: Record<string, string> = {
+  heuristic_fallback: "Kural Tabanlı Yedekleme",
+  deterministic_validation: "Kural Tabanlı Doğrulama",
+  llm: "Yapay Zekâ Destekli",
+};

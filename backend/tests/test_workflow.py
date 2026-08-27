@@ -111,8 +111,8 @@ def test_node_writing_uses_applicant_and_verified_legal_context():
     result = workflow.node_writing(DocumentState(
         document={"process_intent": "cevap"},
         extraction={"fields": {
-            "person_name": {"value": "Polat Madencilik adına Pelin Sönmez"},
-            "recipient": {"value": "Örenli İlçe Kaymakamlığı"},
+            "person_name": {"value": "Polat Madencilik adına Pelin Sönmez", "validated": True},
+            "recipient": {"value": "İrenli İlçe Kaymakamlığı", "validated": True},
         }},
         legal_analysis={
             "evidence": [{"evidence": "İhale işlemleri bu Kanuna tabidir.", "source": "K1"}],
@@ -124,8 +124,8 @@ def test_node_writing_uses_applicant_and_verified_legal_context():
     ))
 
     assert result["node_timings"]["writing_agent"]["status"] == "completed"
-    assert captured["recipient"] == "Polat Madencilik adına Pelin Sönmez"
-    assert "4734 sayılı Kanun" in captured["legal_context"]
+    assert captured["context"]["recipient"] == "Polat Madencilik adına Pelin Sönmez"
+    assert "İhale işlemleri bu Kanuna tabidir." in captured["context"]["legal_context"]
     assert captured["state"]["legal_analysis"]["evidence"]
     assert "4734 sayılı Kanun" in captured["state"]["legal_context"]
 

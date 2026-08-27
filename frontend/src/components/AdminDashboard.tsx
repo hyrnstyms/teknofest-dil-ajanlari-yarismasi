@@ -6,6 +6,7 @@ import {
   type PendingReviewItem,
   type RoiSummary,
 } from "../services/api";
+import { formatDocumentType, formatProcessIntent, formatReviewStatus } from "../utils/presentation";
 
 interface Props {
   onOpenAnalysis: (analysisId: string) => void | Promise<void>;
@@ -75,7 +76,7 @@ export const AdminDashboard: React.FC<Props> = ({ onOpenAnalysis }) => {
               {analyses.length === 0 ? <EmptyRow columns={5} text={loading ? "Yükleniyor…" : "Henüz analiz kaydı bulunmuyor."} /> : analyses.map((item) => (
                 <tr key={item.analysis_id} className="clickable-row" onClick={() => void onOpenAnalysis(item.analysis_id)}>
                   <td><strong>{item.document_id || shortId(item.analysis_id)}</strong><span>{shortId(item.analysis_id)}</span></td>
-                  <td><strong>{humanize(item.document_type || "Belirsiz")}</strong><span>{item.subject || humanize(item.process_intent || "Konu bulunmuyor")}</span></td>
+                  <td><strong>{formatDocumentType(item.document_type)}</strong><span>{item.subject || formatProcessIntent(item.process_intent)}</span></td>
                   <td>{item.recommended_unit || "—"}</td>
                   <td><StatusBadge status={item.human_review_status} /></td>
                   <td>{formatDate(item.created_at)}</td>
@@ -95,7 +96,7 @@ export const AdminDashboard: React.FC<Props> = ({ onOpenAnalysis }) => {
               {pending.length === 0 ? <EmptyRow columns={5} text={loading ? "Yükleniyor…" : "İnceleme bekleyen evrak bulunmuyor."} /> : pending.map((item) => (
                 <tr key={item.analysis_id} className="clickable-row" onClick={() => void onOpenAnalysis(item.analysis_id)}>
                   <td><strong>{shortId(item.analysis_id)}</strong></td>
-                  <td>{humanize(item.document_type || "Belirsiz")}</td>
+                  <td>{formatDocumentType(item.document_type)}</td>
                   <td>{item.recommended_unit || "—"}</td>
                   <td>{item.review_reasons?.join(" ") || "Personel incelemesi gerekli."}</td>
                   <td>{formatDate(item.created_at)}</td>
@@ -118,11 +119,10 @@ const EmptyRow: React.FC<{ columns: number; text: string }> = ({ columns, text }
 const StatusBadge: React.FC<{ status?: string }> = ({ status }) => {
   const normalized = status || "bilinmiyor";
   const className = normalized === "approved" || normalized === "approved_auto" ? "success" : normalized === "rejected" ? "danger" : normalized === "pending_review" ? "warning" : "neutral";
-  return <span className={`table-status ${className}`}>{humanize(normalized)}</span>;
+  return <span className={`table-status ${className}`}>{formatReviewStatus(normalized)}</span>;
 };
 
 function shortId(value: string): string { return value.length > 12 ? `${value.slice(0, 8)}…` : value; }
-function humanize(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
 function formatDate(value?: string): string {
   if (!value) return "—";
   const date = new Date(value);

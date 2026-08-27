@@ -107,6 +107,7 @@ class QualityAgent:
         
         result = {
             "status": "pass",
+            "decision": "continue",
             "checks": {},
             "issues": [],
             "warnings": [],
@@ -158,10 +159,15 @@ class QualityAgent:
             
             if pres.intersection(miss) or pres.intersection(uncert) or miss.intersection(uncert):
                 add_check("missing_fields_consistency", "fail", "Eksik alan analizi birbiriyle çelişen (hem var hem yok) sonuçlar üretti.")
-            elif missing_fields.get("needs_human_review"):
-                add_check("missing_fields", "warning", "Eksik alan analizi personel incelemesi gerektiriyor.")
             else:
-                add_check("missing_fields", "pass", "Eksik alan kontrolü yapıldı.")
+                critical_fields = {"signature_present", "authority_document_present"}
+                if uncert.intersection(critical_fields):
+                    add_check("missing_fields", "warning", "Kritik alanlarda (imza, yetki belgesi vb.) belirsizlik mevcut, personel incelemesi gerekiyor.")
+                    result["requires_human_review"] = True
+                elif missing_fields.get("needs_human_review"):
+                    add_check("missing_fields", "warning", "Eksik alan analizi personel incelemesi gerektiriyor.")
+                else:
+                    add_check("missing_fields", "pass", "Eksik alan kontrolü yapıldı.")
         else:
             add_check("missing_fields", "fail", "Eksik alan analizi bulunamadı.")
 
@@ -224,8 +230,8 @@ class QualityAgent:
             if outcome_claims:
                 add_check(
                     "unverified_outcome_claim",
-                    "warning",
-                    "Olası doğrulanmamış sonuç iddiası bulundu; taslak insan incelemesine işaretlendi.",
+                    "fail",
+                    "Olası doğrulanmamış sonuç iddiası bulundu; güvenli olmayan taslak metni engellendi.",
                 )
                 result["requires_human_review"] = True
 
@@ -269,9 +275,30 @@ class QualityAgent:
             add_check("draft", "warning", "Taslak metin mevcut değil.")
 
         # 8. human_review checks
-        if result["requires_human_review"]:
+        if result["requires_human_review"] and result["status"] != "fail":
             add_check("human_review", "warning", "Kritik işlemler veya belirsizlikler nedeniyle personel onayı gerekiyor.")
         
+        # 9. Determine decision
+        if result["status"] == "fail":
+            # Decide block vs human_review
+            block_conditions = [
+                "sistem kayıtlarında (registry) bulunamadı",
+                "Eksik alan analizi birbiriyle çelişen",
+                "doğrulanmamış sonuç iddiası",
+                "Resmî yazı biçim hataları",
+                "Evrak sınıflandırması yapılamadı",
+                "Belgeden hiçbir bilgi çıkarılamadı",
+                "Eksik alan analizi bulunamadı",
+            ]
+            if any(any(cond in issue for cond in block_conditions) for issue in result["issues"]):
+                result["decision"] = "block"
+            else:
+                result["decision"] = "block"
+        elif result["requires_human_review"] or result["status"] == "warning":
+            result["decision"] = "human_review"
+        else:
+            result["decision"] = "continue"
+
         return result
 
     def _check_official_writing_format(

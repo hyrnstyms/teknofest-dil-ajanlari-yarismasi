@@ -203,6 +203,12 @@ evrak_turleri:
     ad: "Vatandaş Dilekçesi"
     aciklama: "3071 sayılı Kanun kapsamında genel talep/şikayet dilekçesi"
     yasal_dayanak: "3071 sayılı Dilekçe Hakkının Kullanılmasına Dair Kanun"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - subject
+      - request
     tipik_hedef_birim:
       - "yazi_isleri"
       - "zabita"
@@ -212,6 +218,11 @@ evrak_turleri:
     ad: "Bilgi Edinme Başvurusu"
     aciklama: "4982 sayılı Kanun kapsamında bilgi/belge talebi"
     yasal_dayanak: "4982 sayılı Bilgi Edinme Hakkı Kanunu"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - request
     tipik_hedef_birim:
       - "yazi_isleri"
 
@@ -219,6 +230,12 @@ evrak_turleri:
     ad: "İşyeri Açma ve Çalışma Ruhsatı Başvurusu"
     aciklama: "Belediye sınırları içinde işyeri açmak için gerekli ruhsat"
     yasal_dayanak: "İşyeri Açma ve Çalışma Ruhsatlarına İlişkin Yönetmelik"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - phone
+      - request
     tipik_hedef_birim:
       - "zabita"
       - "mali_hizmetler"
@@ -227,6 +244,11 @@ evrak_turleri:
     ad: "İmar Durumu / Yapı Ruhsatı Talebi"
     aciklama: "Parsel bazlı imar durumu belgesi veya yapı ruhsatı başvurusu"
     yasal_dayanak: "3194 sayılı İmar Kanunu"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - request
     tipik_hedef_birim:
       - "imar_sehircilik"
 
@@ -234,6 +256,12 @@ evrak_turleri:
     ad: "Şikayet Bildirimi"
     aciklama: "Belediye hizmetlerine yönelik şikayet bildirimi"
     yasal_dayanak: "5393 sayılı Belediye Kanunu Md. 77"
+    required_fields:
+      - person_name
+      - address
+      - signature_present
+      - subject
+      - request
     tipik_hedef_birim:
       - "yazi_isleri"
       - "zabita"
@@ -244,6 +272,13 @@ evrak_turleri:
     ad: "Kurumlar Arası Resmî Yazışma"
     aciklama: "Başka bir kamu kurumundan gelen üst yazı/talep (ör. Kaymakamlık)"
     yasal_dayanak: "Resmî Yazışma Yönetmeliği"
+    required_fields:
+      - document_number
+      - document_date
+      - sender_unit
+      - recipient
+      - subject
+      - signature_present
     tipik_hedef_birim:
       - "yazi_isleri"
       - "imar_sehircilik"
