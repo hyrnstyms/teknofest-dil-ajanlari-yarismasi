@@ -203,3 +203,71 @@ def test_case_aggregate_exposes_ai_operation_priority_and_deadline_risk():
     assert aggregate["priority_assessment"]["priority_reason"]
     assert aggregate["case"]["priority"] == "HIGH"
     assert aggregate["deadline"]["risk_level"] in {"UNKNOWN", "NORMAL"}
+
+
+def test_process_specific_required_fields_four_scenarios():
+    orchestrator = CaseAwareOrchestrator("belediye")
+
+    road_with_location = orchestrator.evaluate_first_stage(
+        _context("Kaldırım çöktü, Atatürk Mahallesi X Sokak.", include_address=True)
+    )
+    assert road_with_location["blocking_missing"] is False
+    assert road_with_location["ai_operation"]["department_code"] == "fen_isleri"
+    assert road_with_location["ai_operation"]["requires_field_visit"] is True
+
+    road_without_location = orchestrator.evaluate_first_stage(
+        _context("Kaldırım çöktü.", include_address=False)
+    )
+    assert road_without_location["blocking_missing"] is True
+    assert road_without_location["clarification"]["missing_field"] == "location"
+    assert road_without_location["clarification"]["target_type"] == "VATANDAS"
+
+    information_request = orchestrator.evaluate_first_stage(
+        CaseIntelligenceContext(
+            institution_id="belediye",
+            raw_text="4982 kapsamında bilgi edinme talebidir.",
+            originator={"originator_type": "VATANDAS", "originator_name": "Ayşe Yılmaz"},
+            document={"document_type": "bilgi_edinme", "process_intent": "bilgi_talebi"},
+            extraction={"fields": {
+                "person_name": {"value": "Ayşe Yılmaz"},
+                "subject": {"value": "Bilgi edinme"},
+                "request": {"value": "Bilgi talep ediyorum"},
+            }},
+        )
+    )
+    assert information_request["blocking_missing"] is False
+    assert "address" not in information_request["missing_fields"]["required_fields"]
+
+    interagency_letter = orchestrator.evaluate_first_stage(
+        CaseIntelligenceContext(
+            institution_id="belediye",
+            raw_text="Kaymakamlıktan afet koordinasyonu kapsamında bilgi talebidir.",
+            originator={"originator_type": "DIS_KURUM", "originator_name": "Örenli Kaymakamlığı"},
+            document={"document_type": "kurumlar_arasi_yazi", "process_intent": "bilgi_talebi", "source_type": "DIS_KURUM"},
+            extraction={"fields": {
+                "document_number": {"value": "2026/1547"},
+                "document_date": {"value": "2026-08-14"},
+                "sender_unit": {"value": "Örenli Kaymakamlığı"},
+                "recipient": {"value": "Örenli Belediye Başkanlığı"},
+                "subject": {"value": "İlçe Afet Eylem Planı Koordinasyonu"},
+            }},
+        )
+    )
+    assert interagency_letter["blocking_missing"] is False
+    assert "address" not in interagency_letter["missing_fields"]["required_fields"]
+
+    licence_without_address = orchestrator.evaluate_first_stage(
+        CaseIntelligenceContext(
+            institution_id="belediye",
+            raw_text="İşyeri açma ve çalışma ruhsatı başvurusudur.",
+            originator={"originator_type": "VATANDAS", "originator_name": "Mehmet Çelik"},
+            document={"document_type": "ruhsat_basvurusu", "process_intent": "basvuru"},
+            extraction={"fields": {
+                "person_name": {"value": "Mehmet Çelik"},
+                "subject": {"value": "İşyeri açma ruhsatı"},
+                "request": {"value": "Ruhsat verilmesini talep ediyorum"},
+            }},
+        )
+    )
+    assert licence_without_address["blocking_missing"] is True
+    assert licence_without_address["clarification"]["missing_field"] == "address"

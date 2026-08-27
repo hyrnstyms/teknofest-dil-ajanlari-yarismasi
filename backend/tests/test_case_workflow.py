@@ -243,7 +243,12 @@ def test_route_requires_confirmation_and_is_atomic():
     assert len(aggregate["assignments"]) == 1
     assert aggregate["assignments"][0]["ended_at"] is None
     event_types = [event["event_type"] for event in aggregate["events"]]
-    assert event_types[-3:] == ["ROUTING_CONFIRMED", "CASE_ROUTED", "DRAFT_SAVED"]
+    assert event_types[-4:] == [
+        "ROUTING_CONFIRMED",
+        "TASK_CREATED",
+        "CASE_ROUTED",
+        "DRAFT_SAVED",
+    ]
     routing_event = next(
         event for event in aggregate["events"] if event["event_type"] == "CASE_ROUTED"
     )
@@ -577,3 +582,129 @@ def test_analysis_api_remains_compatible_and_can_add_case_link(monkeypatch):
     assert aggregate.status_code == 200
     assert aggregate.json()["case"]["analysis_id"] == integrated.json()["analysis_id"]
     assert aggregate.json()["analysis"]["analysis_id"] == integrated.json()["analysis_id"]
+
+
+def test_yazi_isleri_to_fen_isleri_e2e():
+    registry = _login("ayse_kaya")
+    fen = _login("mehmet_demir")
+    case = _advance_to_ready(_create_case(registry), registry)
+
+    routed = _route_to_fen(case, registry)
+
+    registry_inbox = client.get("/api/cases/inbox", headers=registry).json()["items"]
+    fen_inbox = client.get("/api/cases/inbox", headers=fen).json()["items"]
+    aggregate = client.get(f"/api/cases/{case['id']}", headers=fen).json()
+    assert routed["current_department_code"] == "fen_isleri"
+    assert all(item["id"] != case["id"] for item in registry_inbox)
+    assert any(item["id"] == case["id"] for item in fen_inbox)
+    assert aggregate["assignment"]["status"] == "ASSIGNMENT_PENDING"
+    assert any(event["event_type"] == "CASE_ROUTED" for event in aggregate["timeline"])
+
+
+def test_document_to_task():
+    registry = _login("ayse_kaya")
+    fen = _login("mehmet_demir")
+    case = _advance_to_ready(_create_case(registry), registry)
+    response = client.post(
+        f"/api/cases/{case['id']}/route",
+        headers=registry,
+        json={
+            "department_code": "fen_isleri",
+            "expected_version": case["version"],
+            "confirmed": True,
+            "routing_snapshot": {
+                "ai_operation": {
+                    "task_type": "YOL_BAKIM_INCELEME",
+                    "department_code": "fen_isleri",
+                    "team_code": "saha_bakim_ekibi",
+                    "recommended_role": "SAHA_EKIBI",
+                    "requires_field_visit": True,
+                }
+            },
+        },
+    )
+    assert response.status_code == 200, response.text
+    aggregate = client.get(f"/api/cases/{case['id']}", headers=fen).json()
+    assert aggregate["assignment"]["task_type"] == "YOL_BAKIM_INCELEME"
+    assert aggregate["assignment"]["team_code"] == "saha_bakim_ekibi"
+    assert aggregate["assignment"]["recommended_role"] == "SAHA_EKIBI"
+    assert aggregate["assignment"]["assigned_user_id"] is None
+
+
+def test_citizen_missing_info_target():
+    registry = _login("ayse_kaya")
+    case = _create_case(registry)
+    response = client.post(
+        f"/api/cases/{case['id']}/information-requests",
+        headers=registry,
+        json={
+            "requested_fields": ["location"],
+            "reason": "Saha incelemesi için konum gereklidir.",
+            "target_type": "VATANDAS",
+            "expected_version": case["version"],
+            "confirmed": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    request = response.json()["information_request"]
+    assert request["target_type"] == "VATANDAS"
+    assert request["target_name"] == "Ali Yılmaz"
+    assert request["recommended_action"] == "CITIZEN_INFORMATION_REQUESTED"
+
+
+def test_internal_missing_info_target():
+    registry = _login("ayse_kaya")
+    created = client.post(
+        "/api/cases",
+        headers=registry,
+        json={
+            "source_type": "KURUM_ICI",
+            "source_channel": "KURUM_ICI",
+            "originator_type": "KURUM_ICI",
+            "originator_name": "Yazı İşleri Müdürlüğü",
+            "confirmed": True,
+        },
+    )
+    assert created.status_code == 200, created.text
+    case = created.json()
+    response = client.post(
+        f"/api/cases/{case['id']}/information-requests",
+        headers=registry,
+        json={
+            "requested_fields": ["attachment"],
+            "reason": "Eksik ek gönderici birimden tamamlanmalıdır.",
+            "target_type": "KURUM_ICI",
+            "target_department": "yazi_isleri",
+            "expected_version": case["version"],
+            "confirmed": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    request = response.json()["information_request"]
+    assert request["target_type"] == "INTERNAL_DEPARTMENT"
+    assert request["target_department"] == "yazi_isleri"
+    assert request["recommended_action"] == "INTERNAL_INFORMATION_REQUESTED"
+
+
+def test_role_specific_case_visibility():
+    registry = _login("ayse_kaya")
+    fen = _login("mehmet_demir")
+    imar = _custom_user_headers(institution_id="belediye", department_code="imar_sehircilik")
+    case = _advance_to_ready(_create_case(registry), registry)
+    _route_to_fen(case, registry)
+    assert client.get(f"/api/cases/{case['id']}", headers=fen).status_code == 200
+    denied = client.get(f"/api/cases/{case['id']}", headers=imar)
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "action_forbidden"
+
+
+def test_timeline_after_route():
+    registry = _login("ayse_kaya")
+    fen = _login("mehmet_demir")
+    case = _advance_to_ready(_create_case(registry), registry)
+    _route_to_fen(case, registry)
+    timeline = client.get(f"/api/cases/{case['id']}", headers=fen).json()["timeline"]
+    routed = next(event for event in timeline if event["event_type"] == "CASE_ROUTED")
+    assert routed["payload"]["from_department"] == "yazi_isleri"
+    assert routed["payload"]["to_department"] == "fen_isleri"
+    assert any(event["event_type"] == "TASK_CREATED" for event in timeline)

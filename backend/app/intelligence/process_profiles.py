@@ -334,7 +334,18 @@ def matching_profiles(
         if tokens and not _contains_any(norm_text, tokens):
             continue
         matched.append(profile)
-    return matched
+    # When the classifier supplies a concrete document type, its exact
+    # process profile must win over a broader keyword match.  For example an
+    # incoming ``kurumlar_arasi_yazi`` may contain "bilgi talebi", but that
+    # must not turn it into a citizen information-request process requiring a
+    # person name or address.
+    exact = [
+        profile
+        for profile in matched
+        if document_type in (profile.get("document_types") or [])
+        or document.get("document_subtype") in (profile.get("document_types") or [])
+    ]
+    return exact or matched
 
 
 def detect_permit_ambiguity(
