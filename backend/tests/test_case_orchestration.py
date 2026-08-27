@@ -10,7 +10,7 @@ def test_orchestration_complete_belediye_request(orchestrator, monkeypatch):
     # Mocking agents to avoid real LLM calls
     monkeypatch.setattr(orchestrator.missing_field_agent, "check_missing_fields", lambda **kwargs: {"missing_fields": [], "has_blocking_missing": False})
     monkeypatch.setattr(orchestrator.clarification_agent, "preview", lambda **kwargs: {"needs_clarification": False, "blocking": False})
-    monkeypatch.setattr(orchestrator.routing_agent, "route", lambda *args, **kwargs: {"recommended_unit": "Fen İşleri Müdürlüğü", "recommended_department_code": "fen_isleri"})
+    monkeypatch.setattr(orchestrator.routing_agent, "route", lambda *args, **kwargs: {"recommended_unit": "Fen İşleri Müdürlüğü", "recommended_department_code": "fen_isleri", "score": 0.82})
     monkeypatch.setattr(orchestrator.writing, "draft_for_intake", lambda **kwargs: {"draft_type": "INTERIM_INFORMATION"})
     monkeypatch.setattr(orchestrator.deadline_service, "evaluate", lambda **kwargs: {"applicable": False})
     monkeypatch.setattr(orchestrator.priority_agent, "assess", lambda *args, **kwargs: {"level": "normal"})
@@ -28,6 +28,10 @@ def test_orchestration_complete_belediye_request(orchestrator, monkeypatch):
     assert result["recommended_workflow_status"] == "WAITING_INITIAL_REVIEW"
     assert result["blocking_missing"] is False
     assert result["routing"]["recommended_department_code"] == "fen_isleri"
+    assert result["routing"]["score"] == 0.82
+    assert result["routing"]["assigned"] is False
+    assert "accuracy" not in result["routing"]
+    assert "accuracy_percentage" not in result["routing"]
     assert result["official_response"] is None
 
 def test_orchestration_blocking_missing_location(orchestrator, monkeypatch):

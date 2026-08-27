@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from backend.app.intelligence.case_quality import check_case_aware_quality
 from backend.app.intelligence.case_writing import CaseWritingService
@@ -39,7 +39,21 @@ class PreviewRequest(BaseModel):
 
 
 def _context(body: PreviewRequest) -> CaseIntelligenceContext:
-    return CaseIntelligenceContext.model_validate(body.context or {})
+    try:
+        return CaseIntelligenceContext.model_validate(body.context or {})
+    except ValidationError as exc:
+        errors = [
+            {"loc": list(error.get("loc") or []), "type": error.get("type")}
+            for error in exc.errors()
+        ]
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "validation_error",
+                "message": "AI önizleme girdisi geçersiz.",
+                "context": {"errors": errors},
+            },
+        ) from exc
 
 
 @router.post("/{case_id}/ai/clarification-preview")
@@ -89,7 +103,11 @@ def official_response_preview(case_id: str, body: PreviewRequest) -> dict[str, A
             summary=ctx.summary,
             legal_analysis=ctx.legal_analysis,
             document=ctx.document,
+            case_id=case_id,
         )
+        if draft.get("allowed") is False:
+            error = VerifiedDepartmentActionRequired(context={"case_id": case_id})
+            raise HTTPException(status_code=409, detail=error.as_error_detail())
     except VerifiedDepartmentActionRequired as exc:
         raise HTTPException(status_code=409, detail=exc.as_error_detail()) from exc
 

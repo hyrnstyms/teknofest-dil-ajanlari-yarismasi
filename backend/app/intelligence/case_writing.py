@@ -99,7 +99,10 @@ class CaseWritingService:
     """Lifecycle-aware drafts. Does not persist and does not assign Cases."""
     
     def __init__(self, writing_agent: WritingAgent | None = None):
-        self.writing_agent = writing_agent or WritingAgent()
+        # The safe default is deterministic and needs no model/retriever startup.
+        # Integration may explicitly inject WritingAgent to request a stylistic
+        # rewrite; the verified DepartmentAction remains the factual baseline.
+        self.writing_agent = writing_agent
 
     def draft_for_intake(
         self,
@@ -156,7 +159,7 @@ class CaseWritingService:
                 "reason": "verified_department_action_required"
             }
             
-        if case_id and action.get("case_id") and str(action.get("case_id")) != str(case_id):
+        if case_id and str(action.get("case_id") or "") != str(case_id):
             return {
                 "allowed": False,
                 "draft": None,
@@ -184,12 +187,17 @@ class CaseWritingService:
             recipient=recipient,
         )
         
-        draft_result = self.writing_agent.draft(context=context)
+        draft_result = self.writing_agent.draft(context=context) if self.writing_agent else {}
+        if not isinstance(draft_result, dict):
+            draft_result = {}
+        generated_draft = draft_result.get("draft")
+        if not isinstance(generated_draft, dict):
+            generated_draft = {}
         
         return self._result(
             "OFFICIAL_RESPONSE",
-            subject=draft_result.get("draft", {}).get("subject", "Başvurunuz Hk."),
-            body=draft_result.get("draft", {}).get("body", body),
+            subject=generated_draft.get("subject") or "Başvurunuz Hk.",
+            body=generated_draft.get("body") or body,
             recipient=recipient,
             grounded_in_action=True,
             department_action_id=action.get("id"),
