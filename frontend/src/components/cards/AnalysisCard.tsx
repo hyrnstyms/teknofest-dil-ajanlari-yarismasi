@@ -1,7 +1,7 @@
 import React from "react";
 import { Info, FileSearch } from "lucide-react";
 import { DocumentInfo } from "../../types";
-import { formatDocumentType, formatIntent } from "../../utils/presentation";
+import { formatDocumentType, formatProcessIntent } from "../../utils/presentation";
 
 interface Props {
   document: DocumentInfo;
@@ -31,7 +31,7 @@ export const AnalysisCard: React.FC<Props> = ({ document, documentId }) => {
           </div>
           <div className="flex justify-between items-center border-b pb-2">
             <span className="text-secondary flex items-center gap-2"><Info size={16}/> İşlem Niyeti</span>
-            <span className="font-medium">{formatIntent(document.process_intent)}</span>
+            <span className="font-medium">{formatProcessIntent(document.process_intent)}</span>
           </div>
 
         </div>

@@ -3,6 +3,7 @@ import { Activity, AlertTriangle, BookOpen, Bot, Building2, CheckCircle2, Cpu, D
 import type { InstitutionOption, SystemStatus } from "../services/api";
 import { api } from "../services/api";
 import type { DocumentState } from "../types";
+import { formatDocumentType, formatProcessIntent, formatReviewStatus, formatInstitution, formatDisplayName } from "../utils/presentation";
 import "./ai-operations.css";
 
 interface Props {
@@ -89,7 +90,7 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
         <StatusCard icon={<Bot />} label="LLM" value={system?.llm_provider || ready?.services?.llm?.provider || "Veri yok"} ok={ready?.services?.llm?.status === "ok"} detail={system?.llm_model} />
         <StatusCard icon={<Database />} label="Vector DB" value="Qdrant" ok={ready?.services?.qdrant?.status === "ok"} detail={system?.qdrant ? system.qdrant.legal_points + " mevzuat noktası" : "Sayaç sağlanmıyor"} />
         <StatusCard icon={<Building2 />} label="Aktif Kurum" value={institution?.label || "Seçilmedi"} ok={Boolean(institution)} detail={institutions.length ? institutions.length + " kurum profili" : "Kurum verisi alınamadı"} />
-        <StatusCard icon={<ShieldCheck />} label="Son Analiz" value={analysis ? humanize(reviewStatus) : "Kayıt yok"} ok={Boolean(analysis)} detail={analysis?.analysis_id} />
+        <StatusCard icon={<ShieldCheck />} label="Son Analiz" value={analysis ? formatReviewStatus(reviewStatus) : "Kayıt yok"} ok={Boolean(analysis)} detail={analysis?.analysis_id} />
       </section>
 
       {!analysis ? (
@@ -133,14 +134,14 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
               <SectionTitle icon={<FileSearch />} eyebrow="Backend analysis detail" title="Son Analiz Özeti" />
               <dl>
                 <Metric label="Analysis ID" value={analysis.analysis_id} />
-                <Metric label="Kurum" value={humanize(analysis.kurum_profili_id)} />
-                <Metric label="Evrak türü" value={humanize(analysis.document?.document_type)} />
-                <Metric label="İşlem amacı" value={humanize(analysis.document?.process_intent)} />
+                <Metric label="Kurum" value={formatInstitution(analysis.kurum_profili_id)} />
+                <Metric label="Evrak türü" value={formatDocumentType(analysis.document?.document_type)} />
+                <Metric label="İşlem amacı" value={formatProcessIntent(analysis.document?.process_intent)} />
                 <Metric label="Öncelik" value={analysis.document?.priority} />
                 <Metric label="Önerilen birim" value={analysis.routing?.recommended_unit} />
                 <Metric label="Eksik / belirsiz" value={String((analysis.missing_fields?.missing_fields || []).length + (analysis.missing_fields?.uncertain_fields || []).length)} />
                 <Metric label="Doğrulanmış kanıt" value={String(evidence.length)} />
-                <Metric label="İnceleme" value={humanize(reviewStatus)} />
+                <Metric label="İnceleme" value={formatReviewStatus(reviewStatus)} />
                 <Metric label="Toplam node süresi" value={formatDuration(totalMs)} />
               </dl>
               {analysis.analysis_id && (
@@ -173,7 +174,7 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
 
   const renderAjanlar = () => (
     <section className="aiops-agent-grid">
-      <AgentCard title="Document Agent" task="Belge türü, amaç, özet ve öncelik çıkarımı" result={[analysis?.document?.document_type, analysis?.document?.process_intent].filter(Boolean).map(humanize).join(" · ")} timing={durationOf(timings.document_agent)} />
+      <AgentCard title="Document Agent" task="Belge türü, amaç, özet ve öncelik çıkarımı" result={[analysis?.document?.document_type ? formatDocumentType(analysis.document.document_type) : null, analysis?.document?.process_intent ? formatProcessIntent(analysis.document.process_intent) : null].filter(Boolean).join(" · ")} timing={durationOf(timings.document_agent)} />
       <AgentCard title="Extraction Agent" task="Belgedeki doğrulanabilir alanların çıkarılması" result={analysis?.missing_fields ? "Alanlar çıkarıldı" : "Bekleniyor"} timing={durationOf(timings.extraction_agent)} />
       <AgentCard title="Legal Agent" task="Qdrant üzerinde mevzuat arama ve doğrulanmış kanıt üretimi" result={evidence.length ? evidence.length + " doğrulanmış kanıt" : "Doğrulanmış kanıt bulunamadı"} timing={durationOf(timings.legal_agent)} />
       <AgentCard title="Missing Field Agent" task="Eksik ve belirsiz bilgilerin tespiti" result={String((analysis?.missing_fields?.missing_fields || []).length) + " eksik alan"} timing={durationOf(timings.missing_field_agent)} />
@@ -181,7 +182,7 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
       <AgentCard title="Routing Agent" task="Aktif kurum profiline göre yetkili birim önerisi" result={analysis?.routing?.recommended_unit || "Birim önerisi yok"} timing={durationOf(timings.routing_agent)} />
       <AgentCard title="Writing Agent" task="Doğrulanmış bağlamdan kontrollü resmî yazı taslağı" result={analysis?.draft?.draft ? "Taslak üretildi" : "Taslak bloke veya mevcut değil"} timing={durationOf(timings.writing_agent)} />
       <AgentCard title="Quality Agent" task="Format ve tutarlılık kontrolü" result={analysis?.human_review?.status ? "Kontrol edildi" : "Bekleniyor"} timing={durationOf(timings.quality_agent)} />
-      <AgentCard title="Human Review Agent" task="Nihai personel kararı için bekletme" result={humanize(reviewStatus)} timing={durationOf(timings.human_review_agent)} />
+      <AgentCard title="Human Review Agent" task="Nihai personel kararı için bekletme" result={formatReviewStatus(reviewStatus)} timing={durationOf(timings.human_review_agent)} />
     </section>
   );
 
@@ -190,12 +191,12 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
       <section className="aiops-panel">
         <SectionTitle icon={<Network />} eyebrow="Açıklanabilir yönlendirme" title="Kurum Zekâsı" />
         <dl className="aiops-report">
-          <Metric label="Aktif kurum" value={institution?.label || humanize(analysis?.kurum_profili_id)} />
-          <Metric label="Analiz kurumu" value={humanize(analysis?.kurum_profili_id)} />
+          <Metric label="Aktif kurum" value={institution?.label || formatInstitution(analysis?.kurum_profili_id)} />
+          <Metric label="Analiz kurumu" value={formatInstitution(analysis?.kurum_profili_id)} />
           <Metric label="Önerilen birim" value={analysis?.routing?.recommended_unit} />
           <Metric label="Karar gerekçesi" value={analysis?.routing?.reason || analysis?.routing?.routing_reason} />
           <Metric label="Güven" value={typeof analysis?.routing?.confidence === "number" ? String(analysis.routing.confidence) : undefined} />
-          <Metric label="Personel incelemesi" value={humanize(reviewStatus)} />
+          <Metric label="Personel incelemesi" value={formatReviewStatus(reviewStatus)} />
         </dl>
       </section>
 
@@ -359,7 +360,4 @@ function durationOf(value: number | { duration_ms?: number } | undefined): numbe
 function formatDuration(ms: number): string {
   return ms >= 1000 ? (ms / 1000).toLocaleString("tr-TR", { maximumFractionDigits: 2 }) + " sn" : ms + " ms";
 }
-
-function humanize(value?: string | null): string {
-  return value ? value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")) : "Veri sağlanmıyor";
-}
+

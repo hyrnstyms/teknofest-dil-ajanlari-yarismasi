@@ -36,7 +36,7 @@ def test_normal_dilekce_uses_deterministic_summary(mock_llm):
     assert node_result["node_timings"]["summary_agent"]["status"] == "completed"
     assert result["short_summary"] == (
         "Ahmet Yılmaz tarafından Bilgi talebi konusunda başvuru yapılmıştır. "
-        "Başvuruda belgelerin onaylı örneğini talep ediyorum talep edilmektedir."
+        "Belgelerin onaylı örneğini talep ediyorum."
     )
     assert result["warnings"] == []
     assert result["needs_human_review"] is False

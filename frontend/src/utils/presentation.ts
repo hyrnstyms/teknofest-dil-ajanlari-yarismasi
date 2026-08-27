@@ -1,20 +1,67 @@
-const ENUM_LABELS: Record<string, string> = {
-  dilekce: "Dilekçe", bilgi_talebi: "Bilgi Talebi", basvuru: "Başvuru",
-  sikayet: "Şikâyet", resmi_yazi: "Resmî Yazı", izin_talebi: "İzin Talebi",
-  pending_review: "İnceleme Bekliyor", approved: "Onaylandı",
-  approved_auto: "Otomatik Onaylandı", rejected: "Reddedildi", edited: "Düzenlendi",
-  not_required: "İnceleme Gerekmiyor", low: "Normal", medium: "Orta",
-  high: "Yüksek", urgent: "Acil", belediye: "Belediye", kaymakamlik: "Kaymakamlık",
-  cevap_yazisi: "Cevap Yazısı", ust_yazi: "Üst Yazı",
-  bilgilendirme_metni: "Bilgilendirme Metni", eksik_bilgi_talebi: "Eksik Bilgi Talebi",
-};
+import * as L from "./labels";
+
+export function getLabel(key: string | undefined | null, map: Record<string, string>): string {
+  if (!key) return "—";
+  return map[key] || humanizeFallback(key);
+}
+
+function humanizeFallback(value: string): string {
+  const words = value.replaceAll("_", " ").replaceAll("-", " ").split(" ").filter(Boolean);
+  return words.map((word) => word.charAt(0).toLocaleUpperCase("tr-TR") + word.slice(1).toLocaleLowerCase("tr-TR")).join(" ");
+}
 
 export function formatDisplayName(value?: string | null): string {
   if (!value) return "—";
-  const key = value.trim().toLocaleLowerCase("tr-TR");
-  if (ENUM_LABELS[key]) return ENUM_LABELS[key];
-  const words = value.replaceAll("_", " ").replaceAll("-", " ").split(" ").filter(Boolean);
-  return words.map((word) => word.charAt(0).toLocaleUpperCase("tr-TR") + word.slice(1)).join(" ");
+  
+  // Generic lookup in all registries (not ideal but backward compatible)
+  const allRegistries = [
+    L.DOCUMENT_TYPE_LABELS, L.DOCUMENT_SUBTYPE_LABELS, L.PROCESS_INTENT_LABELS,
+    L.DRAFT_TYPE_LABELS, L.FIELD_LABELS, L.PRIORITY_LABELS, L.REVIEW_STATUS_LABELS,
+    L.QUALITY_STATUS_LABELS, L.INSTITUTION_LABELS, L.GENERATION_MODE_LABELS,
+    L.CLASSIFICATION_MODE_LABELS, L.EVIDENCE_MODE_LABELS
+  ];
+  
+  for (const reg of allRegistries) {
+    if (reg[value]) return reg[value];
+  }
+  
+  return humanizeFallback(value);
+}
+
+export function formatDocumentType(value?: string | null): string {
+  return getLabel(value, L.DOCUMENT_TYPE_LABELS);
+}
+
+export function formatDocumentSubtype(value?: string | null): string {
+  return getLabel(value, L.DOCUMENT_SUBTYPE_LABELS);
+}
+
+export function formatProcessIntent(value?: string | null): string {
+  return getLabel(value, L.PROCESS_INTENT_LABELS);
+}
+
+export function formatDraftType(value?: string | null): string {
+  return getLabel(value, L.DRAFT_TYPE_LABELS);
+}
+
+export function formatFieldName(value?: string | null): string {
+  return getLabel(value, L.FIELD_LABELS);
+}
+
+export function formatPriority(value?: string | null): string {
+  return getLabel(value, L.PRIORITY_LABELS);
+}
+
+export function formatReviewStatus(value?: string | null): string {
+  return getLabel(value, L.REVIEW_STATUS_LABELS);
+}
+
+export function formatInstitution(value?: string | null): string {
+  return getLabel(value, L.INSTITUTION_LABELS);
+}
+
+export function formatQualityStatus(value?: string | null): string {
+  return getLabel(value, L.QUALITY_STATUS_LABELS);
 }
 
 export function humanizeFilename(filename?: string | null): { title: string; extension?: string; original?: string } {
@@ -31,12 +78,6 @@ export function humanizeFilename(filename?: string | null): { title: string; ext
   }
   return { title: formatDisplayName(stem), extension, original: normalized };
 }
-
-export const formatDocumentType = formatDisplayName;
-export const formatIntent = formatDisplayName;
-export const formatReviewStatus = formatDisplayName;
-export const formatPriority = formatDisplayName;
-export const formatInstitution = formatDisplayName;
 
 export function formatDate(value?: string | null): string {
   if (!value) return "—";

@@ -62,10 +62,18 @@ class SummaryAgent:
         if applicant and subject:
             det_summary = f"{applicant} tarafından {subject} konusunda başvuru yapılmıştır."
             if request_text:
-                if not request_text.strip().endswith("."):
-                    det_summary += f" Başvuruda {request_text.lower()} talep edilmektedir."
+                req_clean = request_text.strip()
+                if self._is_complete_request_sentence(req_clean):
+                    if not req_clean.endswith("."):
+                        req_clean += "."
+                    # Capitalize first letter properly if not already capitalized
+                    if len(req_clean) > 0:
+                        req_clean = req_clean[0].upper() + req_clean[1:]
+                    det_summary += f" {req_clean}"
                 else:
-                    det_summary += f" {request_text}"
+                    if req_clean.endswith("."):
+                        req_clean = req_clean[:-1]
+                    det_summary += f" Başvuruda {req_clean.lower()} talep edilmektedir."
                     
             result["short_summary"] = det_summary
             result["summary_mode"] = "deterministic"
@@ -170,6 +178,12 @@ METİN:
             metadata["error"] = f"{type(exc).__name__}: {exc}"[:300]
 
         return metadata
+
+    @staticmethod
+    def _is_complete_request_sentence(text: str) -> bool:
+        text = text.lower().strip()
+        suffixes = ["istiyorum", "arz ederim", "rica ederim", "talep ediyorum", "talep eder", "arz eder", "rica eder", "talep edilmektedir", "bildiririm"]
+        return any(text.endswith(s) or text.endswith(s + ".") for s in suffixes)
 
     @staticmethod
     def _parse_json_object(response: str) -> Dict[str, Any] | None:

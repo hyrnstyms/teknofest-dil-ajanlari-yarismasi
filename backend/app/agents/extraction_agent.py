@@ -164,20 +164,38 @@ class ExtractionAgent:
 
         semantic_candidates = ["person_name", "address", "institution", "sender_unit", "recipient", "subject", "request"]
         target_semantic = [k for k in semantic_candidates if k not in fields]
-        target_semantic.append("other_entities")
+        
+        # Zero-call optimization
+        if not target_semantic:
+            # Nothing left to extract. We can skip LLM entirely.
+            llm_fields = {}
+        else:
+            # If we are calling LLM for other fields, we can optionally ask for other_entities too.
+            requested_fields = target_semantic + ["other_entities"]
+            llm_fields = self._extract_with_llm(text, requested_fields)
 
-        llm_fields = self._extract_with_llm(text, target_semantic)
-
-        if not llm_fields:
+        if not llm_fields and target_semantic:
             warnings.append("semantic_extraction_unavailable")
             needs_human_review = True
-        else:
+        elif llm_fields:
             for k in target_semantic:
                 item = llm_fields.get(k)
                 if isinstance(item, dict) and item.get("value"):
                     ev = str(item.get("evidence", "")).strip()
                     val = str(item.get("value", "")).strip()
 
+                    validation_status = self._validate_semantic_field(k, val, ev, text)
+                    
+                    if validation_status == "INVALID":
+                        warnings.append(f"semantic_validation_failed_for_{k}")
+                        # Keep it out of fields, or set as unknown if we want.
+                        # Rule: "INVALID ise field'i present olarak kaydetme. Duruma göre field yokmuş gibi bırak veya status = unknown kullan."
+                        # We will skip it so it becomes missing/uncertain later in MissingFieldAgent.
+                        continue
+
+                    # Fallback validation for evidence existence if field validation passed or was UNCERTAIN
+                    # We will treat UNCERTAIN as ok to include, but log a warning if we want.
+                    
                     if ev and self._validate_evidence(ev, text):
                         fields[k] = self._format_field(val, ev, "llm")
                     elif val and self._validate_evidence(val, text):
@@ -186,22 +204,23 @@ class ExtractionAgent:
                         warnings.append(f"evidence_validation_failed_for_{k}")
 
             # other_entities
-            other = llm_fields.get("other_entities")
-            if isinstance(other, list):
-                valid_entities = []
-                for ent in other:
-                    if isinstance(ent, dict):
-                        ev = str(ent.get("evidence", "")).strip()
-                        if ev and self._validate_evidence(ev, text):
-                            valid_entities.append(ent)
-                if valid_entities:
-                    fields["other_entities"] = {
-                        "value": valid_entities,
-                        "evidence": [e.get("evidence", "") for e in valid_entities],
-                        "source": "document",
-                        "method": "llm",
-                        "validated": True,
-                    }
+            if "other_entities" in llm_fields:
+                other = llm_fields.get("other_entities")
+                if isinstance(other, list):
+                    valid_entities = []
+                    for ent in other:
+                        if isinstance(ent, dict):
+                            ev = str(ent.get("evidence", "")).strip()
+                            if ev and self._validate_evidence(ev, text):
+                                valid_entities.append(ent)
+                    if valid_entities:
+                        fields["other_entities"] = {
+                            "value": valid_entities,
+                            "evidence": [e.get("evidence", "") for e in valid_entities],
+                            "source": "document",
+                            "method": "llm",
+                            "validated": True,
+                        }
 
         return {
             "fields": fields,
@@ -212,6 +231,37 @@ class ExtractionAgent:
                 "model": self.llm.get_model_name() if getattr(self, "llm", None) else "unknown",
             },
         }
+
+    # =====================================================
+    # SEMANTIC FIELD VALIDATORS
+    # =====================================================
+    
+    def _validate_semantic_field(self, field: str, val: str, ev: str, text: str) -> str:
+        """Returns VALID, INVALID, or UNCERTAIN"""
+        if field == "person_name":
+            lower_val = turkish_lower(val)
+            if any(x in lower_val for x in ["başkanlığı", "kaymakamlığı", "valiliği", "müdürlüğü", "makamına", "sayın"]):
+                return "INVALID"
+            return "VALID"
+            
+        if field == "address":
+            lower_val = turkish_lower(val)
+            if "valiliğine" in lower_val or "başkanlığına" in lower_val or "kaymakamlığına" in lower_val:
+                return "INVALID"
+            return "VALID"
+            
+        if field == "recipient":
+            # Gönderen antetini recipient olarak yanlış kabul etme.
+            # Usually recipient ends with 'na' or 'ne'.
+            return "VALID"
+            
+        if field == "sender_unit":
+            return "VALID"
+            
+        if field == "institution":
+            return "VALID"
+            
+        return "VALID"
 
     # =====================================================
     # DETERMINISTIC EXTRACTORS
@@ -317,22 +367,55 @@ class ExtractionAgent:
 
     def _extract_signature_present(self, text: str) -> tuple[bool | None, str, str | None]:
         lower_text = turkish_lower(text)
-        indicators = ["imza", "imzalıdır", "e-imza", "elektronik imza", "elektronik olarak imzalanmıştır"]
-        for ind in indicators:
+        strong_indicators = [
+            "elektronik olarak imzalanmıştır",
+            "güvenli elektronik imza ile imzalanmıştır",
+            "e-imzalıdır",
+            "elektronik imzalıdır"
+        ]
+        explicit_missing = ["imzasızdır", "imza bulunmamaktadır"]
+        
+        # 1. Check strong explicit indicators (Present)
+        for ind in strong_indicators:
             if ind in lower_text:
                 match = re.search(re.escape(ind), text, re.IGNORECASE)
                 evidence = match.group(0) if match else ind
                 return True, "present", evidence
+                
+        # 2. Check explicit missing (Missing)
+        for ind in explicit_missing:
+            if ind in lower_text:
+                match = re.search(re.escape(ind), text, re.IGNORECASE)
+                evidence = match.group(0) if match else ind
+                return False, "missing", evidence
+                
+        # 3. Weak indicators or no indicator (Unknown)
+        # Even if "imza" is present, if it's not a strong indicator, we return unknown.
         return None, "unknown", None
 
     def _extract_authority_present(self, text: str) -> tuple[bool | None, str, str | None]:
         lower_text = turkish_lower(text)
-        indicators = ["yetki belgesi", "vekaletname", "vekalet", "imza sirküsü", "yetkilendirme belgesi"]
-        for ind in indicators:
+        strong_indicators = [
+            "vekaletname ekte sunulmuştur",
+            "vekaletname ektedir",
+            "yetki belgesi ektedir",
+            "yetki belgesi sunulmuştur",
+            "imza sirküleri ektedir"
+        ]
+        explicit_missing = ["vekaletname bulunmamaktadır", "yetki belgesi yoktur"]
+        
+        for ind in strong_indicators:
             if ind in lower_text:
                 match = re.search(re.escape(ind), text, re.IGNORECASE)
                 evidence = match.group(0) if match else ind
                 return True, "present", evidence
+                
+        for ind in explicit_missing:
+            if ind in lower_text:
+                match = re.search(re.escape(ind), text, re.IGNORECASE)
+                evidence = match.group(0) if match else ind
+                return False, "missing", evidence
+                
         return None, "unknown", None
 
     def _is_invalid_person(self, val: str) -> bool:

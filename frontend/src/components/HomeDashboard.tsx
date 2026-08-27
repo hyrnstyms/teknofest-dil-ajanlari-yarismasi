@@ -6,6 +6,7 @@ import {
   type PendingReviewItem,
   type InstitutionOption,
 } from "../services/api";
+import { formatDocumentType, formatInstitution, formatDisplayName } from "../utils/presentation";
 
 interface Props {
   institution: InstitutionOption | null;
@@ -87,8 +88,8 @@ export const HomeDashboard: React.FC<Props> = ({ institution, onNewDocument, onO
               {analyses.map((item) => (
                 <button type="button" key={item.analysis_id} onClick={() => void onOpenAnalysis(item.analysis_id)}>
                   <div>
-                    <strong>{item.document_id || humanize(item.document_type || "Belirsiz evrak")}</strong>
-                    <span>Analiz: {shortId(item.analysis_id)} · Kurum: {item.institution_id ? humanize(item.institution_id) : "—"}</span>
+                    <strong>{item.document_id || formatDocumentType(item.document_type) || "Belirsiz evrak"}</strong>
+                    <span>Analiz: {shortId(item.analysis_id)} · Kurum: {item.institution_id ? formatInstitution(item.institution_id) : "—"}</span>
                   </div>
                   <div className="record-meta">
                     <Status status={item.quality_status} />
@@ -105,7 +106,7 @@ export const HomeDashboard: React.FC<Props> = ({ institution, onNewDocument, onO
               <section className="last-work-card">
                 <div className="last-work-icon"><FileClock size={19} /></div>
                 <span className="section-kicker">Son çalışma</span>
-                <h2>{analyses[0].subject || analyses[0].document_id || humanize(analyses[0].document_type || "Son analiz")}</h2>
+                <h2>{analyses[0].subject || analyses[0].document_id || formatDocumentType(analyses[0].document_type) || "Son analiz"}</h2>
                 <p>Analiz: {shortId(analyses[0].analysis_id)} · {formatDate(analyses[0].created_at)}</p>
                 <button type="button" onClick={() => void onOpenAnalysis(analyses[0].analysis_id)}>Çalışma alanını aç <ArrowRight size={15} /></button>
               </section>
@@ -119,7 +120,7 @@ export const HomeDashboard: React.FC<Props> = ({ institution, onNewDocument, onO
                 <div className="pending-list">
                   {pending.map((item) => (
                     <button type="button" key={item.analysis_id} onClick={() => void onOpenAnalysis(item.analysis_id)}>
-                      <div><strong>{item.subject || humanize(item.document_type || "Belirsiz evrak")}</strong><span>{item.review_reasons?.join(" ") || "Personel incelemesi gerekli."}</span></div>
+                      <div><strong>{item.subject || formatDocumentType(item.document_type) || "Belirsiz evrak"}</strong><span>{item.review_reasons?.join(" ") || "Personel incelemesi gerekli."}</span></div>
                       <time>{formatDate(item.created_at)}</time>
                     </button>
                   ))}
@@ -137,11 +138,10 @@ const Status: React.FC<{ status?: string }> = ({ status }) => {
   if (!status) return null;
   const value = status;
   const tone = value.includes("approved") || value === "pass" ? "success" : value.includes("pending") || value === "warning" ? "warning" : value === "rejected" || value === "fail" ? "danger" : "neutral";
-  return <span className={`home-status ${tone}`}>{humanize(value)}</span>;
+  return <span className={`home-status ${tone}`}>{formatDisplayName(value)}</span>;
 };
 
 function shortId(value: string): string { return value.length > 12 ? `${value.slice(0, 8)}…` : value; }
-function humanize(value: string): string { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toLocaleUpperCase("tr-TR")); }
 function formatDate(value?: string): string {
   if (!value) return "—";
   const date = new Date(value);

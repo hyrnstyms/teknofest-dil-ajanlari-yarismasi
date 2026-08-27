@@ -1,0 +1,16 @@
+{
+  "seed": 20260825,
+  "sample_size": 1,
+  "automatic_score": null,
+  "manual_review_required": true,
+  "comparisons": [
+    {
+      "id": "SENT-0001",
+      "results": {
+        "evren": {
+          "summary": "Türkçe özet"
+        }
+      }
+    }
+  ]
+}

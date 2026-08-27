@@ -15,6 +15,7 @@ import type { AnalysisListItem } from '../types/analysis';
 import type { ROISummaryResponse } from '../types/metrics';
 import type { InstitutionOption } from '../services/api';
 import { EVRAGBrand } from '../components/EVRAGBrand';
+import { formatDocumentType, formatReviewStatus } from '../utils/presentation';
 
 export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ institution }) => {
   const navigate = useNavigate();
@@ -55,9 +56,9 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
       case 'edited':
         return <span className="badge badge-info">Düzenlendi</span>;
       case 'pending_review':
-        return <span className="badge badge-warning"><AlertTriangle size={12} /> İnceleme Bekliyor</span>;
+        return <span className="badge badge-warning"><AlertTriangle size={12} /> {formatReviewStatus(status)}</span>;
       default:
-        return <span className="badge badge-neutral">{status || 'Bilinmiyor'}</span>;
+        return <span className="badge badge-neutral">{formatReviewStatus(status)}</span>;
     }
   };
 
@@ -190,7 +191,7 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
                   >
                     <td>
                       <span className="font-medium">
-                        {item.document_type || 'Belirsiz'}
+                        {formatDocumentType(item.document_type)}
                       </span>
                     </td>
                     <td>{item.subject || '-'}</td>

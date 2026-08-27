@@ -289,11 +289,12 @@ class DocumentAgent:
         """
         if profile is None:
             return []
-        subtypes = [
-            str(e).strip()
-            for e in (profile.evrak_turleri or [])
-            if e
-        ]
+        subtypes = []
+        for e in (profile.evrak_turleri or []):
+            if isinstance(e, dict) and e.get("id"):
+                subtypes.append(str(e["id"]).strip())
+            elif isinstance(e, str) and e: # Fallback for tests
+                subtypes.append(str(e).strip())
         return subtypes
 
     @staticmethod

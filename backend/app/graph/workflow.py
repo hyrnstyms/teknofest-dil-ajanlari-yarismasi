@@ -36,10 +36,11 @@ class KamuaiWorkflow:
             profile = load_institution_profile(institution)
         except Exception:
             profile = None
+        self.institution_profile = profile
 
         self.doc_agent = DocumentAgent(
             llm=self.llm,
-            institution_profile=profile,
+            institution_profile=self.institution_profile,
         )
         self.extract_agent = ExtractionAgent(llm=self.llm)
         self.legal_agent = LegalAgent(llm=self.legal_llm)
@@ -176,7 +177,8 @@ class KamuaiWorkflow:
                 process_intent=intent,
                 extracted_fields=ext,
                 legal_analysis=leg,
-                document_subtype=dsubtype
+                document_subtype=dsubtype,
+                institution_profile=self.institution_profile
             )
             return {"missing_fields": res}
         return self._measure_time(_run, state, "missing_field_agent")

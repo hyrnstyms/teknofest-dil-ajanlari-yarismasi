@@ -14,6 +14,7 @@ import type {
   AnalysisListItem,
   ReviewQueueItem,
 } from '../types/analysis';
+import { formatDocumentType, formatReviewStatus } from '../utils/presentation';
 
 export const InboxPage: React.FC = () => {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ export const InboxPage: React.FC = () => {
                     className="table-row-clickable"
                     onClick={() => navigate(`/evrak/${item.analysis_id}`)}
                   >
-                    <td>{item.document_type || 'Belirsiz'}</td>
+                    <td>{formatDocumentType(item.document_type)}</td>
                     <td>{item.subject || 'Konu belirtilmemiş'}</td>
                     <td>{item.recommended_unit || 'Öneri yok'}</td>
                     <td>{renderStatus(item.human_review_status)}</td>
@@ -134,9 +135,9 @@ function renderStatus(status?: string): React.ReactNode {
     case 'edited':
       return <span className="badge badge-info">Düzenlendi</span>;
     case 'pending_review':
-      return <span className="badge badge-warning">İnceleme Bekliyor</span>;
+      return <span className="badge badge-warning">{formatReviewStatus(status)}</span>;
     default:
-      return <span className="badge badge-neutral">{status || 'Bilinmiyor'}</span>;
+      return <span className="badge badge-neutral">{formatReviewStatus(status)}</span>;
   }
 }
 
