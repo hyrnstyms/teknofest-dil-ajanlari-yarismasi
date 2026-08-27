@@ -44,6 +44,7 @@ export interface StreamCallbacks {
   onDelta?: (text: string) => void;
   onSources?: (sources: ChatSource[]) => void;
   onDraftUpdate?: (draft: DraftInfo) => void;
+  onPendingAction?: (action: import("./chatTypes").PendingAction) => void;
   onDone?: (data?: { ttft_ms?: number; total_ms?: number }) => void;
   onError?: (err: Error) => void;
 }
@@ -124,6 +125,11 @@ export async function streamChatMessage(
       case "draft_update":
         if (data.updated_draft && typeof data.updated_draft === "object") {
           callbacks.onDraftUpdate?.(data.updated_draft as DraftInfo);
+        }
+        break;
+      case "pending_action":
+        if (data.pending_action && typeof data.pending_action === "object") {
+          callbacks.onPendingAction?.(data.pending_action as import("./chatTypes").PendingAction);
         }
         break;
       case "error":

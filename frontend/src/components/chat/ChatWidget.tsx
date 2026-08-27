@@ -5,6 +5,8 @@ import { ChatPanel } from "./ChatPanel";
 import { streamChatMessage } from "./chatApi";
 import type { ChatUiMessage, ChatMode } from "./chatTypes";
 import { CHAT_STORAGE_VERSION, restoreChatThread, type StoredChatThread } from "./chatStorage";
+import { EVRAGBrand } from "../EVRAGBrand";
+import { mockCaseActionAdapter } from "../../services/copilotCaseApi";
 import "./chat.css";
 
 interface Props {
@@ -87,6 +89,38 @@ export const ChatWidget: React.FC<Props> = ({
     }
   };
 
+  const handleConfirmAction = async (action: import("./chatTypes").PendingAction) => {
+    // Adapter logic to simulate Case Engine API since it might not be ready yet.
+    // In final integration, this will call actual endpoints like /api/cases/{id}/route.
+    
+    const msgIndex = messages.findIndex(m => m.pendingAction === action);
+    if (msgIndex < 0) return;
+    
+    const msg = messages[msgIndex];
+    if (msg.actionStatus === "submitting" || msg.actionStatus === "resolved") {
+      return; // Idempotent guard
+    }
+    
+    const msgId = msg.id;
+    
+    // Set to submitting synchronously before async mock
+    setMessages(prev => prev.map(m => 
+      m.id === msgId ? { ...m, actionStatus: "submitting" } : m
+    ));
+
+    try {
+      const result = await mockCaseActionAdapter.executeAction(action);
+      
+      setMessages(prev => prev.map(m => 
+        m.id === msgId ? { ...m, actionResult: result, actionStatus: "resolved" } : m
+      ));
+    } catch (err) {
+      setMessages(prev => prev.map(m => 
+        m.id === msgId ? { ...m, actionResult: { success: false, message: "İşlem sırasında hata oluştu." }, actionStatus: "resolved" } : m
+      ));
+    }
+  };
+
   const handleSend = async (text: string) => {
     setFailedMessage(null);
     const userMsg: ChatUiMessage = { id: messageId(), role: "user", text };
@@ -136,6 +170,10 @@ export const ChatWidget: React.FC<Props> = ({
           currentBotMsg = { ...currentBotMsg, status: "applied" };
           setMessages((prev) => prev.map((m) => (m.id === botMsgId ? currentBotMsg : m)));
           onDraftUpdated(draft);
+        },
+        onPendingAction: (action) => {
+          currentBotMsg = { ...currentBotMsg, pendingAction: action };
+          setMessages((prev) => prev.map((m) => (m.id === botMsgId ? currentBotMsg : m)));
         },
         onError: (err) => {
           setFailedMessage(text);
@@ -200,6 +238,7 @@ export const ChatWidget: React.FC<Props> = ({
             failedMessage={failedMessage}
             onStop={stopStreaming}
             onClearHistory={handleClearHistory}
+            onConfirmAction={handleConfirmAction}
           />
         )}
       </div>
