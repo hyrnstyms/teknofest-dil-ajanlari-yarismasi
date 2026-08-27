@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  BarChart3, 
-  Clock, 
-  Users, 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
-  Building2 
+import {
+  BarChart3,
+  Building2,
+  CheckCircle,
+  Clock,
+  FileText,
+  Users,
+  XCircle,
 } from 'lucide-react';
-import { fetchAdminStats, AdminStats } from '../services/adminApi';
+import { fetchAdminStats, type AdminStats } from '../services/adminApi';
 
 export const AdminPage: React.FC = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,27 +21,19 @@ export const AdminPage: React.FC = () => {
         setStats(data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error(err);
-        setError("İstatistikler yüklenemedi.");
+      .catch((requestError) => {
+        console.error(requestError);
+        setError('İstatistikler yüklenemedi.');
         setLoading(false);
       });
   }, []);
 
   if (loading) {
-    return (
-      <div className="page-container">
-        <div style={{ padding: '2rem', textAlign: 'center' }}>Yükleniyor...</div>
-      </div>
-    );
+    return <div className="page-container"><div style={{ padding: '2rem', textAlign: 'center' }}>Yükleniyor...</div></div>;
   }
 
   if (error || !stats) {
-    return (
-      <div className="page-container">
-        <div className="alert alert-danger">{error}</div>
-      </div>
-    );
+    return <div className="page-container"><div className="alert alert-danger">{error}</div></div>;
   }
 
   return (
@@ -54,7 +46,6 @@ export const AdminPage: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        {/* Toplam Evrak */}
         <div className="card">
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
@@ -62,13 +53,10 @@ export const AdminPage: React.FC = () => {
               <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Toplam Evrak</span>
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 700 }}>{stats.total_cases}</div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--success-color)' }}>
-              +{stats.today_cases} bugün eklendi
-            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--success-color)' }}>+{stats.today_cases} bugün eklendi</div>
           </div>
         </div>
 
-        {/* Ortalama İşlem Süresi */}
         <div className="card">
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
@@ -79,20 +67,16 @@ export const AdminPage: React.FC = () => {
           </div>
         </div>
 
-        {/* İnsan İnceleme Oranı */}
         <div className="card">
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
               <Users size={18} />
               <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>İnsan İnceleme (Human Review)</span>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 700 }}>
-              {(stats.human_review_ratio * 100).toFixed(1)}%
-            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.human_review_ratio * 100).toFixed(1)}%</div>
           </div>
         </div>
 
-        {/* Taslak Onay/Red */}
         <div className="card">
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
@@ -111,6 +95,8 @@ export const AdminPage: React.FC = () => {
         </div>
       </div>
 
+      <DepartmentDistributionChart data={stats.department_distribution} />
+
       <div className="card">
         <div className="card-header">
           <Building2 size={18} />
@@ -118,21 +104,13 @@ export const AdminPage: React.FC = () => {
         </div>
         <div className="card-body" style={{ padding: 0 }}>
           {stats.department_distribution.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              Henüz evrak bulunmuyor.
-            </div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Henüz evrak bulunmuyor.</div>
           ) : (
             <table className="table" style={{ margin: 0 }}>
-              <thead>
-                <tr>
-                  <th>Kurum</th>
-                  <th>Birim (Department Code)</th>
-                  <th style={{ textAlign: 'right' }}>Evrak Sayısı</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Kurum</th><th>Birim (Department Code)</th><th style={{ textAlign: 'right' }}>Evrak Sayısı</th></tr></thead>
               <tbody>
-                {stats.department_distribution.map((item, idx) => (
-                  <tr key={`${item.institution_id}-${item.department_code}-${idx}`}>
+                {stats.department_distribution.map((item, index) => (
+                  <tr key={`${item.institution_id}-${item.department_code}-${index}`}>
                     <td><span className="badge badge-info">{item.institution_id}</span></td>
                     <td>{item.department_code}</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.count}</td>
@@ -144,5 +122,39 @@ export const AdminPage: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const DepartmentDistributionChart: React.FC<{
+  data: AdminStats['department_distribution'];
+}> = ({ data }) => {
+  const maximum = Math.max(...data.map((item) => item.count), 1);
+  const total = data.reduce((sum, item) => sum + item.count, 0);
+
+  return (
+    <section className="department-chart-card" aria-labelledby="department-chart-title">
+      <header className="card-header">
+        <BarChart3 size={18} />
+        <div>
+          <h3 id="department-chart-title">Birim Dağılımı</h3>
+          <span>{total} evrak</span>
+        </div>
+      </header>
+      {data.length > 0 ? (
+        <div className="department-bars" role="img" aria-label="Birimlere göre evrak dağılımı">
+          {data.map((item, index) => {
+            const label = `${item.institution_id} / ${item.department_code}`;
+            return (
+              <div className="department-bar-row" key={`${label}-${index}`}>
+                <div><strong>{label}</strong><span>{item.count} evrak</span></div>
+                <span className="department-bar-track" aria-hidden="true"><i style={{ width: `${(item.count / maximum) * 100}%` }} /></span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="chart-empty">Birim dağılımı için henüz evrak bulunmuyor.</div>
+      )}
+    </section>
   );
 };
