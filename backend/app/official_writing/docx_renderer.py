@@ -319,7 +319,9 @@ def render_to_docx(context: dict[str, Any], evrak_id: str | None = None) -> io.B
     # ── 10a. QR DOĞRULAMA KODU ─────────────────────────────────────────────
     if evrak_id:
         _add_empty_paragraph(doc)
-        qr_data = "KAMUAI-DOGRULAMA:" + evrak_id
+        import os as _os
+        _base = _os.environ.get("KAMUAI_BASE_URL", "http://localhost:8000").rstrip("/")
+        qr_data = f"{_base}/api/verify/{evrak_id}"
         qr_buffer = generate_qr_image(qr_data)
         qr_para = doc.add_paragraph()
         qr_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
