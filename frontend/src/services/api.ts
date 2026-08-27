@@ -183,6 +183,20 @@ export const api = {
     return response.json();
   },
 
+  async transferAnalysis(analysisId: string): Promise<any> {
+    const response = await apiFetch(
+      `${API_BASE_URL}/api/analyses/${analysisId}/transfer`,
+      { method: "POST" }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail?.message || `HTTP Error: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
   async getAnalyses(query?: AnalysisQuery): Promise<AnalysesResponse> {
     const params = typeof query === "number" ? { limit: query } : query;
     const searchParams = new URLSearchParams();

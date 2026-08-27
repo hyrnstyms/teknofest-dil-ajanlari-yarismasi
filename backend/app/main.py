@@ -454,6 +454,130 @@ def export_docx(analysis_id: str):
     )
 
 
+@app.post("/api/analyses/{analysis_id}/transfer")
+def transfer_analysis(analysis_id: str):
+    """
+    Onaylanmış bir analizi hedef kuruma (EBYS mock) iletir.
+
+    İş kuralları:
+    - Analiz mevcut olmalı (404 yoksa).
+    - `transfer_routing.transfer_required` == True olmalı (400 aksi).
+    - `human_review.status` == "approved" olmalı; onaylanmamışsa 409 döner.
+    - `draft` alanı dolu olmalı; taslak yoksa 400 döner.
+
+    Başarıda:
+    - EBYS mock adapter çağrılır.
+    - DB'de status "belediyeye_iletildi" olarak güncellenir.
+    - review_events tablosuna "transfer_to_institution" kaydı düşer.
+    """
+    state = _get_stored_analysis(analysis_id)
+
+    # Kontrol 1: transfer gerekli mi?
+    transfer_routing = state.get("transfer_routing") or {}
+    if not transfer_routing.get("transfer_required"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "transfer_not_applicable",
+                "message": "Bu analiz için kurumlar arası transfer gerekli değil.",
+            },
+        )
+
+    # Kontrol 2: onaylanmış mı? (önce onayla, sonra gönder)
+    hr_status = (state.get("human_review") or {}).get("status")
+    if hr_status != "approved":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "approval_required",
+                "message": (
+                    "Evrak belediyeye gönderilebilmesi için önce personel onayına sunulmalıdır. "
+                    f"Mevcut durum: '{hr_status or 'onaysız'}'"
+                ),
+            },
+        )
+
+    # Kontrol 3: taslak hazır mı?
+    draft_data = state.get("draft") or {}
+    draft_body = draft_data.get("body") or draft_data.get("draft") or {}
+    if not draft_body and not draft_data:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "draft_required",
+                "message": "Göndermeden önce analiz tamamlanmalı ve taslak üretilmiş olmalıdır.",
+            },
+        )
+
+    # EBYS mock adapter çağrısı
+    from backend.app.integrations.ebys import MockEBYSAdapter
+    from backend.app.integrations.ebys.schemas import EBYSRouteRequest
+
+    hedef_birim = transfer_routing.get("hedef_birim", "Yazı İşleri Müdürlüğü")
+    hedef_kurum = transfer_routing.get("hedef_kurum", "belediye")
+    hedef_kurum_adi = transfer_routing.get("hedef_kurum_adi", hedef_kurum)
+
+    ebys_request = EBYSRouteRequest(
+        document_id=analysis_id,
+        target_unit=hedef_birim,
+        reason=(
+            f"{hedef_kurum_adi} — {transfer_routing.get('yasal_dayanak', 'Resmî Yazışma Yönetmeliği')}"
+        ),
+    )
+
+    def get_ebys_adapter():
+        """EBYS adapter factory — şimdilik mock, ileride gerçek bağlantı buraya."""
+        return MockEBYSAdapter()
+
+    try:
+        ebys_result = get_ebys_adapter().route_document(ebys_request)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "ebys_error", "message": f"EBYS iletimi sırasında hata: {exc}"},
+        )
+
+    # State güncelleme
+    new_status = "belediyeye_iletildi"
+    state["status"] = new_status
+    state.setdefault("audit_history", []).append({
+        "event": "transfer_to_institution",
+        "timestamp": datetime.utcnow().isoformat(),
+        "message": (
+            f"Evrak {hedef_kurum_adi} / {hedef_birim} birimine EBYS üzerinden iletildi. "
+            f"EBYS sonucu: {ebys_result.message}"
+        ),
+    })
+    state["transfer_routing"] = {
+        **transfer_routing,
+        "ebys_routed": True,
+        "ebys_result": ebys_result.model_dump(),
+        "routed_status": new_status,
+    }
+
+    # Atomik DB kaydı: analysis + review_event tek transaction
+    get_analysis_repository().update_analysis_with_event(
+        analysis_id,
+        state,
+        "transfer_to_institution",
+        {
+            "hedef_kurum": hedef_kurum,
+            "hedef_birim": hedef_birim,
+            "ebys_result": ebys_result.model_dump(),
+        },
+    )
+
+    return {
+        "status": "success",
+        "message": f"Evrak {hedef_kurum_adi} / {hedef_birim} birimine başarıyla iletildi.",
+        "hedef_kurum": hedef_kurum,
+        "hedef_kurum_adi": hedef_kurum_adi,
+        "hedef_birim": hedef_birim,
+        "routed_status": new_status,
+        "ebys_result": ebys_result.model_dump(),
+    }
+
+
 @app.post("/api/analysis/{analysis_id}/reject")
 def reject_analysis(analysis_id: str, req: RejectRequest):
     state = _get_stored_analysis(analysis_id)

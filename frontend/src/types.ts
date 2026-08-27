@@ -134,6 +134,25 @@ export interface AuditEvent {
   message?: string;
 }
 
+export interface TransferRouting {
+  transfer_required?: boolean;
+  kaynak_kurum?: string;
+  hedef_kurum?: string;
+  hedef_kurum_adi?: string;
+  hedef_birim?: string;
+  yazi_turu?: string;
+  evrak_turu?: string;
+  konu?: string;
+  ozet?: string;
+  yasal_dayanak?: string;
+  ebys_routed?: boolean;
+  ebys_result?: Record<string, any>;
+  routed_status?: string;
+  warnings?: string[];
+  needs_human_review?: boolean;
+  [key: string]: any;
+}
+
 export interface DocumentState {
   document_id: string;
   raw_text: string;
@@ -145,6 +164,7 @@ export interface DocumentState {
   missing_fields: MissingFields;
   summary: SummaryInfo;
   routing: RoutingInfo;
+  transfer_routing?: TransferRouting;
   draft: DraftInfo;
   quality: QualityInfo;
   human_review: HumanReview;

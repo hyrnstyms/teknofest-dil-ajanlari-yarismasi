@@ -164,6 +164,7 @@ def test_node_routing_calls_agent_with_supported_contract():
             subject,
             request_text,
             extracted_fields,
+            retrieved_documents=None,  # node_routing bu kwarg'ı iletir
         ):
             captured.update({
                 "document_type": document_type,
@@ -176,6 +177,12 @@ def test_node_routing_calls_agent_with_supported_contract():
 
     workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
     workflow.routing_agent = CapturingRoutingAgent()
+    # node_routing, document_retriever'ı try/except içinde çağırır;
+    # AttributeError yerine boş sonuç dönmesi için mock ekliyoruz
+    from unittest.mock import MagicMock
+    workflow.document_retriever = MagicMock()
+    workflow.document_retriever.search_documents.return_value = []
+    workflow.institution = "kaymakamlik"  # transfer bloğu için
     result = workflow.node_routing(DocumentState(
         document={
             "document_type": "sikayet",

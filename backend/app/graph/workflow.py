@@ -12,6 +12,7 @@ from backend.app.agents.summary_agent import SummaryAgent
 from backend.app.agents.routing_agent import RoutingAgent
 from backend.app.agents.writing_agent import WritingAgent
 from backend.app.agents.quality_agent import QualityAgent
+from backend.app.agents.transfer_agent import TransferAgent
 
 from backend.app.llm.factory import create_llm_client
 
@@ -213,6 +214,27 @@ class KamuaiWorkflow:
             )
             if retrieval_warning:
                 res.setdefault("warnings", []).append(retrieval_warning)
+
+            # Transfer tespiti: iletim intent'i veya kurumlar arası evrak türü
+            transfer_routing: dict = {}
+            if intent == "iletim" or dtype == "kurumlar_arasi_yazi":
+                hedef = _detect_target_institution(s.raw_text)
+                try:
+                    transfer_routing = TransferAgent().transfer(
+                        kaynak_kurum=self.institution,
+                        hedef_kurum=hedef,
+                        konu=sub or dtype or "Bilinmiyor",
+                        evrak_ozeti=req or sub or dtype or "Bilinmiyor",
+                        process_intent=intent or "iletim",
+                    )
+                except Exception as exc:
+                    transfer_routing = {
+                        "transfer_required": False,
+                        "warnings": [f"Transfer ajanı hatası: {exc}"],
+                    }
+
+            if transfer_routing:
+                return {"routing": res, "transfer_routing": transfer_routing}
             return {"routing": res}
         return self._measure_time(_run, state, "routing_agent")
 
@@ -363,3 +385,26 @@ class KamuaiWorkflow:
         )
         final_state = self.graph.invoke(initial_state)
         return final_state
+
+
+# ---------------------------------------------------------------------------
+# Modül düzeyinde yardımcı fonksiyonlar
+# ---------------------------------------------------------------------------
+
+def _detect_target_institution(raw_text: str) -> str:
+    """
+    Evrak metninden hedef kurumu deterministik olarak tespit eder.
+    Kural tabanlıdır — LLM kullanmaz.
+
+    Tanınan örüntüler (büyük/küçük harf duyarsız):
+      - "belediye" → "belediye"
+      - "il özel idaresi" / "il_ozel_idare" → "il_ozel_idare"
+      - Aksi halde varsayılan: "belediye"
+    """
+    text_lower = raw_text.lower()
+    if "belediye" in text_lower:
+        return "belediye"
+    if "il özel idaresi" in text_lower or "il özel idare" in text_lower:
+        return "il_ozel_idare"
+    # Varsayılan: kaymakamlıktan gelen iletim yazıları çoğunlukla belediyeye
+    return "belediye"
