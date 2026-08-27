@@ -179,7 +179,10 @@ class KamuaiWorkflow:
                 extracted_fields=ext,
                 legal_analysis=leg,
                 document_subtype=dsubtype,
-                institution_profile=self.institution_profile
+                institution_profile=self.institution_profile,
+                institution_id=self.institution,
+                raw_text=s.raw_text,
+                document=doc_ctx,
             )
             return {"missing_fields": res}
         return self._measure_time(_run, state, "missing_field_agent")

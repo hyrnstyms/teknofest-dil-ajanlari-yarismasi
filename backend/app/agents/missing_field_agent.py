@@ -37,7 +37,11 @@ class MissingFieldAgent:
         extracted_fields: Dict[str, Any],
         legal_analysis: Dict[str, Any] = None,
         document_subtype: str | None = None,
-        institution_profile: Any = None
+        institution_profile: Any = None,
+        institution_id: str | None = None,
+        candidate_department: str | None = None,
+        raw_text: str = "",
+        document: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         
         result = {
@@ -163,5 +167,16 @@ class MissingFieldAgent:
                     else:
                         result["present_fields"].append(field)
                         result["field_results"][field] = {"status": "present", "value": val}
-                        
-        return result
+
+        from backend.app.intelligence.missing_enrichment import enrich_missing_field_result
+
+        return enrich_missing_field_result(
+            result,
+            document_type=document_type,
+            process_intent=process_intent,
+            extracted_fields=extracted_fields,
+            institution_id=institution_id,
+            candidate_department=candidate_department,
+            raw_text=raw_text,
+            document=document or {"document_type": document_type, "process_intent": process_intent, "document_subtype": document_subtype},
+        )

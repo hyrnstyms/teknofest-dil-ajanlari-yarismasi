@@ -1742,3 +1742,48 @@ subject ve body alanlarını eksiksiz üret.
                 .get_model_name()
             ),
         }
+
+    def draft_case_aware(
+        self,
+        *,
+        stage: str,
+        clarification: dict[str, Any] | None = None,
+        missing_fields: dict[str, Any] | None = None,
+        routing: dict[str, Any] | None = None,
+        originator=None,
+        extraction: dict[str, Any] | None = None,
+        department_action=None,
+        summary: dict[str, Any] | None = None,
+        legal_analysis: dict[str, Any] | None = None,
+        document: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Case-lifecycle drafts. Legacy ``draft()`` is unchanged."""
+        from backend.app.intelligence.case_writing import CaseWritingService
+
+        service = CaseWritingService()
+        if stage in {"intake", "first_stage", "MISSING_INFORMATION_REQUEST", "INTERIM_INFORMATION"}:
+            return service.draft_for_intake(
+                clarification=clarification,
+                missing_fields=missing_fields,
+                routing=routing,
+                originator=originator,
+                extraction=extraction,
+            )
+        if stage in {"OFFICIAL_RESPONSE", "official_response"}:
+            return service.draft_official_response(
+                department_action=department_action,
+                originator=originator,
+                extraction=extraction,
+                routing=routing,
+                summary=summary,
+                legal_analysis=legal_analysis,
+                document=document,
+            )
+        return service.draft_internal(
+            stage,  # type: ignore[arg-type]
+            body="",
+            subject="",
+            originator=originator,
+            extraction=extraction,
+            department_action=department_action,
+        )

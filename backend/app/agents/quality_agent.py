@@ -103,6 +103,9 @@ class QualityAgent:
         routing: Dict[str, Any],
         draft: Dict[str, Any],
         human_review: Dict[str, Any] | None = None,
+        case_context: Dict[str, Any] | None = None,
+        department_action: Dict[str, Any] | None = None,
+        originator: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         
         result = {
@@ -222,18 +225,49 @@ class QualityAgent:
                 add_check("draft", "warning", "Taslak metin personel onayı gerektiriyor.")
             else:
                 add_check("draft", "pass", "Taslak metin üretildi.")
+                
+            draft_payload = draft.get("draft") if isinstance(draft.get("draft"), dict) else draft
+            if draft_payload and draft_payload.get("body"):
+                if _OW_VALIDATOR_AVAILABLE:
+                    from backend.app.official_writing.format_validator import validate_format as _ow_validate
+                    val_res = _ow_validate(draft_payload, draft.get("draft_type", "diger"))
+                    if getattr(val_res, "gecerli", True) is False:
+                        hatalar = getattr(val_res, "hatalar", [])
+                        add_check("format_validator", "warning", "Resmî yazışma format uyumsuzluğu: " + ", ".join(h.mesaj if hasattr(h, "mesaj") else str(h) for h in hatalar))
+                        
+                if draft_payload.get("recipient"):
+                    from backend.app.intelligence.case_writing import _originator_recipient
+                    expected_recipient = _originator_recipient(originator, extraction or {})
+                    if expected_recipient and draft_payload.get("recipient") != expected_recipient:
+                        add_check("recipient", "warning", "Taslak alıcısı ile beklenen muhatap (originator/person_name) uyuşmuyor.")
 
             draft_payload = draft.get("draft") if isinstance(draft.get("draft"), dict) else draft
-            outcome_claims = find_unverified_outcome_claims(
-                draft_payload.get("body", "") if isinstance(draft_payload, dict) else ""
-            )
-            if outcome_claims:
-                add_check(
-                    "unverified_outcome_claim",
-                    "fail",
-                    "Olası doğrulanmamış sonuç iddiası bulundu; güvenli olmayan taslak metni engellendi.",
-                )
-                result["requires_human_review"] = True
+            body_text = draft_payload.get("body", "") if isinstance(draft_payload, dict) else ""
+            
+            # Case lifecycle checks
+            if draft.get("canonical_draft_type") == "OFFICIAL_RESPONSE" or draft.get("draft_type") == "cevap_yazisi":
+                if not department_action:
+                    add_check("department_action", "fail", "Resmî cevap için onaylı birim işlemi (DepartmentAction) bulunamadı.")
+                else:
+                    if not department_action.get("verified"):
+                        add_check("department_action", "fail", "Birim işlemi (DepartmentAction) doğrulanmamış (verified=False).")
+                    if case_context and department_action.get("case_id") and case_context.get("id"):
+                        if str(department_action.get("case_id")) != str(case_context.get("id")):
+                            add_check("department_action", "fail", "Birim işlemi başka bir başvuruya ait.")
+                
+                # Unsupported completion claims
+                from backend.app.intelligence.case_writing import official_response_claims_unverified_completion
+                if official_response_claims_unverified_completion(body_text, department_action):
+                    add_check("unverified_outcome_claim", "fail", "Birim işlemi tarafından desteklenmeyen (unsupported) işlem sonucu iddiası bulundu.")
+            else:
+                outcome_claims = find_unverified_outcome_claims(body_text)
+                if outcome_claims:
+                    add_check(
+                        "unverified_outcome_claim",
+                        "fail",
+                        "Olası doğrulanmamış sonuç iddiası bulundu; güvenli olmayan taslak metni engellendi.",
+                    )
+                    result["requires_human_review"] = True
 
             reference_claims = find_unverified_reference_claims(
                 draft_payload.get("body", "") if isinstance(draft_payload, dict) else "",
@@ -298,6 +332,31 @@ class QualityAgent:
             result["decision"] = "human_review"
         else:
             result["decision"] = "continue"
+
+        if case_context or department_action or originator:
+            from backend.app.intelligence.case_quality import check_case_aware_quality
+
+            extra = check_case_aware_quality(
+                draft=draft,
+                department_action=department_action or (case_context or {}).get("department_action"),
+                originator=originator or (case_context or {}).get("originator"),
+                extraction=extraction,
+                legal_analysis=legal_analysis,
+                routing=routing,
+            )
+            result["case_aware"] = extra
+            for key, check in (extra.get("checks") or {}).items():
+                result["checks"][key] = check
+            result["issues"].extend(extra.get("issues") or [])
+            result["warnings"].extend(extra.get("warnings") or [])
+            if extra.get("status") == "fail":
+                result["status"] = "fail"
+                result["decision"] = "block"
+                result["requires_human_review"] = True
+            elif extra.get("requires_human_review"):
+                result["requires_human_review"] = True
+                if result["decision"] == "continue":
+                    result["decision"] = "human_review"
 
         return result
 
