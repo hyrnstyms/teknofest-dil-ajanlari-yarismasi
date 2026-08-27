@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from backend.app.auth.dependencies import CurrentUser
 from backend.app.auth.principals import DEMO_USERS
-from backend.app.cases.departments import assert_department
+from backend.app.cases.departments import assert_department, list_departments
 from backend.app.cases.enums import (
     ACTOR_CITIZEN,
     ACTOR_SYSTEM,
@@ -25,7 +25,6 @@ from backend.app.cases.enums import (
     DRAFT_STATUS_APPROVED,
     DRAFT_STATUS_DRAFT,
     DRAFT_STATUS_EDITED,
-    DRAFT_STATUS_SENT,
     DRAFT_TYPES,
     EVENT_ANALYSIS_COMPLETED,
     EVENT_ANALYSIS_STARTED,
@@ -85,6 +84,7 @@ from backend.app.db.case_models import (
     DepartmentAction,
 )
 from backend.app.db.database import create_session_factory
+from backend.app.db.models import Analysis
 
 
 def _now() -> datetime:
@@ -107,6 +107,18 @@ def tokens_match(raw: str, stored_hash: str | None) -> bool:
     if not stored_hash:
         return False
     return hmac.compare_digest(hash_citizen_token(raw), stored_hash)
+
+
+def _department_name(institution_id: str, department_code: str) -> str:
+    try:
+        match = next(
+            item
+            for item in list_departments(institution_id)
+            if item["code"] == department_code
+        )
+        return str(match["name"])
+    except (StopIteration, FileNotFoundError):
+        return department_code
 
 
 class CaseEngine:
@@ -250,11 +262,9 @@ class CaseEngine:
         if case.institution_id != user.institution_id:
             return False
         if user.role == ROLE_EVRAK_KAYIT:
-            if case.workflow_status in REGISTRY_INBOX_STATUSES:
-                return True
-            if case.workflow_status == STATUS_CLOSED:
-                return True
-            return case.current_department_code == user.department_code
+            # The institution registry may inspect the lifecycle it originated,
+            # while its actionable inbox remains restricted in ``list_inbox``.
+            return True
         if user.role == ROLE_BIRIM_PERSONELI:
             return (
                 case.current_department_code == user.department_code
@@ -499,16 +509,33 @@ class CaseEngine:
             except Exception:
                 stored = None
             if stored:
+                routing = dict(stored.get("routing") or {})
+                clarification = dict(stored.get("clarification") or {})
+                summary = dict(stored.get("summary") or {})
+                deadline = stored.get("deadline_evaluation")
+                if not isinstance(deadline, dict) or not deadline:
+                    from backend.app.intelligence.deadline import LegalDeadlineService
+
+                    deadline = LegalDeadlineService().evaluate(
+                        legal_analysis=dict(stored.get("legal_analysis") or {}),
+                        received_at=aggregate["case"]["received_at"],
+                    )
+                aggregate["deadline"] = deadline
                 aggregate["analysis"] = {
                     "analysis_id": stored.get("analysis_id"),
                     "document_type": (stored.get("document") or {}).get("document_type"),
                     "process_intent": (stored.get("document") or {}).get("process_intent"),
-                    "recommended_unit": (stored.get("routing") or {}).get("recommended_unit"),
-                    "recommended_department_code": (stored.get("routing") or {}).get(
-                        "recommended_department_code"
-                    ),
+                    "summary": summary,
+                    "routing": routing,
+                    "clarification": clarification,
+                    "recommended_unit": routing.get("recommended_unit"),
+                    "recommended_department_code": routing.get("recommended_department_code"),
                     "human_review_status": (stored.get("human_review") or {}).get("status"),
                 }
+        aggregate["case"]["current_department_name"] = _department_name(
+            aggregate["case"]["institution_id"],
+            aggregate["case"]["current_department_code"],
+        )
         return aggregate
 
     def _serialize_assignment(self, row: CaseAssignment) -> dict[str, Any]:
@@ -648,6 +675,7 @@ class CaseEngine:
         *,
         expected_version: int | None = None,
         confirmed: bool | None = None,
+        ready_to_route: bool = False,
     ) -> dict[str, Any]:
         with self.session_factory.begin() as session:
             case = (
@@ -664,7 +692,7 @@ class CaseEngine:
             self._transition(
                 session,
                 case,
-                STATUS_WAITING_INITIAL_REVIEW,
+                STATUS_READY_TO_ROUTE if ready_to_route else STATUS_WAITING_INITIAL_REVIEW,
                 EVENT_ANALYSIS_COMPLETED,
                 user,
                 actor_type=ACTOR_USER if user else ACTOR_SYSTEM,
@@ -677,6 +705,15 @@ class CaseEngine:
             self._require_role(user, ROLE_EVRAK_KAYIT)
             self._require_confirmed(confirmed)
             self._require_version(case, expected_version)
+            analysis = session.get(Analysis, case.analysis_id) if case.analysis_id else None
+            analysis_state = dict(analysis.state_json or {}) if analysis is not None else {}
+            orchestration = analysis_state.get("case_orchestration") or {}
+            clarification = analysis_state.get("clarification") or {}
+            if orchestration.get("blocking_missing") or clarification.get("blocking"):
+                raise invalid_case_transition(
+                    case.workflow_status,
+                    STATUS_WAITING_CITIZEN_INFO,
+                )
             self._transition(session, case, STATUS_READY_TO_ROUTE, "REVIEW_ACCEPTED", user)
             return self.serialize_case(case)
 
@@ -841,6 +878,7 @@ class CaseEngine:
                 STATUS_READY_TO_ROUTE,
                 "MISSING_FIELD",
                 "MISSING_INFORMATION",
+                "ROUTING",
             }:
                 raise validation_error(
                     "Geçersiz devam hedefi.", resume_target=resume_target
@@ -1041,7 +1079,6 @@ class CaseEngine:
                 "originator_email": case.originator_email,
                 "originator_phone": case.originator_phone,
             }
-            draft.status = DRAFT_STATUS_SENT
             self._transition(
                 session,
                 case,
@@ -1105,11 +1142,18 @@ class CaseEngine:
                 )
             clarification = None
             if pending is not None:
+                options = []
+                for option in pending.options or []:
+                    if isinstance(option, dict):
+                        options.append(option)
+                    else:
+                        value = str(option)
+                        options.append({"value": value, "label": value.replace("_", " ")})
                 clarification = {
                     "requested_fields": pending.requested_fields or [],
                     "question": pending.question,
                     "question_type": pending.question_type,
-                    "options": pending.options or [],
+                    "options": options,
                 }
             return {
                 "tracking_code": case.tracking_code,
@@ -1159,11 +1203,10 @@ class CaseEngine:
             pending.status = "COMPLETED"
             pending.completed_at = _now()
             pending.submitted_payload = {field: answers[field] for field in allowlist}
-            resume = (pending.resume_target or STATUS_READY_TO_ROUTE).upper()
-            if resume in {"ANALYZING", "MISSING_FIELD", "MISSING_INFORMATION"}:
-                target = STATUS_ANALYZING
-            else:
-                target = STATUS_READY_TO_ROUTE
+            # Every citizen answer becomes structured evidence and returns to
+            # focused AI reevaluation. The registered bridge decides whether
+            # the safe result is READY_TO_ROUTE or human review.
+            target = STATUS_ANALYZING if case.analysis_id else STATUS_READY_TO_ROUTE
             self._transition(
                 session,
                 case,

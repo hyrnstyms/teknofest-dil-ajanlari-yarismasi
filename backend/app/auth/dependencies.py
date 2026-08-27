@@ -66,3 +66,13 @@ def get_current_user(
             )
     except CaseError as exc:
         raise exc.to_http_exception() from exc
+
+
+def get_optional_current_user(
+    authorization: str | None = Header(default=None),
+) -> CurrentUser | None:
+    """Resolve a supplied bearer token while allowing public Copilot reads."""
+
+    if not authorization:
+        return None
+    return get_current_user(authorization)

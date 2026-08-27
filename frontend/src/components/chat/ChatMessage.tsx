@@ -23,6 +23,10 @@ const MODE_LABELS: Record<ChatMode, string> = {
   taslak_duzenleme: "Taslak Düzenleme",
   active_document: "Aktif Evrak",
   institution: "Kurum İşleyişi",
+  workflow_action: "İş Akışı",
+  clarification_action: "Eksik Bilgi",
+  inbox_query: "Gelen Kutusu",
+  case_query_state: "Dosya Durumu",
 };
 
 export const ChatMessage: React.FC<Props> = ({ message, onConfirmAction }) => {

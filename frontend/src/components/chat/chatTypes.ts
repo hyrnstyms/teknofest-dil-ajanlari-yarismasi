@@ -6,7 +6,11 @@ export type ChatMode =
   | "kucuk_sohbet"
   | "taslak_duzenleme"
   | "active_document"
-  | "institution";
+  | "institution"
+  | "workflow_action"
+  | "clarification_action"
+  | "inbox_query"
+  | "case_query_state";
 
 export type ChatStatus =
   | "answered"
@@ -39,7 +43,14 @@ export interface ChatApiResponse {
 }
 
 export interface PendingAction {
-  type: string;
+  action_id: string;
+  type:
+    | "ROUTE_CASE"
+    | "START_CASE"
+    | "REQUEST_CITIZEN_INFO"
+    | "CREATE_OFFICIAL_DRAFT"
+    | "APPROVE_DRAFT"
+    | "FINALIZE_CASE";
   case_id: string;
   payload: Record<string, any>;
   confirmation_required: boolean;
@@ -49,6 +60,7 @@ export interface PendingAction {
 export interface ActionResult {
   success: boolean;
   message: string;
+  case?: Record<string, unknown>;
 }
 
 export interface ChatUiMessage {

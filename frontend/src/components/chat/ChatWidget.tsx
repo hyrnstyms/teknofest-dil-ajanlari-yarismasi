@@ -5,12 +5,13 @@ import { ChatPanel } from "./ChatPanel";
 import { streamChatMessage } from "./chatApi";
 import type { ChatUiMessage, ChatMode } from "./chatTypes";
 import { CHAT_STORAGE_VERSION, restoreChatThread, type StoredChatThread } from "./chatStorage";
-import { EVRAGBrand } from "../EVRAGBrand";
-import { mockCaseActionAdapter } from "../../services/copilotCaseApi";
+import { useAuth } from "../../contexts/AuthContext";
+import { createCaseActionAdapter } from "../../services/copilotCaseApi";
 import "./chat.css";
 
 interface Props {
   analysisId?: string;
+  caseId?: string;
   currentDraft?: DraftInfo;
   institutionId?: string;
   institutionLabel?: string;
@@ -36,12 +37,14 @@ function welcomeMessage(hasAnalysis: boolean): ChatUiMessage {
 
 export const ChatWidget: React.FC<Props> = ({
   analysisId,
-  currentDraft,
+  caseId,
+  currentDraft: _currentDraft,
   institutionId,
   institutionLabel,
   onDraftUpdated,
   openSignal,
 }) => {
+  const { token } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -52,7 +55,7 @@ export const ChatWidget: React.FC<Props> = ({
   const abortControllerRef = useRef<AbortController | null>(null);
   const [messages, setMessages] = useState<ChatUiMessage[]>([]);
 
-  const sessionKey = `evrag_chat_${institutionId || "global"}_${analysisId || "no_doc"}`;
+  const sessionKey = `evrag_chat_${institutionId || "global"}_${caseId || analysisId || "no_doc"}`;
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -90,9 +93,6 @@ export const ChatWidget: React.FC<Props> = ({
   };
 
   const handleConfirmAction = async (action: import("./chatTypes").PendingAction) => {
-    // Adapter logic to simulate Case Engine API since it might not be ready yet.
-    // In final integration, this will call actual endpoints like /api/cases/{id}/route.
-    
     const msgIndex = messages.findIndex(m => m.pendingAction === action);
     if (msgIndex < 0) return;
     
@@ -103,18 +103,19 @@ export const ChatWidget: React.FC<Props> = ({
     
     const msgId = msg.id;
     
-    // Set to submitting synchronously before async mock
+    // Set to submitting synchronously before the asynchronous confirmation call.
     setMessages(prev => prev.map(m => 
       m.id === msgId ? { ...m, actionStatus: "submitting" } : m
     ));
 
     try {
-      const result = await mockCaseActionAdapter.executeAction(action);
+      if (!token) throw new Error("Oturum bulunamadı.");
+      const result = await createCaseActionAdapter(token).executeAction(action);
       
       setMessages(prev => prev.map(m => 
         m.id === msgId ? { ...m, actionResult: result, actionStatus: "resolved" } : m
       ));
-    } catch (err) {
+    } catch {
       setMessages(prev => prev.map(m => 
         m.id === msgId ? { ...m, actionResult: { success: false, message: "İşlem sırasında hata oluştu." }, actionStatus: "resolved" } : m
       ));
@@ -200,7 +201,9 @@ export const ChatWidget: React.FC<Props> = ({
       },
       controller.signal,
       analysisId,
-      institutionId
+      institutionId,
+      caseId,
+      token || undefined,
     );
   };
 

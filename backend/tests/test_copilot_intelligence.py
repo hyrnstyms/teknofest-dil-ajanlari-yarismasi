@@ -3,7 +3,15 @@ from backend.app.agents.chat_agent import resolve_chat_mode, handle_chat_message
 
 def test_handle_workflow_action():
     # Write mode (W)
-    context = {"user_context": {"role": "EVRAK_KAYIT"}}
+    context = {
+        "user_context": {"role": "EVRAK_KAYIT", "department_code": "yazi_isleri"},
+        "analysis_state": {
+            "id": "case-1",
+            "version": 3,
+            "permissions": ["ROUTE_CASE"],
+            "routing": {"recommended_department_code": "fen_isleri"},
+        },
+    }
     response = handle_chat_message("Fen işlerine gönder", workflow_context=context, resolved_mode="workflow_action")
     
     assert isinstance(response, dict)
@@ -11,12 +19,23 @@ def test_handle_workflow_action():
     assert "pending_action" in response
     
     action = response["pending_action"]
-    assert action["type"] == "route_case"
+    assert action["type"] == "ROUTE_CASE"
     assert action["confirmation_required"] is True
 
 def test_handle_clarification_action():
     # Write mode (R)
-    context = {"user_context": {"role": "BIRIM_PERSONELI"}}
+    context = {
+        "user_context": {"role": "EVRAK_KAYIT", "department_code": "yazi_isleri"},
+        "analysis_state": {
+            "id": "case-1",
+            "version": 3,
+            "permissions": ["REQUEST_CITIZEN_INFO"],
+            "clarification": {
+                "question": "Açık adres nedir?",
+                "requested_fields": ["location"],
+            },
+        },
+    }
     response = handle_chat_message("Vatandaştan ek bilgi iste", workflow_context=context, resolved_mode="clarification_action")
     
     assert isinstance(response, dict)
@@ -24,17 +43,17 @@ def test_handle_clarification_action():
     assert "pending_action" in response
     
     action = response["pending_action"]
-    assert action["type"] == "request_clarification"
+    assert action["type"] == "REQUEST_CITIZEN_INFO"
     assert action["confirmation_required"] is True
 
 def test_handle_case_query_state():
     # Read mode (C)
-    context = {"user_context": {"role": "EVRAK_KAYIT"}, "analysis_state": {"status": "WAITING_APPROVAL"}}
+    context = {"user_context": {"role": "EVRAK_KAYIT"}, "analysis_state": {"workflow_status": "WAITING_INITIAL_REVIEW"}}
     response = handle_chat_message("Dosya ne durumda?", workflow_context=context, resolved_mode="case_query_state")
     
     # Should not be a dict with pending_action, just a string
     assert isinstance(response, str)
-    assert "WAITING_APPROVAL" in response
+    assert "WAITING_INITIAL_REVIEW" in response
 
 def test_handle_inbox_query():
     # Read mode (I)
@@ -42,7 +61,7 @@ def test_handle_inbox_query():
     response = handle_chat_message("Üzerimde kaç iş var?", workflow_context=context, resolved_mode="inbox_query")
     
     assert isinstance(response, str)
-    assert "gelen kutunuzda" in response
+    assert "giriş yapmalısınız" in response
 
 def test_permission_evrak_kayit_draft_edit_denied():
     context = {"user_context": {"role": "EVRAK_KAYIT", "department": "Yazı İşleri"}}
@@ -50,12 +69,12 @@ def test_permission_evrak_kayit_draft_edit_denied():
     
     assert isinstance(response, str)
     assert "Yetki Hatası" in response
-    assert "Evrak Kayıt" in response
+    assert "Birim Personeli" in response
 
 def test_permission_birim_personeli_wrong_department_denied():
     context = {
-        "user_context": {"role": "BIRIM_PERSONELI", "department": "Fen İşleri"},
-        "analysis_state": {"department": "İmar"}
+        "user_context": {"role": "BIRIM_PERSONELI", "department_code": "fen_isleri"},
+        "analysis_state": {"current_department_code": "imar_sehircilik"}
     }
     response = handle_chat_message("Taslağı düzenle", workflow_context=context, resolved_mode="taslak_duzenleme", current_draft={"text": "Taslak"})
     
@@ -65,8 +84,8 @@ def test_permission_birim_personeli_wrong_department_denied():
 
 def test_permission_birim_personeli_correct_department_allowed():
     context = {
-        "user_context": {"role": "BIRIM_PERSONELI", "department": "Fen İşleri"},
-        "analysis_state": {"department": "Fen İşleri"}
+        "user_context": {"role": "BIRIM_PERSONELI", "department_code": "fen_isleri"},
+        "analysis_state": {"current_department_code": "fen_isleri"}
     }
     # It should pass permission check and return dict (or reject because of missing draft context, but we provide mock draft)
     response = handle_chat_message("Taslağı düzenle", workflow_context=context, resolved_mode="taslak_duzenleme", current_draft={"text": "Taslak"})
@@ -113,6 +132,5 @@ def test_handle_inbox_query_adapter():
     response = handle_chat_message("Gelen kutumda ne var?", workflow_context=context, resolved_mode="inbox_query")
     
     assert isinstance(response, str)
-    assert "Yazı İşleri" in response
-    assert "EVRAK_KAYIT" in response
+    assert "giriş yapmalısınız" in response
 

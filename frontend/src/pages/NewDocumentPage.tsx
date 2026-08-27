@@ -12,6 +12,7 @@ import { api, type InstitutionOption } from '../services/api';
 import { DocumentState } from '../types';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { humanizeFilename } from '../utils/presentation';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   institution: InstitutionOption | null;
@@ -28,6 +29,7 @@ const PROCESSING_STAGES = [
 ];
 export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded }) => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [text, setText] = useState('');
   const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -72,11 +74,15 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
     try {
       let result: DocumentState;
       if (selectedFile) {
-        result = await api.uploadDocument(selectedFile, institution?.id);
+        result = await api.uploadDocument(selectedFile, institution?.id, token || undefined);
       } else {
-        result = await api.analyzeText(text, institution?.id);
+        result = await api.analyzeText(text, institution?.id, token || undefined);
       }
       onAnalysisLoaded?.(result);
+      if (result.case_id) {
+        navigate(`/dosya/${result.case_id}`);
+        return;
+      }
       const analysisId = result.analysis_id || result.document_id;
       if (!analysisId) {
         throw new Error('Backend yanıtında analiz kimliği bulunamadı.');
@@ -93,8 +99,14 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
     <div className="page-container">
       <h2 style={{ marginBottom: '1.5rem' }}>
         <FilePlus size={24} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
-        Yeni Evrak Analiz Et
+        Demo Evrak Girişi
       </h2>
+
+      <p className="demo-ingress-note">
+        Yarışma demosunda evrak girişi manuel olarak simüle edilmektedir.
+        Üretim ortamında EVRAG mevcut EBYS / elektronik başvuru sistemleriyle
+        entegre edilebilir.
+      </p>
 
       {/* Kurum Seçimi */}
       <div className="selected-context institution-profile-badge mb-6">

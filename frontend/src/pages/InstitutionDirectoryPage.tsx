@@ -1,0 +1,7 @@
+import React, { useEffect, useState } from "react";
+import { Building2 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { caseApi } from "../services/caseApi";
+import type { Department } from "../types/case";
+import { EmptyState } from "../components/case/CasePrimitives";
+export function InstitutionDirectoryPage() { const { user, token } = useAuth(); const [items, setItems] = useState<Department[]>([]); const [error, setError] = useState(""); useEffect(() => { if (user && token) void caseApi.departments(token, user.institution_id).then((x) => setItems(x.departments)).catch((e) => setError(e.message)); }, [user, token]); return <div className="case-page"><header className="case-page-heading"><div><span className="eyebrow">KURUM REHBERİ</span><h1>Belediye hizmet birimleri</h1><p>Birimler doğrudan kurum profilinden alınır; frontend ayrı bir birim listesi tutmaz.</p></div></header>{error && <div className="case-error">{error}</div>}{!error && !items.length ? <EmptyState title="Birimler yükleniyor" text="Kurum dizini Case API üzerinden getiriliyor."/> : <section className="department-grid">{items.map((d) => <article key={d.code}><span><Building2/></span><h2>{d.name}</h2><p>{d.responsibility || "Kurum profilinde tanımlı hizmet birimi."}</p>{d.supported_processes?.length ? <ul>{d.supported_processes.map((p) => <li key={p}>{p}</li>)}</ul> : null}</article>)}</section>}</div>; }

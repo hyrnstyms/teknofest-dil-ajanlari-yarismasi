@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, Form, Request, Response
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from collections.abc import Iterator, MutableMapping
 import uuid
 import os
@@ -34,10 +34,17 @@ from backend.app.institutions.profile_loader import (
 from backend.app.agents.transfer_agent import TransferAgent
 from backend.app.db.repository import AnalysisRepository
 from backend.app.auth.router import router as auth_router
+from backend.app.auth.dependencies import (
+    CurrentUser,
+    get_current_user,
+    get_optional_current_user,
+)
 from backend.app.cases.institution_router import router as case_institution_router
+from backend.app.cases.intelligence_bridge import register_intelligence_hooks
 from backend.app.cases.intake import maybe_create_case_for_analysis
 from backend.app.cases.public_router import router as public_case_router
 from backend.app.cases.router import router as case_router
+from backend.app.intelligence.preview_router import router as ai_preview_router
 
 
 # Initialize FastAPI app
@@ -67,6 +74,8 @@ app.include_router(auth_router)
 app.include_router(case_router)
 app.include_router(public_case_router)
 app.include_router(case_institution_router)
+app.include_router(ai_preview_router, dependencies=[Depends(get_current_user)])
+register_intelligence_hooks()
 
 analysis_repository: AnalysisRepository | None = None
 
@@ -173,8 +182,23 @@ class ChatMessageRequest(BaseModel):
 class ChatStreamRequest(BaseModel):
     message: str
     analysis_id: Optional[str] = None
+    case_id: Optional[str] = None
     institution: Optional[str] = None
     history: Optional[list[dict]] = None
+
+
+class CopilotActionConfirmRequest(BaseModel):
+    action_id: str
+    type: Literal[
+        "ROUTE_CASE",
+        "START_CASE",
+        "REQUEST_CITIZEN_INFO",
+        "CREATE_OFFICIAL_DRAFT",
+        "APPROVE_DRAFT",
+        "FINALIZE_CASE",
+    ]
+    case_id: str
+    payload: dict[str, Any]
 
 
 @app.get("/health")
@@ -700,38 +724,75 @@ def chat_message(req: ChatMessageRequest):
 
 
 @app.post("/api/copilot/stream")
-def copilot_stream(req: ChatStreamRequest):
+def copilot_stream(
+    req: ChatStreamRequest,
+    current_user: CurrentUser | None = Depends(get_optional_current_user),
+):
     """Copilot streaming endpoint with history and true SSE."""
     current_state = None
     current_draft = None
-    if req.analysis_id is not None:
+    if req.case_id is not None:
+        if current_user is None:
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "authentication_required", "message": "Case erişimi için giriş yapın."},
+            )
+        from backend.app.copilot.service import load_case_state
+
+        current_state = load_case_state(current_user, req.case_id)
+        current_draft = current_state.get("draft")
+        if not current_draft and current_state.get("drafts"):
+            current_draft = current_state["drafts"][-1].get("content")
+    elif req.analysis_id is not None:
         try:
             stored_state = _get_stored_analysis(req.analysis_id)
-            state_institution = stored_state.get("kurum_profili_id")
-            if not req.institution or state_institution == req.institution:
+            state_institution = stored_state.get("institution_id") or stored_state.get("kurum_profili_id")
+            requested_institution = current_user.institution_id if current_user else req.institution
+            if not requested_institution or state_institution == requested_institution:
                 current_state = stored_state
                 current_draft = stored_state.get("draft")
         except HTTPException:
             pass
 
-    # Integration Note (Person 4): 
-    # This endpoint signature is defined here, so we must inject the user context 
-    # here to satisfy role-aware requirements until the auth branch merges.
-    # See backend/app/copilot/auth_adapter.py for the mock implementation.
-    from backend.app.copilot.auth_adapter import get_dummy_user_context
-    user_context = get_dummy_user_context()
+    user_context = None
+    institution_id = req.institution
+    if current_user is not None:
+        from backend.app.copilot.service import user_context as build_user_context
+
+        user_context = build_user_context(current_user)
+        institution_id = current_user.institution_id
 
     return StreamingResponse(
         stream_copilot_response(
             message=req.message,
             history=req.history or [],
             analysis_state=current_state,
-            institution_id=req.institution,
+            institution_id=institution_id,
             current_draft=current_draft,
             user_context=user_context,
         ),
         media_type="text/event-stream"
     )
+
+
+@app.post("/api/copilot/actions/confirm")
+def confirm_copilot_action(
+    req: CopilotActionConfirmRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    from backend.app.cases.errors import CaseError
+    from backend.app.copilot.service import execute_confirmed_action
+
+    try:
+        return execute_confirmed_action(
+            current_user,
+            action_id=req.action_id,
+            action_type=req.type,
+            case_id=req.case_id,
+            payload=req.payload,
+        )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
 
 
 @app.get("/api/system/status")
