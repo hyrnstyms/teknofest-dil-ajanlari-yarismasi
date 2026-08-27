@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, BookOpen, Bot, Building2, CheckCircle2, Cpu, Database, FileSearch, Gauge, Network, RefreshCw, Server, ShieldCheck, Workflow, ChevronRight } from "lucide-react";
-import type { InstitutionOption, SystemStatus } from "../services/api";
+import type { EvaluationSummary, InstitutionOption, SystemStatus } from "../services/api";
 import { api } from "../services/api";
 import type { DocumentState } from "../types";
 import "./ai-operations.css";
@@ -38,6 +38,7 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
   const [institutions, setInstitutions] = useState<InstitutionOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationSummary | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,12 +48,15 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
       api.getSystemStatus(),
       api.getAnalyses(20),
       api.listInstitutionOptions(),
+      api.getEvaluationSummary(),
     ]);
     if (results[0].status === "fulfilled") setReady(results[0].value);
     else setReady(null);
     if (results[1].status === "fulfilled") setSystem(results[1].value);
     else setSystem(null);
     if (results[3].status === "fulfilled") setInstitutions(results[3].value);
+    if (results[4].status === "fulfilled") setEvaluation(results[4].value);
+    else setEvaluation(null);
 
     if (results[2].status === "fulfilled" && results[2].value.items.length) {
       const preferred = results[2].value.items.find((item) => !institution?.id || item.analysis_id);
@@ -92,6 +96,17 @@ export const AIOperationsPage: React.FC<Props> = ({ institution, onOpenAnalysis 
         <StatusCard icon={<ShieldCheck />} label="Son Analiz" value={analysis ? humanize(reviewStatus) : "Kayıt yok"} ok={Boolean(analysis)} detail={analysis?.analysis_id} />
       </section>
 
+      <section className="aiops-panel" aria-label="Offline model ve ajan kalitesi">
+        <SectionTitle icon={<Gauge />} eyebrow="Canlı telemetriden ayrı" title="Model & Agent Quality · Offline Evaluation" />
+        {evaluation?.available ? (
+          <pre className="aiops-evaluation-json">{JSON.stringify(evaluation.report, null, 2)}</pre>
+        ) : (
+          <div className="aiops-inline-empty">
+            <strong>Doğrulanmış final değerlendirme henüz yayımlanmadı.</strong>
+            <p>{evaluation?.message || "Kalite yüzdeleri yalnız tamamlanmış ground-truth değerlendirmesinden sonra gösterilir."}</p>
+          </div>
+        )}
+      </section>
       {!analysis ? (
         <section className="aiops-empty">
           <Workflow size={34} />

@@ -3,6 +3,20 @@ from pathlib import Path
 from backend.app.agents.writing_agent import WritingAgent
 from backend.app.evaluation.schemas import EvaluationReport, CoverageInfo
 
+def _normalize_claim_text(value: str) -> str:
+    import re
+    import unicodedata
+
+    text = unicodedata.normalize("NFKD", str(value).casefold())
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    return re.sub(r"[^\w]+", " ", text, flags=re.UNICODE).strip()
+
+
+def find_forbidden_claims(text: str, forbidden_claims: list[str]) -> list[str]:
+    """Case ve noktalama farklarından etkilenmeden unsupported iddiaları bulur."""
+    normalized_text = _normalize_claim_text(text)
+    return [claim for claim in forbidden_claims if _normalize_claim_text(claim) in normalized_text]
+
 def evaluate_writing() -> EvaluationReport:
     gold_path = Path("data/evaluation/writing/gold_taslaklar.jsonl")
     evraklar_path = Path("data/evaluation/synthetic/evraklar.jsonl")

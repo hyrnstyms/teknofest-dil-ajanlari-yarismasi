@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Response
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
@@ -11,6 +12,7 @@ from pathlib import Path
 from datetime import datetime
 from functools import lru_cache
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ from backend.app.agents.chat_agent import handle_draft_edit
 from backend.app.agents.chat_agent import (
     handle_chat_message,
     resolve_chat_mode,
+    stream_copilot_response,
 )
 from backend.app.institutions.profile_loader import (
     list_available_profiles,
@@ -148,6 +151,12 @@ class ChatMessageRequest(BaseModel):
     analysis_id: Optional[str] = None
     institution: Optional[str] = None
 
+class ChatStreamRequest(BaseModel):
+    message: str
+    analysis_id: Optional[str] = None
+    institution: Optional[str] = None
+    history: Optional[list[dict]] = None
+
 
 @app.get("/health")
 def health_check():
@@ -255,11 +264,15 @@ def readiness_check():
         services["postgres"]["status"] = "unavailable"
         ready = False
 
-    return {
+    response_data = {
         "ready": ready,
         "services": services,
         "message": "Sistem servise hazır." if ready else "Bazı servisler hazır değil."
     }
+    return JSONResponse(
+        status_code=200,
+        content=response_data
+    )
 
 
 @app.post("/api/documents/analyze-text")
@@ -655,6 +668,33 @@ def chat_message(req: ChatMessageRequest):
     return response_data
 
 
+@app.post("/api/copilot/stream")
+def copilot_stream(req: ChatStreamRequest):
+    """Copilot streaming endpoint with history and true SSE."""
+    current_state = None
+    current_draft = None
+    if req.analysis_id is not None:
+        try:
+            stored_state = _get_stored_analysis(req.analysis_id)
+            state_institution = stored_state.get("kurum_profili_id")
+            if not req.institution or state_institution == req.institution:
+                current_state = stored_state
+                current_draft = stored_state.get("draft")
+        except HTTPException:
+            pass
+
+    return StreamingResponse(
+        stream_copilot_response(
+            message=req.message,
+            history=req.history or [],
+            analysis_state=current_state,
+            institution_id=req.institution,
+            current_draft=current_draft,
+        ),
+        media_type="text/event-stream"
+    )
+
+
 @app.get("/api/system/status")
 def system_status():
     from backend.app.llm.settings import LLMSettings
@@ -715,6 +755,22 @@ def system_status():
         }
     }
 
+
+@app.get("/api/evaluation/summary")
+def get_evaluation_summary():
+    """Son tamamlanmış offline evaluation artifact'ını model çağrısı yapmadan döndürür."""
+    report_path = Path("reports/evaluation/final_evaluation.json")
+    if not report_path.exists():
+        return {
+            "available": False,
+            "message": "Tamamlanmış final offline değerlendirme raporu bulunmuyor.",
+        }
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        logger.warning("Evaluation summary okunamadı: %s", exc)
+        return {"available": False, "message": "Offline değerlendirme raporu okunamadı."}
+    return {"available": True, "report": payload}
 
 @app.get("/api/roi/summary")
 def roi_summary():

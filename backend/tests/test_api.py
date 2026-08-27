@@ -769,3 +769,10 @@ def test_chat_drops_analysis_context_when_selected_institution_mismatches(monkey
     assert response.status_code == 200
     assert calls == [(None, {"institution": "belediye"}, "active_document")]
     assert "Kaymakamlık evrakı" not in response.json()["sohbet_yaniti"]
+
+def test_evaluation_summary_does_not_invent_metrics(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    res = client.get("/api/evaluation/summary")
+    assert res.status_code == 200
+    assert res.json()["available"] is False
+    assert "report" not in res.json()

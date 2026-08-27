@@ -66,6 +66,11 @@ export interface SystemStatus {
   };
 }
 
+export interface EvaluationSummary {
+  available: boolean;
+  message?: string;
+  report?: Record<string, unknown>;
+}
 type AnalysisQuery = number | { limit?: number; offset?: number; status?: string };
 type ReviewQuery = number | { limit?: number; offset?: number };
 
@@ -205,6 +210,11 @@ export const api = {
     return response.json();
   },
 
+  async getEvaluationSummary(): Promise<EvaluationSummary> {
+    const response = await apiFetch(`${API_BASE_URL}/api/evaluation/summary`);
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+    return response.json();
+  },
   async getRoiSummary(): Promise<ROISummaryResponse> {
     const response = await apiFetch(`${API_BASE_URL}/api/roi/summary`);
     if (!response.ok) {

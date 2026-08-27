@@ -10,7 +10,7 @@ from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generator
 
 from rapidfuzz import fuzz
 
@@ -70,7 +70,7 @@ Yalnızca düz metin döndür.
 """.strip()
 
 MEVZUAT_SORUSU_RE = re.compile(
-    r"\b(?:kanun\w*|madde\w*|yönetmeli\w*|yonetmeli\w*|sayılı\w*|sayili\w*)\b",
+    r"\b(?:kanun\w*|madde\w*|yönetmeli\w*|yonetmeli\w*|sayılı\w*|sayili\w*|süre\w*|sure\w*|yasal|mevzuat\w*|gün\w*|gun\w*|süreç\w*|surec\w*)\b",
     flags=re.UNICODE,
 )
 
@@ -654,10 +654,25 @@ def match_faq(user_message: str, esik: int = ESLESME_ESIGI) -> str:
 
 
 def is_mevzuat_sorusu(message: str) -> bool:
-    """Mesajın açık bir mevzuat anahtar sözcüğü içerip içermediğini belirler."""
+    """Resolve only high-confidence legal signals without an LLM call."""
 
-    return bool(MEVZUAT_SORUSU_RE.search(_normalize_text(message)))
-
+    normalized = _normalize_text(message)
+    if re.search(r"\b(?:chatbot|copilot)\b.*\b(?:sorabilir|kullan|nasil)\w*", normalized):
+        return False
+    if re.search(r"\bmevzuat\b.*\b(?:esle|oran)\w*", normalized):
+        return False
+    explicit_reference = bool(re.search(
+        r"\b(?:\d{3,4}\s+say\w+|madde\s+\d+|kanun\w*|\w*netmeli\w*)\b",
+        normalized,
+    ))
+    if re.match(r"^(?:merhaba|selam)\b", normalized) and not explicit_reference:
+        return False
+    natural_legal_question = bool(re.search(
+        r"\b(?:dilek\w*|ba\w*vuru|bilgi edinme)\b.*\b(?:cevap|yan\w*t|ka\w* g\w*n|s\w*re)\w*|"
+        r"\b(?:yasal s\w*re|hangi kanun|hangi madde|mevzuata g\w*re)\b",
+        normalized,
+    ))
+    return explicit_reference or natural_legal_question
 
 @lru_cache(maxsize=1)
 def _get_legal_agent() -> "LegalAgent":
@@ -1148,16 +1163,22 @@ def handle_draft_edit(
     )
 
 
-def is_active_document_question(message: str) -> bool:
+def is_active_document_question(message: str, history: list[dict] | None = None, has_active_document: bool = False) -> bool:
     """Aktif evrak state'inden cevaplanabilecek açık soruları belirler."""
 
     normalized = _normalize_text(message)
     has_document_reference = bool(re.search(r"\b(?:bu|aktif|mevcut)\s+evrak", normalized))
-    if not has_document_reference:
+
+    if history and history[-1].get("mode") == "active_document":
+        # Follow-up keyword check
+        if bool(re.search(r"\b(?:neden|niye|nasıl|nasil|peki|eksik|özet|ozet|kim)\b", normalized)):
+            return True
+
+    if not (has_document_reference or has_active_document):
         return False
     return bool(re.search(
-        r"\b(?:konu|özet|ozet|eksik|belirsiz|risk|birim|yönlendir|yonlendir|"
-        r"mevzuat|kanun|personel|onay|taslak)\w*",
+        r"\b(?:konu|özet|ozet|hakkında|hakkinda|eksik|belirsiz|risk|birim|yönlendir|yonlendir|gitmeli|"
+        r"mevzuat|kanun|personel|onay|taslak|önceliği|onceligi|sonraki|adım|adim)\w*",
         normalized,
     ))
 
@@ -1215,10 +1236,17 @@ def _state_list(value: Any) -> list[str]:
     return [str(item).strip() for item in value if str(item).strip()]
 
 
-def handle_active_document_question(message: str, state: dict[str, Any]) -> str:
+def handle_active_document_question(message: str, state: dict[str, Any], history: list[dict] | None = None) -> str:
     """Aktif analiz state'ini yorumlamadan, kısa ve kaynak-sınırlı biçimde sunar."""
 
     normalized = _normalize_text(message)
+
+    # Check if this is a "Neden?" follow up to a routing answer
+    if history and history[-1].get("mode") == "active_document" and "neden" in normalized:
+        prev_bot = str(history[-1].get("content") or "").lower()
+        if "önerilen birim:" in prev_bot:
+            normalized = "yönlendir gerekçe"  # force it into the routing block below
+
     summary = state.get("summary") if isinstance(state.get("summary"), dict) else {}
     extraction = state.get("extraction") if isinstance(state.get("extraction"), dict) else {}
     fields = extraction.get("fields") if isinstance(extraction.get("fields"), dict) else {}
@@ -1242,7 +1270,7 @@ def handle_active_document_question(message: str, state: dict[str, Any]) -> str:
             parts.append("Belirsiz alanlar: " + ", ".join(uncertain_items) + ".")
         return " ".join(parts) or "Aktif evrakta kayıtlı eksik veya belirsiz alan bulunmuyor."
 
-    if "yönlendir" in normalized or "yonlendir" in normalized or "birim" in normalized:
+    if "yönlendir" in normalized or "yonlendir" in normalized or "birim" in normalized or "gerekçe" in normalized:
         unit = routing.get("recommended_unit")
         reason = routing.get("routing_reason") or routing.get("reason")
         evidence = _state_list(routing.get("routing_evidence") or routing.get("evidence"))
@@ -1353,15 +1381,22 @@ def classify_with_router(message: str) -> str:
     return label if label in ROUTER_GECERLI_ETIKETLER else "X"
 
 
-def resolve_chat_mode(message: str) -> str:
-    """Deterministik modları, SSS'yi ve son çare router'ı tek yerde çözer."""
+def resolve_chat_mode(message: str, history: list[dict] | None = None, has_active_document: bool = False) -> str:
+    """Deterministik modları, SSS'yi ve son çare router'ı geçmişe de bakarak çözer."""
 
     if is_taslak_duzenleme_talebi(message):
         return "taslak_duzenleme"
-    if is_active_document_question(message):
+    if is_active_document_question(message, history, has_active_document):
         return "active_document"
     if is_institution_question(message):
         return "institution"
+
+    normalized = _normalize_text(message)
+    # Check follow up to mevzuat
+    if history and history[-1].get("mode") == "mevzuat":
+        if bool(re.search(r"\b(?:hangi|madde|süre|sure|nedir)\b", normalized)):
+            return "mevzuat"
+
     if is_mevzuat_sorusu(message):
         return "mevzuat"
     if is_kucuk_sohbet(message):
@@ -1384,11 +1419,12 @@ def handle_chat_message(
     current_draft: dict[str, Any] | None = None,
     workflow_context: dict[str, Any] | None = None,
     resolved_mode: str | None = None,
+    history: list[dict] | None = None,
 ) -> str | dict[str, Any]:
     """Tek kez çözülen moda göre mevcut güvenli sohbet işleyicisini çalıştırır."""
 
     valid_modes = {"taslak_duzenleme", "active_document", "institution", "mevzuat", "kucuk_sohbet", "kilavuz"}
-    mode = resolved_mode if resolved_mode in valid_modes else resolve_chat_mode(message)
+    mode = resolved_mode if resolved_mode in valid_modes else resolve_chat_mode(message, history)
 
     if mode == "taslak_duzenleme":
         if current_draft is None:
@@ -1402,7 +1438,7 @@ def handle_chat_message(
         state = (workflow_context or {}).get("analysis_state")
         if not isinstance(state, dict):
             return "Bu soruyu yanıtlamak için önce bir evrak analizi açın."
-        return handle_active_document_question(message, state)
+        return handle_active_document_question(message, state, history)
     if mode == "institution":
         return handle_institution_question(
             message,
@@ -1413,6 +1449,127 @@ def handle_chat_message(
     if mode == "kucuk_sohbet":
         return handle_kucuk_sohbet(message)
     return match_faq(message)
+
+
+# ---------------------------------------------------------------------------
+# Streaming Copilot Logic
+# ---------------------------------------------------------------------------
+
+def _build_rag_sources(message: str, history: list[dict], analysis_state: dict[str, Any] | None) -> list[dict]:
+    query_parts = [message]
+    if analysis_state:
+        doc = analysis_state.get("document") or {}
+        intent = doc.get("process_intent", "")
+        if intent:
+            query_parts.append(intent)
+
+    query = " ".join(query_parts)[:800]
+    try:
+        result = _get_legal_agent().analyze(query=query)
+        sources = result.get("sources") or []
+        evidence = result.get("evidence") or []
+        return [
+            {
+                "law_number": src.get("law_number", ""),
+                "title": src.get("title", ""),
+                "madde_no": src.get("madde_no", ""),
+                "excerpt": str(next(
+                    (e.get("evidence", "") for e in evidence
+                     if isinstance(e, dict) and e.get("source") == f"K{i+1}"),
+                    src.get("excerpt", "")
+                ))[:600],
+                "score": result.get("retrieval_score"),
+            }
+            for i, src in enumerate(sources[:4])
+            if isinstance(src, dict)
+        ]
+    except Exception:
+        return []
+
+def stream_copilot_response(
+    message: str,
+    history: list[dict],
+    analysis_state: dict[str, Any] | None,
+    institution_id: str | None,
+    current_draft: dict[str, Any] | None = None,
+) -> Generator[str, None, None]:
+    """SSE Streaming Copilot."""
+    import time
+    from backend.app.llm.settings import LLMSettings
+    from backend.app.llm.factory import create_llm_client
+
+    start_time = time.time()
+    ttft_ms = None
+
+    # Isolate strictly needed roles
+    filtered_history = [h for h in history if h.get("role") in ("user", "assistant") and h.get("content")][-12:]
+
+    workflow_context = {}
+    if institution_id:
+        workflow_context["institution"] = institution_id
+    if analysis_state:
+        workflow_context["analysis_state"] = analysis_state
+        workflow_context.update({
+            "extraction": analysis_state.get("extraction", {}),
+            "routing": analysis_state.get("routing", {}),
+            "kurum_profili_id": analysis_state.get("kurum_profili_id") or "kaymakamlik_v1",
+        })
+
+    mode = resolve_chat_mode(message, history=filtered_history, has_active_document=analysis_state is not None)
+    provider = LLMSettings.get_provider()
+
+    # 1. Emit start
+    yield f"event: start\ndata: {json.dumps({'provider': provider, 'mode': mode}, ensure_ascii=False)}\n\n"
+
+    # 2. Modes that can be answered immediately (no LLM text streaming needed)
+    if mode in ("taslak_duzenleme", "active_document", "institution", "kucuk_sohbet", "kilavuz"):
+        ans = handle_chat_message(message, current_draft, workflow_context, mode, filtered_history)
+        text_ans = ans.get("sohbet_yaniti", "") if isinstance(ans, dict) else ans
+
+        yield f"event: delta\ndata: {json.dumps({'text': text_ans}, ensure_ascii=False)}\n\n"
+
+        if mode == "taslak_duzenleme" and isinstance(ans, dict) and ans.get("status") == "applied":
+            # For draft edits, send a specific update event so client knows to update the UI
+            yield f"event: draft_update\ndata: {json.dumps({'updated_draft': ans.get('updated_draft')}, ensure_ascii=False)}\n\n"
+
+    # 3. RAG/Legal Mode (Requires LLM Streaming)
+    elif mode == "mevzuat":
+        rag_sources = _build_rag_sources(message, filtered_history, analysis_state)
+
+        if not rag_sources:
+            # Emit no evidence safe message
+            yield f"event: delta\ndata: {json.dumps({'text': MEVZUAT_KANIT_BULUNAMADI_MESAJI}, ensure_ascii=False)}\n\n"
+        else:
+            yield f"event: sources\ndata: {json.dumps({'sources': rag_sources}, ensure_ascii=False)}\n\n"
+
+            # Build safe prompt
+            from backend.app.institutions.profile_loader import load_institution_profile
+            try:
+                prof = load_institution_profile(institution_id) if institution_id else None
+                inst_ctx = f"Kurum: {prof.kurum_adi}" if prof else ""
+            except:
+                inst_ctx = ""
+
+            src_text = "\\n".join(f"• {s['law_number']} sayılı Kanun — Madde {s['madde_no']}\\n\"{s['excerpt']}\"" for s in rag_sources)
+
+            system_prompt = (
+                "Sen EVRAG sisteminin Copilot asistanısın. Görevin: ilgili mevzuat hakkındaki soruları kısa ve kaynak-destekli yanıtlamak.\\n"
+                "KURALLAR:\\n- Yetersiz kanıt varsa bunu dürüstçe belirt; yasa uydurma.\\n"
+                "- Copilot sadece evrak, mevzuat ve kurum süreci konularında yardımcı olur.\\n\\n"
+                f"{inst_ctx}\\n\\n[DOĞRULANMIŞ MEVZUAT KAYNAKLARI]\\n{src_text}\\n"
+            )
+
+            client = create_llm_client("legal_agent")
+            try:
+                for delta in client.chat_stream(system_prompt=system_prompt, user_prompt=message, history=filtered_history, max_tokens=700):
+                    if ttft_ms is None:
+                        ttft_ms = int((time.time() - start_time) * 1000)
+                    yield f"event: delta\ndata: {json.dumps({'text': delta}, ensure_ascii=False)}\n\n"
+            except Exception:
+                yield f"event: error\ndata: {json.dumps({'message': 'Mevzuat yorumlaması sırasında bir hata oluştu.'}, ensure_ascii=False)}\n\n"
+
+    total_ms = int((time.time() - start_time) * 1000)
+    yield f"event: done\ndata: {json.dumps({'ttft_ms': ttft_ms or total_ms, 'total_ms': total_ms}, ensure_ascii=False)}\n\n"
 
 
 __all__ = [
@@ -1441,4 +1598,5 @@ __all__ = [
     "is_taslak_duzenleme_talebi",
     "match_faq",
     "resolve_chat_mode",
+    "stream_copilot_response",
 ]

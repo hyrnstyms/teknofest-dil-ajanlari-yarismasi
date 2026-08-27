@@ -77,6 +77,38 @@ class EvrenClient(LLMClient):
 
         return str(content).strip()
 
+    def chat_stream(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        history: list[dict] | None = None,
+        temperature: float = 0.3,
+        max_tokens: int = 800,
+    ):
+        """OpenAI-compatible streaming — yields text deltas from EVREN."""
+        messages: list[dict] = [{"role": "system", "content": system_prompt}]
+        if history:
+            for turn in history:
+                role = turn.get("role", "user")
+                content = turn.get("content", "")
+                if role in ("user", "assistant") and content:
+                    messages.append({"role": role, "content": content})
+        messages.append({"role": "user", "content": user_prompt})
+
+        stream = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+            extra_body={"enable_thinking": False},
+            timeout=self.timeout,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            if delta:
+                yield delta
+
     def get_model_name(self) -> str:
         return self.model_name
 
