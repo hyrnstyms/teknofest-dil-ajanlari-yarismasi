@@ -148,10 +148,8 @@ describe('CaseRecord structural invariants', () => {
 describe('PublicCase public DTO invariants', () => {
   const publicCase: PublicCase = {
     tracking_code: 'EVR-2026-000001',
-    subject: 'Yol bakım talebi',
     received_at: '2026-08-27T09:30:00+03:00',
-    status: 'İşleminiz incelemede',
-    workflow_status: 'RECEIVED',
+    public_status: 'İşleminiz incelemede',
     updated_at: '2026-08-27T09:31:00+03:00',
     timeline: [],
   };
@@ -175,10 +173,9 @@ describe('PublicCase public DTO invariants', () => {
     expect('analysis_summary' in publicCase).toBe(false);
   });
 
-  it('has tracking_code, subject, received_at and status', () => {
+  it('has only the safe tracking and public status fields', () => {
     expect(publicCase.tracking_code).toBeTruthy();
-    expect(publicCase.subject).toBeTruthy();
     expect(publicCase.received_at).toBeTruthy();
-    expect(publicCase.status).toBeTruthy();
+    expect(publicCase.public_status).toBeTruthy();
   });
 });

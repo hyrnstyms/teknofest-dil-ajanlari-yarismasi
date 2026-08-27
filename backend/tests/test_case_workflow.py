@@ -207,8 +207,8 @@ def test_route_requires_confirmation_and_is_atomic():
             "confirmed": True,
         },
     )
-    assert invalid_state.status_code == 403
-    assert invalid_state.json()["detail"]["code"] == "action_forbidden"
+    assert invalid_state.status_code == 409
+    assert invalid_state.json()["detail"]["code"] == "invalid_case_transition"
 
 
 def test_department_start_and_action_are_human_authorized():
