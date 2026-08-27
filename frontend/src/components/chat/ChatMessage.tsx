@@ -9,10 +9,11 @@ import {
   ChevronRight,
   Copy,
 } from "lucide-react";
-import type { ChatMode, ChatUiMessage } from "./chatTypes";
+import type { ChatMode, ChatUiMessage, PendingAction } from "./chatTypes";
 
 interface Props {
   message: ChatUiMessage;
+  onConfirmAction?: (action: PendingAction) => void;
 }
 
 const MODE_LABELS: Record<ChatMode, string> = {
@@ -24,8 +25,9 @@ const MODE_LABELS: Record<ChatMode, string> = {
   institution: "Kurum İşleyişi",
 };
 
-export const ChatMessage: React.FC<Props> = ({ message }) => {
+export const ChatMessage: React.FC<Props> = ({ message, onConfirmAction }) => {
   const [sourcesExpanded, setSourcesExpanded] = React.useState(false);
+  const [actionResponded, setActionResponded] = React.useState(false);
   const isBot = message.role === "bot";
   const showFailure =
     message.status === "rejected" || message.status === "error";
@@ -98,6 +100,46 @@ export const ChatMessage: React.FC<Props> = ({ message }) => {
             <button className="chat-action-btn" onClick={copyToClipboard} title="Kopyala">
               <Copy size={14} /> Kopyala
             </button>
+          </div>
+        )}
+
+        {message.pendingAction && (
+          <div className="chat-pending-action-card">
+            <div className="pending-action-text">
+              <strong>Eylem Onayı Bekleniyor</strong>
+              <p>{message.pendingAction.confirmation_text}</p>
+            </div>
+            {message.actionResult ? (
+              <div className={`action-result ${message.actionResult.success ? "success" : "error"} ${message.actionResult.message.includes("[DEMO]") ? "demo-warning" : ""}`}>
+                <AlertTriangle size={14} />
+                <span>{message.actionResult.message}</span>
+              </div>
+            ) : actionResponded ? (
+              <div className="action-result">
+                <span>İşlem iptal edildi.</span>
+              </div>
+            ) : (
+              <div className="pending-action-buttons">
+                <button 
+                  className="btn-confirm" 
+                  disabled={message.isStreaming || message.actionStatus === "submitting"}
+                  onClick={() => {
+                    if (onConfirmAction) {
+                      onConfirmAction(message.pendingAction!);
+                    }
+                  }}
+                >
+                  {message.actionStatus === "submitting" ? "İşleniyor..." : "Onayla"}
+                </button>
+                <button 
+                  className="btn-cancel" 
+                  disabled={message.isStreaming || message.actionStatus === "submitting"}
+                  onClick={() => setActionResponded(true)}
+                >
+                  Vazgeç
+                </button>
+              </div>
+            )}
           </div>
         )}
 

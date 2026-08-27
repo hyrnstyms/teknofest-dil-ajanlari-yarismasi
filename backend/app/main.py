@@ -714,6 +714,13 @@ def copilot_stream(req: ChatStreamRequest):
         except HTTPException:
             pass
 
+    # Integration Note (Person 4): 
+    # This endpoint signature is defined here, so we must inject the user context 
+    # here to satisfy role-aware requirements until the auth branch merges.
+    # See backend/app/copilot/auth_adapter.py for the mock implementation.
+    from backend.app.copilot.auth_adapter import get_dummy_user_context
+    user_context = get_dummy_user_context()
+
     return StreamingResponse(
         stream_copilot_response(
             message=req.message,
@@ -721,6 +728,7 @@ def copilot_stream(req: ChatStreamRequest):
             analysis_state=current_state,
             institution_id=req.institution,
             current_draft=current_draft,
+            user_context=user_context,
         ),
         media_type="text/event-stream"
     )

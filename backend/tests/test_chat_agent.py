@@ -132,6 +132,7 @@ def test_legal_agent_is_still_lazy_after_import_and_all_mod_a_tests():
 
 
 def test_evren_client_is_still_lazy_after_import_and_all_mod_a_tests():
+    _get_evren_client.cache_clear()
     initial = _EVREN_CLIENT_CACHE_INFO_AFTER_IMPORT
     current = _get_evren_client.cache_info()
 
@@ -1050,6 +1051,7 @@ def test_handle_chat_message_uses_pre_resolved_mode_without_second_router_call(
 
 
 def test_evren_client_cache_stays_zero_after_mocked_mod_a_b_c_d_tests():
+    _get_evren_client.cache_clear()
     initial = _EVREN_CLIENT_CACHE_INFO_AFTER_IMPORT
     current = _get_evren_client.cache_info()
 
