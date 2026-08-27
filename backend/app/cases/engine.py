@@ -531,6 +531,11 @@ class CaseEngine:
                     "recommended_unit": routing.get("recommended_unit"),
                     "recommended_department_code": routing.get("recommended_department_code"),
                     "human_review_status": (stored.get("human_review") or {}).get("status"),
+                    "document": dict(stored.get("document") or {}),
+                    "extraction": dict(stored.get("extraction") or {}),
+                    "missing_fields": dict(stored.get("missing_fields") or {}),
+                    "legal_analysis": dict(stored.get("legal_analysis") or {}),
+                    "raw_text": stored.get("raw_text"),
                 }
         aggregate["case"]["current_department_name"] = _department_name(
             aggregate["case"]["institution_id"],

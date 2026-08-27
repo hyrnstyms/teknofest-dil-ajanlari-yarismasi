@@ -45,6 +45,7 @@ from backend.app.cases.intake import maybe_create_case_for_analysis
 from backend.app.cases.public_router import router as public_case_router
 from backend.app.cases.router import router as case_router
 from backend.app.intelligence.preview_router import router as ai_preview_router
+from backend.app.demo.router import router as demo_router
 
 
 # Initialize FastAPI app
@@ -75,6 +76,7 @@ app.include_router(case_router)
 app.include_router(public_case_router)
 app.include_router(case_institution_router)
 app.include_router(ai_preview_router, dependencies=[Depends(get_current_user)])
+app.include_router(demo_router)
 register_intelligence_hooks()
 
 analysis_repository: AnalysisRepository | None = None
