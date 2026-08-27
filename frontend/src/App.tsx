@@ -15,7 +15,7 @@ import { InstitutionDirectoryPage } from "./pages/InstitutionDirectoryPage";
 import { NewDocumentPage } from "./pages/NewDocumentPage";
 import { OfficialWritingsPage } from "./pages/OfficialWritingsPage";
 import { QrVerifyPage } from "./pages/QrVerifyPage";
-import { RoleHomePage } from "./pages/RoleHomePage";
+import { RoleOperationsPage } from "./pages/RoleOperationsPage";
 import type { InstitutionOption } from "./services/api";
 import type { DocumentState } from "./types";
 import "./index.css";
@@ -69,7 +69,7 @@ function WorkspaceShell() {
           <TopBar user={user!} />
           <main className="main-content">
             <Routes>
-              <Route path="/" element={<RoleHomePage />} />
+              <Route path="/" element={<RoleOperationsPage />} />
               <Route path="/dosyalar" element={<CaseInboxPage />} />
               <Route path="/gecmis" element={<CaseInboxPage history />} />
               <Route path="/dosya/:id" element={<CaseWorkspacePage />} />
