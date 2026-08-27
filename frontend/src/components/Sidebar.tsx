@@ -1,43 +1,9 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Bot, FilePlus, FileText, Inbox, LayoutDashboard, MessageSquareText, Settings, UserCheck } from "lucide-react";
+import { Bot, Building2, FilePlus, FolderClock, Inbox, LayoutDashboard, MessageSquareText } from "lucide-react";
 import { EVRAGBrand } from "./EVRAGBrand";
-
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  "sidebar-link " + (isActive ? "sidebar-link-active" : "");
-
-interface Props {
-  onOpenCopilot?: () => void;
-}
-
-const groups = [
-  { label: "EVRAK", items: [
-    { to: "/", icon: LayoutDashboard, text: "Ana Sayfa", end: true },
-    { to: "/yeni-evrak", icon: FilePlus, text: "Yeni Evrak" },
-    { to: "/gelen-evraklar", icon: Inbox, text: "Gelen Evraklar" },
-  ]},
-  { label: "ÇALIŞMA", items: [
-    { to: "/taslaklar", icon: FileText, text: "Taslaklar" },
-    { to: "/inceleme-bekleyenler", icon: UserCheck, text: "İnceleme Bekleyenler" },
-  ]},
-  { label: "YAPAY ZEKÂ", items: [
-    { to: "/ai-operasyon", icon: Bot, text: "AI Operasyon Merkezi" },
-  ]},
-  { label: "YÖNETİM", items: [
-    { to: "/yonetici", icon: Settings, text: "Yönetici Paneli" },
-  ]},
-];
-
-export const Sidebar: React.FC<Props> = ({ onOpenCopilot }) => <aside className="sidebar no-print">
-  <div className="sidebar-brand">
-    <EVRAGBrand variant="full" theme="light" />
-  </div>
-  <nav className="sidebar-nav">
-    {groups.map((group) => <React.Fragment key={group.label}>
-      <span className="sidebar-section-label">{group.label}</span>
-      {group.items.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}><item.icon size={19}/><span>{item.text}</span></NavLink>)}
-      {group.label === "YAPAY ZEKÂ" && <button type="button" className="sidebar-link sidebar-copilot-link" onClick={onOpenCopilot}><MessageSquareText size={19}/><span>EVRAG Copilot</span></button>}
-    </React.Fragment>)}
-  </nav>
-  <div className="sidebar-footer"><div className="sidebar-footer-text"><span className="sidebar-health-dot"/>Sistem Hazır</div><div className="sidebar-runtime">Yerel · Qwen2.5 3B</div></div>
-</aside>;
+import type { UserRole } from "../types/case";
+import { navigationForRole } from "../utils/roleNavigation";
+interface Props { role: UserRole; onOpenCopilot?: () => void }
+const icons: Record<string, React.ComponentType<{ size?: number }>> = { home: LayoutDashboard, incoming: Inbox, clarification: FolderClock, routing: Inbox, history: FolderClock, assigned: Inbox, progress: FolderClock, approval: FolderClock, deadline: FolderClock };
+export const Sidebar: React.FC<Props> = ({ role, onOpenCopilot }) => <aside className="sidebar no-print"><div className="sidebar-brand"><EVRAGBrand variant="full" theme="light"/></div><nav className="sidebar-nav"><span className="sidebar-section-label">ÇALIŞMA ALANI</span>{navigationForRole(role).map((item) => { const Icon = icons[item.key] || Inbox; return <NavLink key={item.key} to={item.to} end={item.to === "/"} className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}><Icon size={19}/><span>{item.text}</span></NavLink>; })}<span className="sidebar-section-label">ARAÇLAR</span>{role === "EVRAK_KAYIT" && <NavLink to="/yeni-evrak" className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}><FilePlus size={19}/><span>Demo Evrak Girişi</span></NavLink>}<NavLink to="/kurum-rehberi" className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}><Building2 size={19}/><span>Kurum Rehberi</span></NavLink><button type="button" className="sidebar-link sidebar-copilot-link" onClick={onOpenCopilot}><MessageSquareText size={19}/><span>EVRAG Copilot</span></button>{role === "EVRAK_KAYIT" && <NavLink to="/ai-operasyon" className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}><Bot size={19}/><span>AI Operasyonları</span></NavLink>}</nav><div className="sidebar-footer"><div className="sidebar-footer-text"><span className="sidebar-health-dot"/>Kurumsal çalışma alanı</div><div className="sidebar-runtime">AI destekler · Personel karar verir</div></div></aside>;

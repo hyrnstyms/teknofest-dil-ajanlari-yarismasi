@@ -93,8 +93,14 @@ export const NewDocumentPage: React.FC<Props> = ({ institution, onAnalysisLoaded
     <div className="page-container">
       <h2 style={{ marginBottom: '1.5rem' }}>
         <FilePlus size={24} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
-        Yeni Evrak Analiz Et
+        Demo Evrak Girişi
       </h2>
+
+      <p className="demo-ingress-note">
+        Yarışma demosunda evrak girişi manuel olarak simüle edilmektedir.
+        Üretim ortamında EVRAG mevcut EBYS / elektronik başvuru sistemleriyle
+        entegre edilebilir.
+      </p>
 
       {/* Kurum Seçimi */}
       <div className="selected-context institution-profile-badge mb-6">

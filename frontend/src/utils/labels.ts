@@ -112,3 +112,8 @@ export const EVIDENCE_MODE_LABELS: Record<string, string> = {
   deterministic_validation: "Kural Tabanlı Doğrulama",
   llm: "Yapay Zekâ Destekli",
 };
+
+export function getLabel(key: string | undefined | null, map: Record<string, string>): string {
+  const normalized = String(key ?? "").trim();
+  return map[normalized] || normalized.replaceAll("_", " ");
+}
