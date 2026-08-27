@@ -4,7 +4,9 @@ export type ChatMode =
   | "kilavuz"
   | "mevzuat"
   | "kucuk_sohbet"
-  | "taslak_duzenleme";
+  | "taslak_duzenleme"
+  | "active_document"
+  | "institution";
 
 export type ChatStatus =
   | "answered"
@@ -17,6 +19,14 @@ export interface ChatValidationIssue {
   kural_kodu?: string;
   mesaj?: string;
   madde_ref?: string;
+}
+
+export interface ChatSource {
+  law_number: string;
+  title: string;
+  madde_no: string;
+  excerpt: string;
+  score: number;
 }
 
 export interface ChatApiResponse {
@@ -35,4 +45,6 @@ export interface ChatUiMessage {
   mode?: ChatMode;
   status?: ChatStatus;
   validationErrors?: ChatValidationIssue[];
+  isStreaming?: boolean;
+  sources?: ChatSource[];
 }

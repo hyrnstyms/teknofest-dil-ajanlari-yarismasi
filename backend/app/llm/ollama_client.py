@@ -25,6 +25,22 @@ class OllamaClient(LLMClient):
             f"{self.base_url}/api/chat"
         )
 
+    def _build_messages(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        history: list[dict] | None = None,
+    ) -> list[dict[str, str]]:
+        messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+        if history:
+            for turn in history:
+                role = turn.get("role", "user")
+                content = turn.get("content", "")
+                if role in ("user", "assistant") and content:
+                    messages.append({"role": role, "content": content})
+        messages.append({"role": "user", "content": user_prompt})
+        return messages
+
     def chat(
         self,
         system_prompt: str,
@@ -85,6 +101,48 @@ class OllamaClient(LLMClient):
             )
 
         return content.strip()
+
+    def chat_stream(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        history: list[dict] | None = None,
+        temperature: float = 0.3,
+        max_tokens: int = 800,
+    ):
+        """Ollama native streaming — yields text deltas token by token."""
+        import json as _json
+
+        payload: dict[str, Any] = {
+            "model": self.model_name,
+            "stream": True,
+            "keep_alive": os.getenv("OLLAMA_KEEP_ALIVE", "30m"),
+            "messages": self._build_messages(system_prompt, user_prompt, history),
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+        }
+
+        with requests.post(
+            self.chat_url,
+            json=payload,
+            timeout=180,
+            stream=True,
+        ) as response:
+            response.raise_for_status()
+            for raw_line in response.iter_lines():
+                if not raw_line:
+                    continue
+                try:
+                    chunk = _json.loads(raw_line)
+                except (ValueError, TypeError):
+                    continue
+                delta = chunk.get("message", {}).get("content", "")
+                if delta:
+                    yield delta
+                if chunk.get("done"):
+                    break
 
     def get_model_name(
         self,

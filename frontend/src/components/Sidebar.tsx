@@ -1,10 +1,14 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Bot, FilePlus, FileText, Inbox, LayoutDashboard, Settings, UserCheck } from "lucide-react";
+import { Bot, FilePlus, FileText, Inbox, LayoutDashboard, MessageSquareText, Settings, UserCheck } from "lucide-react";
 import { EVRAGBrand } from "./EVRAGBrand";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   "sidebar-link " + (isActive ? "sidebar-link-active" : "");
+
+interface Props {
+  onOpenCopilot?: () => void;
+}
 
 const groups = [
   { label: "EVRAK", items: [
@@ -24,7 +28,7 @@ const groups = [
   ]},
 ];
 
-export const Sidebar: React.FC = () => <aside className="sidebar no-print">
+export const Sidebar: React.FC<Props> = ({ onOpenCopilot }) => <aside className="sidebar no-print">
   <div className="sidebar-brand">
     <EVRAGBrand variant="full" theme="light" />
   </div>
@@ -32,6 +36,7 @@ export const Sidebar: React.FC = () => <aside className="sidebar no-print">
     {groups.map((group) => <React.Fragment key={group.label}>
       <span className="sidebar-section-label">{group.label}</span>
       {group.items.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}><item.icon size={19}/><span>{item.text}</span></NavLink>)}
+      {group.label === "YAPAY ZEKÂ" && <button type="button" className="sidebar-link sidebar-copilot-link" onClick={onOpenCopilot}><MessageSquareText size={19}/><span>EVRAG Copilot</span></button>}
     </React.Fragment>)}
   </nav>
   <div className="sidebar-footer"><div className="sidebar-footer-text"><span className="sidebar-health-dot"/>Sistem Hazır</div><div className="sidebar-runtime">Yerel · Qwen2.5 3B</div></div>

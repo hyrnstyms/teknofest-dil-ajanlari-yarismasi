@@ -1,28 +1,35 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Send, X } from "lucide-react";
+import { Send, X, Square, Trash2, RefreshCw } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
+import { EVRAGBrand } from "../EVRAGBrand";
 import type { ChatUiMessage } from "./chatTypes";
 
 interface Props {
   messages: ChatUiMessage[];
   isLoading: boolean;
+  isStreaming?: boolean;
   hasAnalysis: boolean;
-  hasDraft: boolean;
   institutionLabel?: string;
+  failedMessage?: string | null;
   onSend: (message: string) => Promise<void>;
-  onRetry?: () => Promise<void>;
+  onRetry?: () => void;
   onClose: () => void;
+  onStop?: () => void;
+  onClearHistory?: () => void;
 }
 
 export const ChatPanel: React.FC<Props> = ({
   messages,
   isLoading,
+  isStreaming,
   hasAnalysis,
-  hasDraft,
   institutionLabel,
+  failedMessage,
   onSend,
   onRetry,
   onClose,
+  onStop,
+  onClearHistory,
 }) => {
   const [input, setInput] = useState("");
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -33,112 +40,145 @@ export const ChatPanel: React.FC<Props> = ({
 
   const submit = async () => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || isStreaming) return;
     setInput("");
     await onSend(trimmed);
   };
 
+  const isKaymakamlik = institutionLabel?.toLowerCase().includes("kaymakam");
+  const isBelediye = institutionLabel?.toLowerCase().includes("belediye");
+
+  let quickActions: string[] = [];
+  if (hasAnalysis) {
+    quickActions = ["Bu evrak ne hakkında?", "Hangi birime yönlendirilmeli?", "Eksik bilgi var mı?", "Hangi mevzuat uygulanıyor?"];
+    // Dynamic based on last bot message
+    const lastBot = messages.filter(m => m.role === "bot").pop();
+    if (lastBot?.mode === "active_document") {
+      quickActions = ["Neden bu birim?", "Sonraki adım ne?", "Mevzuatı göster", "Taslak oluştur"];
+    } else if (lastBot?.mode === "mevzuat") {
+      quickActions = ["Bu madde ne anlama geliyor?", "Süre var mı?", "Bu evraka nasıl uygulanıyor?"];
+    } else if (lastBot?.mode === "taslak_duzenleme") {
+      quickActions = ["Taslağı özetle", "Daha resmî hale getir", "Daha kısa hale getir"];
+    }
+  } else {
+    if (isBelediye) {
+      quickActions = ["Yol bakım talepleri hangi müdürlüğe gider?", "Bilgi edinme başvurularında mevzuat nedir?", "Bir dilekçenin cevap süresi nedir?"];
+    } else if (isKaymakamlik) {
+      quickActions = ["Dilekçe cevap süresi nedir?", "Sosyal yardım başvurusu nasıl yönlendirilir?", "Bilgi edinme başvurularında süreç nedir?"];
+    } else {
+      quickActions = ["KAMUAI ne yapıyor?", "Nasıl evrak yüklerim?", "Dilekçe cevap süresi nedir?"];
+    }
+  }
+
   return (
-    <section
-      className="chat-panel"
-      aria-label="KAMUAI yardım sohbeti"
-    >
-      <header className="chat-panel-header">
+    <section className="kamuai-chat-panel" aria-label="KAMUAI Copilot">
+      <header className="kamuai-chat-header">
         <div>
-          <h2>KAMUAI Kurumsal Copilot</h2>
-          <p>Evrak, mevzuat, yönlendirme ve taslak desteği</p>
+          <h2><EVRAGBrand variant="icon" theme="light" className="copilot-brand-mark" /><span>EVRAG Copilot</span></h2>
+          <p>
+            Kurum ve evrak asistanı
+          </p>
         </div>
-        <button
-          type="button"
-          className="chat-close-button"
-          onClick={onClose}
-          aria-label="Sohbeti kapat"
-        >
-          <X size={20} />
-        </button>
+        <div className="chat-header-actions">
+          {onClearHistory && (
+            <button
+              type="button"
+              className="chat-header-action"
+              onClick={onClearHistory}
+              title="Sohbeti Temizle"
+              aria-label="Sohbeti temizle"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="chat-header-action"
+            onClick={onClose}
+            aria-label="Sohbeti kapat"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </header>
 
-      <div className="chat-context-hint">
-        <span className="chat-context-badge">Kurum: {institutionLabel || "Seçilmedi"}</span>
-        <span className={`chat-context-badge ${hasAnalysis ? "active" : "idle"}`}>
-          {hasAnalysis ? "Aktif Evrak" : "Aktif evrak yok"}
-        </span>
-        <span>
-          {hasAnalysis
-            ? hasDraft
-              ? "Analiz ve taslak bağlamı kullanılıyor."
-              : "Aktif analizde düzenlenebilir taslak bulunmuyor."
-            : "Evrak işlemleri için önce bir analiz açın."}
-        </span>
-      </div>
-
-      <div className="chat-quick-actions" aria-label="Hızlı sorular">
-        {(hasAnalysis
-          ? ["Bu evrakı özetle", "Eksikleri göster", "Neden bu birim?", "Bu evraka hangi mevzuat uygulanıyor?"]
-          : ["KAMUAI ne yapıyor?", "Nasıl evrak yüklerim?"]
-        ).map((label) => (
-          <button key={label} type="button" onClick={() => void onSend(label)} disabled={isLoading}>
-            {label}
-          </button>
-        ))}
-        {hasDraft && (
-          <button type="button" onClick={() => void onSend("Taslak metni daha resmî yap")} disabled={isLoading}>
-            Taslağı iyileştir
-          </button>
+      <div className="kamuai-chat-context-badges">
+        <span className="context-badge primary">{institutionLabel || "Genel Kurum"}</span>
+        {hasAnalysis && (
+          <span className="context-badge active">Aktif Evrak</span>
         )}
       </div>
 
-      <div className="chat-message-list" aria-live="polite">
+      <div className="kamuai-chat-quick-actions" aria-label="Önerilen sorular">
+        {quickActions.slice(0, 4).map((label) => (
+          <button key={label} type="button" onClick={() => void onSend(label)} disabled={isLoading || isStreaming}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="kamuai-chat-messages" aria-live="polite">
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
 
-        {isLoading && (
-          <div className="chat-typing" aria-label="Asistan yazıyor">
-            <span />
-            <span />
-            <span />
-            <span className="chat-typing-label">yazıyor...</span>
+        {isLoading && !isStreaming && (
+          <div className="kamuai-chat-loading" aria-label="Düşünüyor">
+            <span className="evrag-mark-small">◆</span> Yanıt hazırlanıyor<span className="dots">...</span>
           </div>
         )}
-        {onRetry && (
-          <button type="button" className="chat-retry-button" onClick={() => void onRetry()} disabled={isLoading}>
-            Son mesajı tekrar gönder
-          </button>
+
+        {failedMessage && onRetry && (
+          <div className="chat-retry-container">
+            <p>Sohbet isteği tamamlanamadı.</p>
+            <button onClick={onRetry} className="chat-retry-button">
+              <RefreshCw size={14} /> Tekrar Dene
+            </button>
+          </div>
         )}
         <div ref={messageEndRef} />
       </div>
 
-      <form
-        className="chat-input-row"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void submit();
-        }}
-      >
+      <div className="kamuai-chat-composer">
         <textarea
           value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
+          onChange={(e) => {
+            setInput(e.target.value);
+            e.target.style.height = 'auto';
+            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
               void submit();
             }
           }}
           placeholder="Mesajınızı yazın..."
           aria-label="Sohbet mesajı"
-          rows={2}
-          disabled={isLoading}
+          disabled={isLoading && !isStreaming}
+          rows={1}
         />
-        <button
-          type="submit"
-          className="chat-send-button"
-          disabled={isLoading || !input.trim()}
-          aria-label="Mesajı gönder"
-        >
-          <Send size={18} />
-        </button>
-      </form>
+        {isStreaming ? (
+          <button
+            type="button"
+            className="chat-stop-button"
+            onClick={onStop}
+            aria-label="Üretimi durdur"
+          >
+            <Square size={18} fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className="chat-send-button"
+            onClick={submit}
+            disabled={isLoading || !input.trim()}
+            aria-label="Mesajı gönder"
+          >
+            <Send size={18} />
+          </button>
+        )}
+      </div>
     </section>
   );
 };
