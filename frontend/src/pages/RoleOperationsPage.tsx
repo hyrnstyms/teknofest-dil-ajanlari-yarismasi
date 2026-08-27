@@ -16,7 +16,7 @@ export function RoleOperationsPage() {
   }, [token]);
   if (!user) return null;
   return <div className="case-page role-operations-home">
-    <RoleOperationsDashboard user={user} items={items} loading={loading}/>
+    <RoleOperationsDashboard user={user} items={items} loading={loading || Boolean(error)}/>
     {error && <div className="case-error" role="alert">{error}</div>}
     {user.role === "EVRAK_KAYIT" && token && <DemoScenarioCenter token={token}/>} 
   </div>;

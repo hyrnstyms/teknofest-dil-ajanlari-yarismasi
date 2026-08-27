@@ -118,12 +118,13 @@ def list_cases_by_department(
 @router.get("/inbox")
 def case_inbox(
     status: str | None = Query(default=None),
+    scope: str | None = Query(default=None, pattern="^(history)?$"),
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str | None = Query(default=None),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     try:
-        return _engine().list_inbox(current_user, status=status, limit=limit, cursor=cursor)
+        return _engine().list_inbox(current_user, status=status, scope=scope, limit=limit, cursor=cursor)
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 

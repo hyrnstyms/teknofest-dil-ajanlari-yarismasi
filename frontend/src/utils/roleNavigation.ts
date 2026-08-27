@@ -7,7 +7,7 @@ const registry: RoleNavItem[] = [
   { to: "/dosyalar?view=incoming", text: "Gelen Evraklar", key: "incoming" },
   { to: "/dosyalar?status=READY_TO_ROUTE", text: "Havale Bekleyenler", key: "routing" },
   { to: "/dosyalar?status=WAITING_CITIZEN_INFO", text: "Eksik Bilgi", key: "clarification" },
-  { to: "/dosyalar?status=WAITING_FINAL_APPROVAL", text: "Giden Evraklar", key: "outgoing" },
+  { to: "/resmi-yazilar", text: "Giden Evraklar", key: "outgoing" },
   { to: "/gecmis", text: "Geçmiş", key: "history" },
 ];
 

@@ -424,6 +424,7 @@ class CaseEngine:
         user: CurrentUser,
         *,
         status: str | None = None,
+        scope: str | None = None,
         limit: int = 20,
         cursor: str | None = None,
     ) -> dict[str, Any]:
@@ -440,7 +441,12 @@ class CaseEngine:
             statement = select(CaseRecord).where(
                 CaseRecord.institution_id == user.institution_id
             )
-            if user.role == ROLE_EVRAK_KAYIT:
+            if user.role == ROLE_EVRAK_KAYIT and scope == "history":
+                # Registry staff retain a read-only audit/history view after a
+                # case is handed to a department.  It must not be mistaken for
+                # the actionable inbox, whose ownership rules remain below.
+                pass
+            elif user.role == ROLE_EVRAK_KAYIT:
                 statement = statement.where(
                     (CaseRecord.workflow_status.in_(tuple(REGISTRY_INBOX_STATUSES)))
                     | (CaseRecord.current_department_code == user.department_code)

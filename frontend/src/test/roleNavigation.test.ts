@@ -29,8 +29,8 @@ describe('navigationForRole', () => {
 
   it('EVRAK_KAYIT has Giden Evraklar (outgoing) entry', () => {
     const items = navigationForRole('EVRAK_KAYIT');
-    const keys = items.map((i) => i.key);
-    expect(keys).toContain('outgoing');
+    const outgoing = items.find((item) => item.key === 'outgoing');
+    expect(outgoing?.to).toBe('/resmi-yazilar');
   });
 
   it('returns BIRIM_PERSONELI navigation items', () => {
