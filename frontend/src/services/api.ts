@@ -66,7 +66,12 @@ export interface SystemStatus {
   };
 }
 
-type AnalysisQuery = number | { limit?: number; offset?: number; status?: string };
+type AnalysisQuery = number | {
+  limit?: number;
+  offset?: number;
+  status?: string;
+  institution?: string;
+};
 type ReviewQuery = number | { limit?: number; offset?: number };
 
 export class ApiRequestError extends Error {
@@ -189,6 +194,7 @@ export const api = {
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.offset) searchParams.set('offset', String(params.offset));
     if (params?.status) searchParams.set('status', params.status);
+    if (params?.institution) searchParams.set('institution_id', params.institution);
 
     const response = await apiFetch(`${API_BASE_URL}/api/analyses?${searchParams}`);
     if (!response.ok) {

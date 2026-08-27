@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, FileText, Filter, Inbox, RefreshCw, Search, UserCheck } from "lucide-react";
-import { api, type AnalysisListItem, type PendingReviewItem } from "../services/api";
+import { api, type AnalysisListItem, type InstitutionOption, type PendingReviewItem } from "../services/api";
 import type { DocumentState } from "../types";
 import { formatDate, formatDisplayName as humanize } from "../utils/presentation";
 
@@ -8,11 +8,15 @@ interface ViewProps {
   onOpenAnalysis: (analysisId: string) => void | Promise<void>;
 }
 
+interface IncomingDocumentsProps extends ViewProps {
+  institution: InstitutionOption | null;
+}
+
 interface DetailedAnalysis extends AnalysisListItem {
   detail?: DocumentState;
 }
 
-function useDetailedAnalyses(limit = 40) {
+function useDetailedAnalyses(limit = 40, institution?: string) {
   const [items, setItems] = useState<DetailedAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +25,7 @@ function useDetailedAnalyses(limit = 40) {
     setLoading(true);
     setError(null);
     try {
-      const result = await api.getAnalyses(limit);
+      const result = await api.getAnalyses({ limit, institution });
       const detailed = await Promise.all(result.items.map(async (item) => {
         try {
           return { ...item, detail: await api.getAnalysis(item.analysis_id) };
@@ -35,14 +39,14 @@ function useDetailedAnalyses(limit = 40) {
     } finally {
       setLoading(false);
     }
-  }, [limit]);
+  }, [limit, institution]);
 
   useEffect(() => { void load(); }, [load]);
   return { items, loading, error, load };
 }
 
-export const IncomingDocumentsPage: React.FC<ViewProps> = ({ onOpenAnalysis }) => {
-  const { items, loading, error, load } = useDetailedAnalyses();
+export const IncomingDocumentsPage: React.FC<IncomingDocumentsProps> = ({ institution: activeInstitution, onOpenAnalysis }) => {
+  const { items, loading, error, load } = useDetailedAnalyses(40, activeInstitution?.id);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [documentType, setDocumentType] = useState("");

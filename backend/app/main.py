@@ -789,12 +789,14 @@ def _analysis_list_subject(state: Dict[str, Any]) -> str:
 def get_analyses(
     limit: int = 20, 
     offset: int = 0, 
+    institution_id: Optional[str] = None,
     status: Optional[str] = None, 
     document_type: Optional[str] = None, 
     process_intent: Optional[str] = None
 ):
     items = []
     states = get_analysis_repository().list_analyses(
+        institution_id=institution_id,
         status=status,
         document_type=document_type,
         process_intent=process_intent,
@@ -809,6 +811,7 @@ def get_analyses(
         
         items.append({
             "analysis_id": analysis_id,
+            "institution_id": state.get("institution_id") or state.get("kurum_profili_id"),
             "document_id": state.get("document_id", ""),
             "document_type": doc.get("document_type"),
             "process_intent": doc.get("process_intent"),

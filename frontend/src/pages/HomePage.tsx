@@ -27,7 +27,7 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
       setLoading(true);
       try {
         const [analysesRes, roiRes] = await Promise.allSettled([
-          api.getAnalyses({ limit: 5 }),
+          api.getAnalyses({ limit: 5, institution: institution?.id }),
           api.getRoiSummary(),
         ]);
 
@@ -44,7 +44,7 @@ export const HomePage: React.FC<{ institution: InstitutionOption | null }> = ({ 
       }
     };
     fetchData();
-  }, []);
+  }, [institution?.id]);
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
