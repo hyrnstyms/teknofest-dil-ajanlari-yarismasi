@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, FileText, Filter, Inbox, RefreshCw, Search, UserCheck } from "lucide-react";
 import { api, type AnalysisListItem, type InstitutionOption, type PendingReviewItem } from "../services/api";
 import type { DocumentState } from "../types";
@@ -20,10 +20,13 @@ function useDetailedAnalyses(limit = 40, institution?: string) {
   const [items, setItems] = useState<DetailedAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
+    setItems([]);
     try {
       const result = await api.getAnalyses({ limit, institution });
       const detailed = await Promise.all(result.items.map(async (item) => {
@@ -33,11 +36,13 @@ function useDetailedAnalyses(limit = 40, institution?: string) {
           return item;
         }
       }));
-      setItems(detailed);
+      if (requestId === requestIdRef.current) setItems(detailed);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Evrak kayıtları yüklenemedi.");
+      if (requestId === requestIdRef.current) {
+        setError(loadError instanceof Error ? loadError.message : "Evrak kayıtları yüklenemedi.");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, [limit, institution]);
 
@@ -50,10 +55,8 @@ export const IncomingDocumentsPage: React.FC<IncomingDocumentsProps> = ({ instit
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [documentType, setDocumentType] = useState("");
-  const [institution, setInstitution] = useState("");
 
   const documentTypes = unique(items.map((item) => item.document_type).filter(Boolean) as string[]);
-  const institutions = unique(items.map((item) => item.detail?.kurum_profili_id).filter(Boolean) as string[]);
   const filtered = useMemo(() => items.filter((item) => {
     const query = search.trim().toLocaleLowerCase("tr-TR");
     const subject = item.subject || getDraftSubject(item.detail) || "";
@@ -61,9 +64,8 @@ export const IncomingDocumentsPage: React.FC<IncomingDocumentsProps> = ({ instit
       .some((value) => String(value || "").toLocaleLowerCase("tr-TR").includes(query));
     return matchesSearch
       && (!status || item.human_review_status === status)
-      && (!documentType || item.document_type === documentType)
-      && (!institution || item.detail?.kurum_profili_id === institution);
-  }), [items, search, status, documentType, institution]);
+      && (!documentType || item.document_type === documentType);
+  }), [items, search, status, documentType]);
 
   return (
     <div className="records-page no-print">
@@ -71,7 +73,7 @@ export const IncomingDocumentsPage: React.FC<IncomingDocumentsProps> = ({ instit
       {error && <div className="inline-error" role="alert">{error}</div>}
       <div className="record-filters">
         <label className="search-filter"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Belge, analiz, konu veya birim ara" /></label>
-        <label><Filter size={15} /><select value={institution} onChange={(event) => setInstitution(event.target.value)}><option value="">Tüm kurumlar</option>{institutions.map((value) => <option key={value} value={value}>{humanize(value)}</option>)}</select></label>
+        <span className="record-status neutral"><Filter size={15} />{activeInstitution?.label || "Aktif kurum seçilmedi"}</span>
         <label><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">Tüm durumlar</option><option value="pending_review">İnceleme bekliyor</option><option value="approved">Onaylandı</option><option value="approved_auto">Otomatik onay</option><option value="edited">Düzenlendi</option><option value="rejected">Reddedildi</option></select></label>
         <label><select value={documentType} onChange={(event) => setDocumentType(event.target.value)}><option value="">Tüm evrak türleri</option>{documentTypes.map((value) => <option key={value} value={value}>{humanize(value)}</option>)}</select></label>
       </div>

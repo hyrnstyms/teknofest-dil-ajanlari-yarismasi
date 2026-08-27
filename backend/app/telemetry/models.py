@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 class TelemetryRecord(BaseModel):
     analysis_id: str
+    institution_id: Optional[str] = None
     processing_started_at: Optional[datetime] = None
     processing_finished_at: Optional[datetime] = None
     total_processing_ms: Optional[int] = None

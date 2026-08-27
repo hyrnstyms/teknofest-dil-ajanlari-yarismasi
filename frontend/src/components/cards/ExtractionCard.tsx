@@ -1,6 +1,7 @@
 import React from "react";
 import { List } from "lucide-react";
 import { ExtractionInfo } from "../../types";
+import { FIELD_LABELS, getLabel } from "../../utils/labels";
 
 interface Props {
   extraction: ExtractionInfo;
@@ -67,7 +68,7 @@ function formatRawValue(value: unknown): string | null {
 
   if (typeof value === "string") {
     const trimmed = value.trim();
-    return trimmed || null;
+    return VALUE_LABELS[trimmed.toLocaleLowerCase("tr-TR")] || trimmed || null;
   }
 
   if (Array.isArray(value)) {
@@ -103,7 +104,7 @@ function formatListItem(item: unknown): string | null {
   }
 
   const type = typeof item.type === "string" ? item.type.trim() : "";
-  return type ? `${type}: ${formattedValue}` : formattedValue;
+  return type ? `${formatKey(type)}: ${formattedValue}` : formattedValue;
 }
 
 function formatRecordValue(value: Record<string, unknown>): string | null {
@@ -122,8 +123,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function formatKey(key: string): string {
+  const translated = getLabel(key, FIELD_LABELS);
+  if (translated !== key) return translated;
   return key
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
+
+const VALUE_LABELS: Record<string, string> = {
+  unknown: "Bilinmiyor",
+  uncertain: "Belirsiz",
+  present: "Mevcut",
+  missing: "Eksik",
+  not_found: "Bulunamadı",
+  person: "Kişi",
+  organization: "Kurum",
+  location: "Yer",
+};

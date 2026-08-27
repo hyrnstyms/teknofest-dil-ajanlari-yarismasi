@@ -211,8 +211,13 @@ export const api = {
     return response.json();
   },
 
-  async getRoiSummary(): Promise<ROISummaryResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/api/roi/summary`);
+  async getRoiSummary(institution?: string): Promise<ROISummaryResponse> {
+    const searchParams = new URLSearchParams();
+    if (institution) searchParams.set('institution_id', institution);
+    const queryString = searchParams.toString();
+    const response = await apiFetch(
+      `${API_BASE_URL}/api/roi/summary${queryString ? `?${queryString}` : ''}`,
+    );
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }

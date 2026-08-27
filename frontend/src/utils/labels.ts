@@ -37,6 +37,15 @@ export const FIELD_LABELS: Record<string, string> = {
   attachments: "Ekler",
   signature_present: "İmza Durumu",
   authority_document_present: "Yetki Belgesi",
+  other_entities: "Diğer Varlıklar",
+  name: "Ad",
+  value: "Değer",
+  text: "Metin",
+  type: "Tür",
+  evidence: "Kanıt",
+  status: "Durum",
+  validated: "Doğrulandı",
+  confidence: "Güven Skoru",
 };
 
 export const DRAFT_MODE_LABELS: Record<string, string> = {

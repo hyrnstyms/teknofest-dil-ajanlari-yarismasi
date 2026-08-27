@@ -287,6 +287,9 @@ def analyze_text(req: AnalyzeRequest):
         ]
         
         final_state["analysis_id"] = analysis_id
+        if req.institution:
+            final_state.setdefault("institution_id", req.institution)
+            final_state.setdefault("kurum_profili_id", req.institution)
         final_state["audit_history"] = audit_history
         final_state["created_at"] = datetime.utcnow().isoformat()
         
@@ -736,8 +739,20 @@ def system_status():
 
 
 @app.get("/api/roi/summary")
-def roi_summary():
-    records = telemetry_service.get_all_records()
+def roi_summary(institution_id: Optional[str] = None):
+    if institution_id:
+        states = get_analysis_repository().list_analyses(
+            institution_id=institution_id,
+        )
+        records = [
+            telemetry_service.build_record_from_state(
+                state["analysis_id"],
+                state,
+            )
+            for state in states
+        ]
+    else:
+        records = telemetry_service.get_all_records()
     summary = calculate_roi_summary(records)
     
     if not records:

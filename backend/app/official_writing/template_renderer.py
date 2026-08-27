@@ -181,21 +181,12 @@ def render_cevap_yazisi(context: dict[str, Any]) -> str:
     """
     cevap_yazisi.jinja2 şablonunu render eder ve düz metin döndürür.
 
-    [TASARIM KARARI] ilgi zorunludur — render öncesinde kontrol edilir.
-    Yönetmelikte cevap yazısı için ilgi zorunluluğu kaynaklı değildir;
-    ekip kararıdır (tekit yazısı için Madde 34'te kaynaklıdır).
+    İlgi yalnızca doğrulanmış başvuru tarihi ve sayısı mevcutsa gösterilir.
+    Kaynak veride bu bilgiler yoksa şablon ilgi satırı olmadan render edilir.
 
     Raises:
-        ValueError:     context['ilgi'] eksik veya boşsa.
         UndefinedError: context'te başka zorunlu bir alan eksikse.
     """
-    ilgi = context.get("ilgi")
-    if not ilgi:
-        raise ValueError(
-            "[TASARIM KARARI] Cevap yazısında 'ilgi' alanı zorunludur. "
-            "Cevap verilen yazının tarih ve sayısı context'e ekleyin. "
-            "(Not: bu zorunluluk yönetmelikte kaynaklı değil, ekip kararıdır.)"
-        )
     tmpl = _ENV.get_template("cevap_yazisi.jinja2")
     return _normalize_official_layout(tmpl.render(**context))
 
