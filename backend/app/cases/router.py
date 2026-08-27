@@ -1,9 +1,24 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import select
 
 from backend.app.auth.dependencies import CurrentUser, get_current_user
-from backend.app.cases.errors import CaseError, verified_department_action_required, version_conflict
+from backend.app.cases.departments import assert_department
+from backend.app.cases.enums import (
+    DEPARTMENT_INBOX_STATUSES,
+    DURABLE_STATUSES,
+    ROLE_BIRIM_PERSONELI,
+    ROLE_EVRAK_KAYIT,
+    STATUS_CLOSED,
+)
+from backend.app.cases.errors import (
+    CaseError,
+    action_forbidden,
+    validation_error,
+    verified_department_action_required,
+    version_conflict,
+)
 from backend.app.cases.exports import approved_export_context, render_case_pdf
 from backend.app.official_writing.docx_renderer import render_to_docx
 from backend.app.cases.auto_draft import generate_official_response_after_action
@@ -17,6 +32,7 @@ from backend.app.cases.schemas import (
     SaveDraftRequest,
     VersionedAction,
 )
+from backend.app.db.case_models import CaseRecord
 
 router = APIRouter(prefix="/api/cases", tags=["cases"])
 
@@ -32,6 +48,66 @@ def create_case(
 ) -> dict:
     try:
         return _engine().create_case(current_user, body.model_dump())
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
+@router.get("")
+def list_cases_by_department(
+    department_code: str = Query(min_length=1),
+    status: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    """List an authorized department queue within the caller's institution."""
+    try:
+        department_code = department_code.strip()
+        assert_department(current_user.institution_id, department_code)
+        if status is not None and status not in DURABLE_STATUSES:
+            raise validation_error("Geçersiz dosya durumu.", status=status)
+        try:
+            offset = int(cursor) if cursor else 0
+        except (TypeError, ValueError) as exc:
+            raise validation_error(
+                "Geçersiz sayfalama imleci.", cursor=cursor
+            ) from exc
+        if offset < 0:
+            raise validation_error("Geçersiz sayfalama imleci.", cursor=cursor)
+
+        if current_user.role == ROLE_BIRIM_PERSONELI:
+            if department_code != current_user.department_code:
+                raise action_forbidden(
+                    department_code=department_code,
+                    user_department_code=current_user.department_code,
+                )
+        elif current_user.role != ROLE_EVRAK_KAYIT:
+            raise action_forbidden(role=current_user.role)
+
+        engine = _engine()
+        with engine.session_factory() as session:
+            statement = select(CaseRecord).where(
+                CaseRecord.institution_id == current_user.institution_id,
+                CaseRecord.current_department_code == department_code,
+            )
+            if current_user.role == ROLE_BIRIM_PERSONELI:
+                statement = statement.where(
+                    CaseRecord.workflow_status.in_(
+                        tuple(DEPARTMENT_INBOX_STATUSES | {STATUS_CLOSED})
+                    )
+                )
+            if status:
+                statement = statement.where(CaseRecord.workflow_status == status)
+            statement = statement.order_by(
+                CaseRecord.received_at.desc(), CaseRecord.id.desc()
+            )
+            rows = list(
+                session.scalars(statement.offset(offset).limit(limit + 1))
+            )
+
+        items = [engine.serialize_inbox_item(row) for row in rows[:limit]]
+        next_cursor = str(offset + limit) if len(rows) > limit else None
+        return {"items": items, "next_cursor": next_cursor}
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 

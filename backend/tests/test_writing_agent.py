@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from unittest.mock import MagicMock
 from backend.app.agents.writing_agent import WritingAgent, WritingContext
@@ -180,3 +182,79 @@ def test_malicious_document_instruction_ignored(agent, mock_llm):
     # Promptta katı kural olduğundan emin ol
     assert "DOĞRULANMIŞ İŞLEM BİLGİLERİ işlem sonucunu açıkça doğrulamıyorsa" in call_args["system_prompt"]
     assert "kabul edilmiştir" in call_args["system_prompt"]
+
+
+def test_recipient_mismatch_is_corrected_from_extracted_person(agent):
+    ctx = _base_context()
+    ctx["recipient"] = "Yanlış Muhatap"
+    ctx["extracted_fields"] = {
+        "person_name": {"value": "Ayşe Başvuran", "validated": True}
+    }
+
+    result = agent.draft(context=ctx)
+
+    assert result["draft"]["recipient"] == "Ayşe Başvuran"
+
+
+def test_missing_recipient_is_recovered_from_extracted_person(agent):
+    ctx = _base_context()
+    ctx["recipient"] = None
+    ctx["extracted_fields"] = {"person_name": {"value": "Ali Vatandaş"}}
+
+    result = agent.draft(context=ctx)
+
+    assert result["draft_generation_mode"] == "llm"
+    assert result["draft"]["recipient"] == "Ali Vatandaş"
+
+
+def test_recipient_falls_back_to_extracted_sender_unit(agent):
+    ctx = _base_context()
+    ctx["recipient"] = "Yanlış Kurum"
+    ctx["extracted_fields"] = {
+        "sender_unit": {"value": "Örenli Kaymakamlığı", "validated": True}
+    }
+
+    result = agent.draft(context=ctx)
+
+    assert result["draft"]["recipient"] == "Örenli Kaymakamlığı"
+
+
+def test_person_name_has_priority_over_sender_unit(agent):
+    ctx = _base_context()
+    ctx["recipient"] = "Yanlış Muhatap"
+    ctx["extracted_fields"] = {
+        "person_name": {"value": "Zeynep Vatandaş", "validated": True},
+        "sender_unit": {"value": "Başka Kurum", "validated": True},
+    }
+
+    result = agent.draft(context=ctx)
+
+    assert result["draft"]["recipient"] == "Zeynep Vatandaş"
+
+
+def test_unvalidated_recipient_evidence_requires_human_review(agent):
+    ctx = _base_context()
+    ctx["recipient"] = None
+    ctx["extracted_fields"] = {
+        "person_name": {"value": "Şüpheli İsim", "validated": False}
+    }
+
+    result = agent.draft(context=ctx)
+
+    assert result["draft"] is None
+    assert result["draft_generation_mode"] == "blocked_uncertain_fields"
+    assert result["requires_human_approval"] is True
+
+
+def test_recipient_correction_does_not_mutate_input_context(agent):
+    ctx = _base_context()
+    ctx["recipient"] = "Yanlış Muhatap"
+    ctx["extracted_fields"] = {
+        "person_name": {"value": "Doğru Muhatap", "validated": True}
+    }
+    original = deepcopy(ctx)
+
+    result = agent.draft(context=ctx)
+
+    assert result["draft"]["recipient"] == "Doğru Muhatap"
+    assert ctx == original

@@ -131,6 +131,20 @@ class WritingAgent:
         c_recipient = context.get("recipient")
         c_sender_unit = context.get("sender_unit")
 
+        # QualityAgent aynı invariantı çıktıdan sonra da doğrular. Burada ise
+        # modele gitmeden önce extraction kaynaklı muhatabı deterministik
+        # biçimde geri kazanır ve yanlış context değerinin taslağa kilitlenmesini
+        # engelleriz. Çağıranın context sözlüğü yerinde değiştirilmez.
+        extracted_recipient = self._recipient_from_extraction(
+            context.get("extracted_fields") or {}
+        )
+        if extracted_recipient and self._different_recipient(
+            c_recipient, extracted_recipient
+        ):
+            c_recipient = extracted_recipient
+            context = dict(context)
+            context["recipient"] = c_recipient
+
         # -------------------------------------------------
         # 1. Hangi resmî yazı hazırlanmalı?
         # -------------------------------------------------
@@ -532,6 +546,39 @@ class WritingAgent:
     # =====================================================
     # YAZI TÜRÜ KARARI
     # =====================================================
+
+    @staticmethod
+    def _extracted_text(fields: dict[str, Any], field_name: str) -> str | None:
+        value = fields.get(field_name)
+        if isinstance(value, dict):
+            if value.get("validated") is False:
+                return None
+            value = value.get("value")
+        if value is None:
+            return None
+        normalized = " ".join(str(value).split()).strip()
+        return normalized or None
+
+    @classmethod
+    def _recipient_from_extraction(cls, fields: dict[str, Any]) -> str | None:
+        """Resolve only evidence-backed recipient candidates.
+
+        A named person is the strongest addressee signal. Institutional input
+        without a person falls back to its extracted sender unit. Explicitly
+        unvalidated fields are never promoted into an official draft.
+        """
+        if not isinstance(fields, dict):
+            return None
+        return cls._extracted_text(fields, "person_name") or cls._extracted_text(
+            fields, "sender_unit"
+        )
+
+    @staticmethod
+    def _different_recipient(current: Any, expected: str) -> bool:
+        if current is None:
+            return True
+        normalized_current = " ".join(str(current).split()).strip().casefold()
+        return normalized_current != expected.casefold()
 
     def _decide_draft_type(
         self,
