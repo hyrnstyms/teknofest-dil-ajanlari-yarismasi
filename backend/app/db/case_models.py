@@ -51,6 +51,7 @@ class CaseRecord(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tracking_code: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    zincir_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     analysis_id: Mapped[str | None] = mapped_column(
         String(64),
         ForeignKey("analyses.analysis_id", ondelete="SET NULL"),
@@ -136,6 +137,8 @@ class CaseEvent(Base):
     from_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
     to_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
     payload: Mapped[dict] = mapped_column(JsonType, nullable=False, default=dict)
+    before_value: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
+    after_value: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
 
 
 class CitizenRequest(Base):
