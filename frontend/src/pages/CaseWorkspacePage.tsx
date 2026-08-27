@@ -10,7 +10,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { caseApi } from "../services/caseApi";
 import type { CaseRecord, DepartmentAction } from "../types/case";
 
-type Pending = "review" | "route" | "start" | "clarification" | null;
+type Pending = "review" | "route" | "start" | "clarification" | "generate" | null;
 const blankAction = { action_type: "", result: "", decision: "", planned_date: "", notes: "" };
 const sourceLabels: Record<CaseRecord["source_type"], string> = { VATANDAS: "Vatandaş", DIS_KURUM: "Dış Kurum", KURUM_ICI: "Kurum İçi" };
 
@@ -53,7 +53,9 @@ export function CaseWorkspacePage() {
           ? await caseApi.route(token, item, item.routing_recommendation!.recommended_department_code)
           : pending === "start"
             ? await caseApi.start(token, item)
-            : await caseApi.requestInformation(token, item);
+            : pending === "generate"
+              ? await caseApi.regenerateDraft(token, item)
+              : await caseApi.requestInformation(token, item);
       setItem(result.case);
       setNotice(result.message);
       setPending(null);
@@ -94,6 +96,7 @@ export function CaseWorkspacePage() {
     if (action === "assignment") return document.getElementById("case-assignment")?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (action === "result") return openTabAndScroll("overview", "department-action");
     if (action === "draft") return openTabAndScroll("writings", "official-writing-detail");
+    if (action === "generate") return setPending("generate");
     setPending(action);
   }
 
@@ -138,7 +141,7 @@ export function CaseWorkspacePage() {
     />}
     {pending && <ConfirmAction
       busy={busy}
-      title={pending === "review" ? "İlk incelemeyi onayla" : pending === "route" ? "Kurumsal sorumluluğu aktar" : pending === "start" ? "Dosyayı işleme al" : "Eksik bilgi talebini gönder"}
+      title={pending === "review" ? "İlk incelemeyi onayla" : pending === "route" ? "Kurumsal sorumluluğu aktar" : pending === "start" ? "Dosyayı işleme al" : pending === "generate" ? "Cevap taslağı oluştur" : "Eksik bilgi talebini gönder"}
       text={pending === "route" ? `Dosyanın sorumluluğu ${item.routing_recommendation?.recommended_unit} birimine aktarılacaktır.` : "Bu işlem Case Engine tarafından kalıcı olarak kaydedilecektir."}
       onCancel={() => setPending(null)}
       onConfirm={() => void confirm()}

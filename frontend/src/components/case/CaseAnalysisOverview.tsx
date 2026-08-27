@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, FileText, Scale } from "lucide-react";
 import type { CaseRecord } from "../../types/case";
+import { isResponseDraft } from "../../utils/caseDraftPresentation";
 
 const documentTypeLabels: Record<string, string> = {
   dilekce: "Dilekçe",
@@ -161,6 +162,6 @@ export function CaseAnalysisOverview({ item, onOpenDraft }: { item: CaseRecord; 
     <LegalResult item={item}/>
     {item.analysis_summary && <div className="analysis-result-block summary-result"><h3>Özet</h3><p>{item.analysis_summary}</p></div>}
     {routeDepartment && <div className="analysis-result-block routing-result"><h3>Yönlendirme</h3><strong>{routeDepartment}</strong>{routeReason && <p><b>Gerekçe:</b> {routeReason}</p>}<small>Durum: {routed ? "Havale tamamlandı" : "Havale kararı bekliyor"}</small></div>}
-    {item.drafts.length > 0 && <div className="analysis-draft-status"><div><span>Cevap</span><strong>{item.drafts.length} taslak hazır</strong></div>{onOpenDraft && <button className="btn btn-secondary" onClick={onOpenDraft}>Taslağa Git</button>}</div>}
+    {item.drafts.filter(isResponseDraft).length > 0 && <div className="analysis-draft-status"><div><span>Cevap</span><strong>{item.drafts.filter(isResponseDraft).length} taslak hazır</strong></div>{onOpenDraft && <button className="btn btn-secondary" onClick={onOpenDraft}>Taslağa Git</button>}</div>}
   </section>;
 }

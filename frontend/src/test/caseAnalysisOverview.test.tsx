@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CaseProductPanels } from "../components/case/CaseProductPanels";
 import type { CaseRecord } from "../types/case";
@@ -48,10 +48,10 @@ const routedCase: CaseRecord = {
   department_actions: [],
   drafts: [{
     id: "draft-1",
-    draft_type: "FORWARDING_COVER_LETTER",
+    draft_type: "OFFICIAL_RESPONSE",
     draft_status: "DRAFT",
     subject: "Afet eylem planı altyapı bilgileri",
-    recipient: "Fen İşleri Müdürlüğü",
+    recipient: "Örenli İlçe Kaymakamlığı",
     body: "Bilgilerin hazırlanması rica olunur.",
     ai_generated: true,
   }],
@@ -106,7 +106,7 @@ describe("Case document analysis overview", () => {
   it("opens the response-draft tab from the compact draft status", () => {
     render(<CaseProductPanels item={routedCase} token="token" onRefresh={vi.fn()} onNotice={vi.fn()}/>);
     fireEvent.click(screen.getByRole("button", { name: "Taslağa Git" }));
-    expect(screen.getByText("Taslak İçeriği")).toBeInTheDocument();
+    expect(screen.getAllByText("Cevap Taslağı", { exact: false }).length).toBeGreaterThan(0);
   });
 
   it("shows blocking detail and does not invent a law when verified evidence is absent", () => {
@@ -141,5 +141,14 @@ describe("Case document analysis overview", () => {
     expect(screen.getByText("Başvuru sahibi")).toBeInTheDocument();
     expect(screen.getByText("Bu işlem için doğrulanmış özel mevzuat dayanağı bulunamadı.")).toBeInTheDocument();
     expect(screen.queryByText(/3071|4982/)).not.toBeInTheDocument();
+  });
+
+  it("completes the response lifecycle step after backend approval without completing the case", () => {
+    const approved = { ...routedCase, workflow_status: "WAITING_FINAL_APPROVAL" as const, drafts: [{ ...routedCase.drafts[0], draft_status: "APPROVED" as const }] };
+    render(<CaseProductPanels item={approved} token="token" onRefresh={vi.fn()} onNotice={vi.fn()}/>);
+    const lifecycle = screen.getByRole("region", { name: "Dosya ilerleme durumu" });
+    expect(within(lifecycle).getByText("Cevap").closest("span")).toHaveClass("done");
+    expect(within(lifecycle).getByText("Tamamlandı").closest("span")).toHaveClass("future");
+    expect(lifecycle).toBeInTheDocument();
   });
 });

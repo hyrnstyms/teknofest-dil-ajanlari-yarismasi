@@ -28,7 +28,7 @@ interface CaseAggregateWire {
   clarification?: CaseRecord["clarification"] | Record<string, never>;
   priority_assessment?: CaseRecord["priority_assessment"];
   department_actions: DepartmentAction[];
-  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
+  drafts: Array<{ id: string; case_id?: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
   analysis?: {
     summary?: { short_summary?: string; structured_summary?: { subject?: string; request?: string } };
     routing?: CaseRecord["routing_recommendation"];
@@ -83,6 +83,7 @@ function eventLabel(event: CaseEventWire): string {
     CITIZEN_INFO_COMPLETED: "Vatandaşın eksik bilgi yanıtı alındı",
     TASK_ASSIGNED: "Görev ilgili personele atandı",
   };
+  if (event.event_type === "DRAFT_SAVED" && payload.draft_type === "FORWARDING_COVER_LETTER") return "Kurum içi havale kaydı oluşturuldu";
   if (event.event_type === "CASE_ROUTED") {
     const to = readableCode(payload.to_department || payload.department_code);
     return to ? `${to} birimine havale edildi` : "Dosya ilgili birime havale edildi";
@@ -151,6 +152,7 @@ function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
     department_actions: aggregate.department_actions,
     drafts: aggregate.drafts.map((draft) => ({
       id: draft.id,
+      case_id: draft.case_id || aggregate.case.id,
       draft_type: draft.draft_type,
       draft_status: draft.status,
       revision: draft.revision,

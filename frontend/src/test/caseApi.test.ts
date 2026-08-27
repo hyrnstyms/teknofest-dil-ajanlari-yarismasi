@@ -118,7 +118,7 @@ describe('caseApi aggregate integration', () => {
       clarification: {},
       events: [{ id: 'e1', event_type: 'CASE_ROUTED', actor_type: 'USER', actor_user_id: 'u1', created_at: MINIMAL_CASE.updated_at, from_status: 'READY_TO_ROUTE', to_status: 'IN_DEPARTMENT', payload: { from_department: 'yazi_isleri', to_department: 'fen_isleri' } }],
       timeline: [{ id: 'e1', event_type: 'CASE_ROUTED', actor_type: 'USER', actor_user_id: 'u1', created_at: MINIMAL_CASE.updated_at, from_status: 'READY_TO_ROUTE', to_status: 'IN_DEPARTMENT', payload: { from_department: 'yazi_isleri', to_department: 'fen_isleri' } }],
-      department_actions: [], drafts: [], analysis: null,
+      department_actions: [], drafts: [{ id: 'draft-1', draft_type: 'OFFICIAL_RESPONSE', status: 'DRAFT', revision: 1, content: { subject: 'Yanıt', body: 'İncelendi.' } }], analysis: null,
       deadline: { applicable: false, due_at: null, risk_level: 'UNKNOWN' },
     }));
 
@@ -129,6 +129,7 @@ describe('caseApi aggregate integration', () => {
     expect(result.priority_assessment?.priority_reason).toBe('Acil ifadesi bulundu.');
     expect(result.timeline[0].label).toBe('Fen İşleri Müdürlüğü birimine havale edildi');
     expect(result.timeline[0].actor_name).toBeUndefined();
+    expect(result.drafts[0].case_id).toBe(MINIMAL_CASE.id);
   });
 
   it('posts clarification metadata to the real information-request endpoint', async () => {

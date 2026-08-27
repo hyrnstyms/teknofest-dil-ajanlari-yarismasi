@@ -17,7 +17,7 @@ const department: RoleNavItem[] = [
   { to: "/dosyalar?view=assigned", text: "Birim İşleri", key: "assigned" },
   { to: "/dosyalar?status=IN_PROGRESS", text: "Saha İşleri", key: "progress" },
   { to: "/dosyalar?status=WAITING_CITIZEN_INFO", text: "Eksik Bilgi", key: "clarification" },
-  { to: "/dosyalar?status=WAITING_FINAL_APPROVAL", text: "Cevaplar", key: "approval" },
+  { to: "/resmi-yazilar", text: "Cevaplar", key: "approval" },
   { to: "/dosyalar?risk=APPROACHING", text: "Süreler", key: "deadline" },
   { to: "/gecmis", text: "Geçmiş", key: "history" },
 ];

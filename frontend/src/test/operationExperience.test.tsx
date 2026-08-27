@@ -92,4 +92,17 @@ describe("EVRAG operation-first experience", () => {
     expect(screen.getByText("Cevap Taslağı")).toBeInTheDocument();
     expect(screen.getAllByText("Saha incelemesi için konum gereklidir.").length).toBeGreaterThan(0);
   });
+
+  it("keeps the routing empty state compact and actionable", () => {
+    render(<MemoryRouter><RoleOperationsDashboard user={registry} items={[]} loading={false}/></MemoryRouter>);
+    expect(screen.getByText("Şu anda havale kararı bekleyen dosya yok.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Tüm gelen evrakları görüntüle" })).toHaveAttribute("href", "/dosyalar?view=incoming");
+  });
+
+  it("shows an approved response as ready to send, never sent", () => {
+    const approved = { ...item, workflow_status: "WAITING_FINAL_APPROVAL" as const, clarification: undefined, department_actions: [{ id: "a", action_type: "İNCELEME", result: "Tamam", decision: "Yanıtla", verified: true, recorded_by_user_id: "u", created_at: "2026-08-27" }], drafts: [{ id: "r", draft_type: "OFFICIAL_RESPONSE" as const, draft_status: "APPROVED" as const, subject: "Yanıt", body: "İşlem tamamlandı.", ai_generated: true }], permissions: ["FINALIZE_CASE"] };
+    render(<OperationalNextAction item={approved} user={department} onAction={vi.fn()}/>);
+    expect(screen.getByText("Gönderime hazır")).toBeInTheDocument();
+    expect(screen.queryByText("Gönderildi")).not.toBeInTheDocument();
+  });
 });

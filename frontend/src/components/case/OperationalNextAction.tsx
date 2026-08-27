@@ -1,8 +1,9 @@
 import React from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import type { CaseRecord, CurrentUser } from "../../types/case";
+import { isResponseDraft } from "../../utils/caseDraftPresentation";
 
-export type OperationalAction = "review" | "route" | "start" | "clarification" | "assignment" | "result" | "draft";
+export type OperationalAction = "review" | "route" | "start" | "clarification" | "assignment" | "result" | "generate" | "draft";
 type NextAction = { title: string; body: string; label?: string; action?: OperationalAction; done?: boolean };
 
 function informationActionLabel(item: CaseRecord) {
@@ -21,7 +22,8 @@ export function OperationalNextAction({ item, user, onAction }: { item: CaseReco
   const canRoute = user?.role === "EVRAK_KAYIT" && item.permissions.includes("ROUTE_CASE") && Boolean(item.routing_recommendation);
   const canStart = user?.role === "BIRIM_PERSONELI" && item.permissions.includes("START_CASE");
   const canRecordResult = user?.role === "BIRIM_PERSONELI" && item.permissions.includes("RECORD_DEPARTMENT_ACTION");
-  const hasDraft = item.drafts.length > 0;
+  const responseDraft = item.drafts.filter(isResponseDraft).at(-1);
+  const verifiedAction = item.department_actions.some((action) => action.verified);
 
   let next: NextAction;
   if (needsInfo) next = { title: "Eksik bilgiyi tamamlatın", body: item.clarification?.reason || "Dosyanın devamı için eksik bilgi gerekiyor.", label: informationActionLabel(item), action: "clarification" };
@@ -30,8 +32,11 @@ export function OperationalNextAction({ item, user, onAction }: { item: CaseReco
   else if (canRoute) next = { title: "Dosyayı ilgili birime havale edin", body: `${item.routing_recommendation!.recommended_unit} önerisini kontrol edin.`, label: `${item.routing_recommendation!.recommended_unit} Birimine Havale Et`, action: "route" };
   else if (user?.role === "BIRIM_PERSONELI" && task?.status === "ASSIGNMENT_PENDING") next = { title: "Görevlendirmeyi inceleyin", body: "Ekip ve rol önerisi hazır; personel seçimi kullanıcı onayı gerektirir.", label: "Görevlendirmeyi İncele", action: "assignment" };
   else if (canStart) next = { title: "Dosyayı işleme alın", body: "Birim görevini kontrol ederek işlemi başlatın.", label: "İşleme Al", action: "start" };
-  else if (canRecordResult) next = { title: "İşlem sonucunu kaydedin", body: "Doğrulanmış saha veya kurum sonucunu dosyaya ekleyin.", label: "İşlem Sonucunu Kaydet", action: "result" };
-  else if (hasDraft) next = { title: "Cevap taslağını inceleyin", body: "Muhatap ve dayanak bilgilerini kontrol edin.", label: "Taslağı İncele", action: "draft" };
+  else if (canRecordResult && !verifiedAction) next = { title: "İşlem sonucunu kaydedin", body: "Doğrulanmış saha veya kurum sonucunu dosyaya ekleyin.", label: "İşlem Sonucunu Kaydet", action: "result" };
+  else if (verifiedAction && !responseDraft && item.permissions.includes("SAVE_DRAFT")) next = { title: "Cevap taslağı oluşturun", body: "Doğrulanmış işlem sonucuna dayalı cevap taslağını hazırlayın.", label: "Cevap Taslağı Oluştur", action: "generate" };
+  else if (responseDraft?.draft_status === "APPROVED") next = { title: "Gönderime hazır", body: "Taslak personel tarafından onaylandı; EBYS gönderimi ayrıca tamamlanmalıdır.", done: true };
+  else if (responseDraft && item.permissions.includes("APPROVE_DRAFT")) next = { title: "Taslağı onaylayın", body: "Muhatap ve dayanak bilgilerini kontrol ederek onay kararını verin.", label: "Taslağı İncele", action: "draft" };
+  else if (responseDraft) next = { title: "Cevap taslağını inceleyin", body: "Muhatap ve dayanak bilgilerini kontrol edin.", label: "Taslağı İncele", action: "draft" };
   else next = { title: item.workflow_status === "CLOSED" ? "Dosya kapatıldı" : "Yeni işlem beklenmiyor", body: item.workflow_status === "CLOSED" ? "Dosya yaşam döngüsü tamamlandı." : "Bu aşamada kullanıcı aksiyonu bulunmuyor.", done: true };
 
   return <section className="case-panel next-action next-action-operational">

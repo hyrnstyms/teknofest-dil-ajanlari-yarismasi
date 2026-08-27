@@ -51,7 +51,7 @@ export function RoleOperationsDashboard({ user, items, loading }: { user: Curren
               <div className="operations-table-head" role="row"><span>Evrak / Konu</span><span>Önerilen birim</span><span>Gerekçe</span><span>Öncelik</span><span>Aksiyon</span></div>
               {routingItems.map((item) => <div role="row" key={item.id}><span><b>{item.tracking_code}</b><small>{item.title}</small></span><strong>{item.routing_recommendation!.recommended_unit}</strong><p>{item.routing_recommendation!.reason}</p><em>{priorityLabel(item)}</em><Link className="btn btn-secondary" to={`/dosya/${item.id}`}>{item.routing_recommendation!.recommended_unit} birimine havale</Link></div>)}
             </div>
-            : <EmptyState title="Havale önerisi bekleyen dosya yok" text="Yalnız backend tarafından üretilmiş gerçek yönlendirme önerileri burada görünür."/>}
+            : <div className="compact-routing-empty"><span>Şu anda havale kararı bekleyen dosya yok.</span><Link to="/dosyalar?view=incoming">Tüm gelen evrakları görüntüle</Link></div>}
       </section>
       : <section className="case-panel operations-table-panel">
         <header><div><span className="eyebrow">Bugünün işleri</span><h2>Evrak değil, tamamlanacak görevler</h2></div><Link to="/dosyalar?view=assigned">Tümünü gör</Link></header>

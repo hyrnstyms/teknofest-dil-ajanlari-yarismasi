@@ -49,10 +49,14 @@ export function CaseOperationPlan({ item }: { item: CaseRecord }) {
     </header>
     <h3>{workflowTitle(item, department, taskType)}</h3>
     <dl className="operation-summary">
-      <div><dt>Nereye?</dt><dd>{department}{team ? <> <span>→</span> {team}</> : null}</dd></div>
-      <div><dt>Ne yapılacak?</dt><dd>{taskType || "İnsan incelemesiyle belirlenecek"}{task?.status && <small>{taskStatusLabels[task.status] || "Görev durumu güncellendi"}</small>}{role ? <small>Uygun rol: {role}</small> : null}</dd></div>
+      <div><dt>Nereye?</dt><dd>{department}</dd></div>
+      <div><dt>Ne yapılacak?</dt><dd>{taskType || "İnsan incelemesiyle belirlenecek"}</dd></div>
       <div><dt>Neden?</dt><dd>{reason}</dd></div>
     </dl>
+    {task && <div className="assignment-compact-row">
+      <span>Birim içi görev</span>
+      <div><strong>{team || department} · {taskType || "Birim incelemesi"}</strong>{role && <small>Önerilen rol: {role}</small>}<small>Durum: <span>{taskStatusLabels[task.status] || "Görev durumu güncellendi"}</span></small></div>
+    </div>}
     {(fieldVisit === true || (priorityLabel && !["Normal", "Düşük"].includes(priorityLabel))) && <div className="operation-tags">
       {fieldVisit === true && <span><MapPin/> Saha işlemi gerekli</span>}
       {priorityLabel && !["Normal", "Düşük"].includes(priorityLabel) && <span className="priority-tag">Öncelik: {priorityLabel}</span>}
