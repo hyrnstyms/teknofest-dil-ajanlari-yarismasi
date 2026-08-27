@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import './premium-theme.css';
 import './demo-product.css';
+import './writing-workflow.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
