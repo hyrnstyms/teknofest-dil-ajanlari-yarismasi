@@ -41,7 +41,7 @@ interface CaseAggregateWire {
     document?: Record<string, unknown>;
     extraction?: { fields?: Record<string, { value?: unknown; validated?: boolean }> };
     missing_fields?: { missing_fields?: string[]; blocking_fields?: string[] };
-    legal_analysis?: { verified?: boolean; evidence?: unknown[]; sources?: unknown[]; text?: string };
+    legal_analysis?: { verified?: boolean; evidence?: unknown[]; sources?: unknown[]; text?: string; answer?: string };
     raw_text?: string;
   } | null;
   deadline?: CaseRecord["deadline"];
@@ -69,12 +69,12 @@ function eventLabel(event: CaseEventWire): string {
   const taskType = readableCode(recommendation.task_type);
   const labels: Record<string, string> = {
     CASE_RECEIVED: "Evrak sisteme alındı",
-    ANALYSIS_STARTED: "EVRAG analizi başlatıldı",
-    ANALYSIS_COMPLETED: "EVRAG analizi tamamlandı",
-    ROUTING_CONFIRMED: "Kurumsal havale insan tarafından onaylandı",
+    ANALYSIS_STARTED: "AI ön incelemesi başlatıldı",
+    ANALYSIS_COMPLETED: "AI ön inceleme tamamlandı",
+    ROUTING_CONFIRMED: "İlk inceleme onaylandı",
     CASE_STARTED: "Birim işlemi başlatıldı",
     DEPARTMENT_ACTION_RECORDED: "Birim işlem sonucu kaydedildi",
-    DRAFT_SAVED: "Resmî yazı taslağı oluşturuldu",
+    DRAFT_SAVED: "Cevap taslağı oluşturuldu",
     DRAFT_SUBMITTED: "Resmî yazı onaya gönderildi",
     DRAFT_APPROVED: "Resmî yazı onaylandı",
     CASE_COMPLETED: "Dosya tamamlandı",
@@ -84,9 +84,8 @@ function eventLabel(event: CaseEventWire): string {
     TASK_ASSIGNED: "Görev ilgili personele atandı",
   };
   if (event.event_type === "CASE_ROUTED") {
-    const from = readableCode(payload.from_department);
     const to = readableCode(payload.to_department || payload.department_code);
-    return from && to ? `${from} → ${to} havalesi tamamlandı` : "Dosya ilgili birime havale edildi";
+    return to ? `${to} birimine havale edildi` : "Dosya ilgili birime havale edildi";
   }
   if (event.event_type === "TASK_CREATED") return taskType ? `${taskType} görevi oluşturuldu` : "Birim içi görev oluşturuldu";
   if (event.event_type === "TASK_STATUS_CHANGED") {

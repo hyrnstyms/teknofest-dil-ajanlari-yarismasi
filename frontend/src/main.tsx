@@ -7,6 +7,7 @@ import "./operation-details.css";
 import './demo-product.css';
 import './writing-workflow.css';
 import './operations.css';
+import './case-cockpit.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { Bot, Building2, CalendarClock, Route, Save, UserRound } from "lucide-react";
+import { Save } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { CaseTimeline, ConfirmAction, StatusBadge } from "../components/case/CasePrimitives";
-import { CaseProductPanels } from "../components/case/CaseProductPanels";
+import { ConfirmAction, StatusBadge } from "../components/case/CasePrimitives";
+import { caseHeaderSummary } from "../components/case/CaseAnalysisOverview";
+import { CaseProductPanels, type CaseWorkspaceTab } from "../components/case/CaseProductPanels";
 import { CaseOperationPlan } from "../components/case/CaseOperationPlan";
-import { MissingInformationSolution } from "../components/case/MissingInformationSolution";
 import { OperationalNextAction, type OperationalAction } from "../components/case/OperationalNextAction";
-import { WritingGroundingSummary } from "../components/case/WritingGroundingSummary";
 import { useAuth } from "../contexts/AuthContext";
 import { caseApi } from "../services/caseApi";
 import type { CaseRecord, DepartmentAction } from "../types/case";
 
 type Pending = "review" | "route" | "start" | "clarification" | null;
 const blankAction = { action_type: "", result: "", decision: "", planned_date: "", notes: "" };
+const sourceLabels: Record<CaseRecord["source_type"], string> = { VATANDAS: "Vatandaş", DIS_KURUM: "Dış Kurum", KURUM_ICI: "Kurum İçi" };
 
 export function CaseWorkspacePage() {
   const { id = "" } = useParams();
@@ -24,6 +24,7 @@ export function CaseWorkspacePage() {
   const [pending, setPending] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(blankAction);
+  const [activeTab, setActiveTab] = useState<CaseWorkspaceTab>("overview");
 
   useEffect(() => {
     if (!token) return;
@@ -84,10 +85,15 @@ export function CaseWorkspacePage() {
     }
   }
 
+  function openTabAndScroll(tab: CaseWorkspaceTab, elementId: string) {
+    setActiveTab(tab);
+    window.setTimeout(() => document.getElementById(elementId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
+
   function handleOperationalAction(action: OperationalAction) {
     if (action === "assignment") return document.getElementById("case-assignment")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (action === "result") return document.getElementById("department-action")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (action === "draft") return document.querySelector(".official-writing-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (action === "result") return openTabAndScroll("overview", "department-action");
+    if (action === "draft") return openTabAndScroll("writings", "official-writing-detail");
     setPending(action);
   }
 
@@ -95,54 +101,41 @@ export function CaseWorkspacePage() {
   if (error && !item) return <div className="case-page"><div className="case-error" role="alert">{error}</div></div>;
   if (!item) return null;
 
-  const canRoute = item.permissions.includes("ROUTE_CASE") && user?.role === "EVRAK_KAYIT";
   const canAction = item.permissions.includes("RECORD_DEPARTMENT_ACTION") && user?.role === "BIRIM_PERSONELI";
+  const actionPanel = canAction ? <section className="case-panel" id="department-action">
+    <h2>Kurum İşlem Sonucu</h2><p>Doğrulanmış saha veya kurum sonucunu dosyaya kaydedin.</p>
+    <form className="department-action-form" onSubmit={(event) => void saveAction(event)}>
+      <label>İşlem Türü<input required value={form.action_type} onChange={(event) => setForm({ ...form, action_type: event.target.value })}/></label>
+      <label>Sonuç<textarea required value={form.result} onChange={(event) => setForm({ ...form, result: event.target.value })}/></label>
+      <label>Karar<textarea required value={form.decision} onChange={(event) => setForm({ ...form, decision: event.target.value })}/></label>
+      <label>Planlanan Tarih<input type="date" value={form.planned_date} onChange={(event) => setForm({ ...form, planned_date: event.target.value })}/></label>
+      <label className="full">Personel Notu<textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></label>
+      <button className="btn btn-primary" disabled={busy}><Save size={16}/> İşlem Sonucunu Kaydet</button>
+    </form>
+  </section> : undefined;
 
   return <div className="case-page case-workspace">
     <nav className="case-breadcrumb"><Link to="/dosyalar">Dosyalar</Link><span>›</span><span>{item.tracking_code}</span></nav>
-    <header className="case-workspace-header">
-      <div><span className="eyebrow">{item.tracking_code}</span><h1>{item.title}</h1><StatusBadge status={item.workflow_status}/></div>
-      <div className="ownership-strip">
-        <section><span><UserRound/> Kaynak / Başvuru Sahibi</span><strong>{item.originator_name}</strong><small>{item.source_type} · {item.source_channel}</small></section>
-        <section><span><Building2/> Mevcut Sahip</span><strong>{item.current_department_name}</strong><small>Kurumsal sorumluluk</small></section>
-        <section className="ai-owner"><span><Bot/> AI Önerisi</span><strong>{item.routing_recommendation?.recommended_unit || "Öneri bulunmuyor"}</strong><small>İnsan onayı olmadan sahiplik değişmez</small></section>
-      </div>
+    <header className="case-workspace-header cockpit-header">
+      <span className="tracking-code">{item.tracking_code}</span>
+      <h1>{caseHeaderSummary(item)}</h1>
+      <div className="case-header-meta"><span>{sourceLabels[item.source_type]}</span><i>•</i><span>{item.current_department_name}</span><i>•</i><StatusBadge status={item.workflow_status}/></div>
     </header>
     {notice && <div className="case-success" role="status">{notice}</div>}
     {error && <div className="case-error" role="alert">{error}</div>}
-    <CaseOperationPlan item={item} onRoute={() => setPending("route")}/>
-    <div className="case-workspace-grid">
-      <main>
-        <section className="case-panel"><span className="eyebrow">AI ANALİZİ</span><h2>Başvuru özeti</h2><p>{item.analysis_summary || "Analiz özeti henüz hazır değil."}</p></section>
-        <MissingInformationSolution item={item} onRequest={() => setPending("clarification")}/>
-        <WritingGroundingSummary item={item}/>
-        {item.routing_recommendation && <section className="case-panel routing-decision">
-          <header><div><span className="eyebrow">AI ÖNERİSİ · İNSAN KARARI GEREKİR</span><h2>{item.routing_recommendation.recommended_unit}</h2></div><Route/></header>
-          <h3>Gerekçe</h3><p>{item.routing_recommendation.reason}</p>
-          {item.routing_recommendation.evidence.length > 0 && <ul>{item.routing_recommendation.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul>}
-          {canRoute && <button className="btn btn-primary" onClick={() => setPending("route")}>{item.routing_recommendation.recommended_unit} birimine yönlendir</button>}
-        </section>}
-        {canAction && <section className="case-panel" id="department-action">
-          <span className="eyebrow">İNSAN TARAFINDAN DOĞRULANAN KAYNAK</span><h2>Kurum işlem sonucunu kaydet</h2>
-          <form className="department-action-form" onSubmit={(event) => void saveAction(event)}>
-            <label>İşlem Türü<input required value={form.action_type} onChange={(event) => setForm({ ...form, action_type: event.target.value })}/></label>
-            <label>Sonuç<textarea required value={form.result} onChange={(event) => setForm({ ...form, result: event.target.value })}/></label>
-            <label>Karar<textarea required value={form.decision} onChange={(event) => setForm({ ...form, decision: event.target.value })}/></label>
-            <label>Planlanan Tarih<input type="date" value={form.planned_date} onChange={(event) => setForm({ ...form, planned_date: event.target.value })}/></label>
-            <label className="full">Personel Notu<textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></label>
-            <button className="btn btn-primary" disabled={busy}><Save size={16}/> Doğrulanmış işlem sonucunu kaydet</button>
-          </form>
-        </section>}
-        {token && <CaseProductPanels item={item} token={token} onRefresh={async () => setItem(await caseApi.get(token, id))} onNotice={setNotice}/>}
-      </main>
-      <aside>
-        <OperationalNextAction item={item} user={user} onAction={handleOperationalAction}/>
-        {item.deadline?.applicable && item.deadline.legal_basis?.verified
-          ? <section className="case-panel deadline-card"><span><CalendarClock/> Yasal Süre</span><strong>{item.deadline.deadline_days} gün</strong><p>{item.deadline.due_at ? new Date(item.deadline.due_at).toLocaleDateString("tr-TR") : "Son tarih hesaplanamadı"}</p><small>{item.deadline.legal_basis.citation}</small></section>
-          : <section className="case-panel"><p>Bu dosya için doğrulanmış bir yasal süre bulunamadı.</p></section>}
-        <section className="case-panel"><h2>Dosya zaman çizelgesi</h2><CaseTimeline events={item.timeline}/></section>
-      </aside>
+    <div className="case-cockpit">
+      <CaseOperationPlan item={item}/>
+      <OperationalNextAction item={item} user={user} onAction={handleOperationalAction}/>
     </div>
+    {token && <CaseProductPanels
+      item={item}
+      token={token}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      actionPanel={actionPanel}
+      onRefresh={async () => setItem(await caseApi.get(token, id))}
+      onNotice={setNotice}
+    />}
     {pending && <ConfirmAction
       busy={busy}
       title={pending === "review" ? "İlk incelemeyi onayla" : pending === "route" ? "Kurumsal sorumluluğu aktar" : pending === "start" ? "Dosyayı işleme al" : "Eksik bilgi talebini gönder"}

@@ -127,7 +127,7 @@ describe('caseApi aggregate integration', () => {
     expect(result.ai_operation?.team_code).toBe('saha_bakim_ekibi');
     expect(result.assignment?.status).toBe('ASSIGNMENT_PENDING');
     expect(result.priority_assessment?.priority_reason).toBe('Acil ifadesi bulundu.');
-    expect(result.timeline[0].label).toBe('Yazı İşleri Müdürlüğü → Fen İşleri Müdürlüğü havalesi tamamlandı');
+    expect(result.timeline[0].label).toBe('Fen İşleri Müdürlüğü birimine havale edildi');
     expect(result.timeline[0].actor_name).toBeUndefined();
   });
 

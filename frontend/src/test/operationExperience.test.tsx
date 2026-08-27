@@ -30,27 +30,44 @@ describe("EVRAG operation-first experience", () => {
   it("shows a registry routing desk derived from case data", () => {
     render(<MemoryRouter><RoleOperationsDashboard user={registry} items={[item]} loading={false}/></MemoryRouter>);
     expect(screen.getByText("Yazı İşleri Operasyon Masası")).toBeInTheDocument();
-    expect(screen.getByText("AI HAVALE ÖNERİLERİ")).toBeInTheDocument();
+    expect(screen.getByText("AI havale önerileri")).toBeInTheDocument();
     expect(screen.getByText("Kaldırım bakımından sorumlu birimdir.")).toBeInTheDocument();
   });
 
   it("turns department cases into today's work", () => {
     render(<MemoryRouter><RoleOperationsDashboard user={department} items={[{ ...item, workflow_status: "IN_DEPARTMENT", permissions: ["START_CASE"] }]} loading={false}/></MemoryRouter>);
     expect(screen.getByText("Fen İşleri Müdürlüğü Çalışma Masası")).toBeInTheDocument();
-    expect(screen.getByText("BUGÜNÜN İŞLERİ")).toBeInTheDocument();
+    expect(screen.getByText("Bugünün işleri")).toBeInTheDocument();
     expect(screen.getByText("Dosyayı işleme al")).toBeInTheDocument();
   });
 
   it("renders the real Level-2 task without inventing personnel", () => {
-    const onRoute = vi.fn();
     const routed = { ...item, current_department_code: "fen_isleri", current_department_name: "Fen İşleri Müdürlüğü", workflow_status: "IN_DEPARTMENT" as const, permissions: ["START_CASE"], assignment: { id: "t1", case_id: "c1", source_case_id: "c1", task_type: "YOL_BAKIM_INCELEME", department_code: "fen_isleri", team_code: "saha_bakim_ekibi", recommended_role: "SAHA_EKIBI", assigned_user_id: null, status: "ASSIGNMENT_PENDING" as const, created_at: "2026-08-27T08:00:00Z", updated_at: "2026-08-27T08:00:00Z" } };
-    render(<CaseOperationPlan item={routed} onRoute={onRoute}/>);
-    expect(screen.getByText("EVRAG AKILLI İŞLEM PLANI")).toBeInTheDocument();
-    expect(screen.getAllByText("ASSIGNMENT_PENDING").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Saha Bakım Ekibi").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Saha Ekibi").length).toBeGreaterThan(0);
-    expect(screen.getByText(/sahte personel gösterilmedi/)).toBeInTheDocument();
+    render(<CaseOperationPlan item={routed}/>);
+    expect(screen.getByText("İşlem Planı")).toBeInTheDocument();
+    expect(screen.getByText("Fen İşleri Müdürlüğü birimine havale edildi")).toBeInTheDocument();
+    expect(screen.getByText(/Saha Bakım Ekibi/)).toBeInTheDocument();
+    expect(screen.getByText(/Saha Ekibi/)).toBeInTheDocument();
+    expect(screen.getByText("Görevlendirme bekliyor")).toBeInTheDocument();
+    expect(screen.getByText("Öncelik: Yüksek")).toBeInTheDocument();
+    expect(screen.queryByText(/için işlem önerisi/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Ahmet|Mehmet|Ayşe/)).not.toBeInTheDocument();
+  });
+
+  it("uses recommendation wording only before routing", () => {
+    const { rerender } = render(<CaseOperationPlan item={item}/>);
+    expect(screen.getByText("Fen İşleri Müdürlüğü için işlem önerisi")).toBeInTheDocument();
+    rerender(<CaseOperationPlan item={{ ...item, current_department_name: "Fen İşleri Müdürlüğü", workflow_status: "IN_DEPARTMENT" }}/>);
+    expect(screen.getByText("Fen İşleri Müdürlüğü birimine havale edildi")).toBeInTheDocument();
+    expect(screen.queryByText("Fen İşleri Müdürlüğü için işlem önerisi")).not.toBeInTheDocument();
+  });
+
+  it("shows uncertainty only when the routing score is low", () => {
+    const uncertain = { ...item, routing_recommendation: { ...item.routing_recommendation!, score: 0.48 } };
+    const { rerender } = render(<CaseOperationPlan item={uncertain}/>);
+    expect(screen.getByText("Yönlendirme belirsizliği yüksek")).toBeInTheDocument();
+    rerender(<CaseOperationPlan item={{ ...uncertain, routing_recommendation: { ...uncertain.routing_recommendation, score: 0.9 } }}/>);
+    expect(screen.queryByText("Yönlendirme belirsizliği yüksek")).not.toBeInTheDocument();
   });
 
   it("explains missing information and chooses the correct source", () => {
@@ -69,9 +86,10 @@ describe("EVRAG operation-first experience", () => {
   it("offers exactly the actionable next step and explains draft grounding", () => {
     const onAction = vi.fn();
     render(<><OperationalNextAction item={item} user={registry} onAction={onAction}/><WritingGroundingSummary item={item}/></>);
-    fireEvent.click(screen.getByRole("button", { name: /Eksik Bilgi Talebi Oluştur/ }));
+    expect(screen.getByText("Şimdi ne yapmalıyım?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Vatandaştan Konum Bilgisi İste" }));
     expect(onAction).toHaveBeenCalledWith("clarification");
-    expect(screen.getByText("BU TASLAK NEDEN ÜRETİLDİ?")).toBeInTheDocument();
+    expect(screen.getByText("Cevap Taslağı")).toBeInTheDocument();
     expect(screen.getAllByText("Saha incelemesi için konum gereklidir.").length).toBeGreaterThan(0);
   });
 });

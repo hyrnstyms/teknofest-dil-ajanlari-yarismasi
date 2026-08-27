@@ -53,7 +53,7 @@
 }
 
 body {
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: Inter, "Noto Sans", "Segoe UI", Arial, sans-serif;
   font-size: 14px;
   font-weight: 400;
   background-color: var(--color-bg);

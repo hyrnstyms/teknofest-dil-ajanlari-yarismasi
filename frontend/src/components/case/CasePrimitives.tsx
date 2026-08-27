@@ -1,7 +1,7 @@
 import React from "react";
 import { AlertTriangle, Check, Circle, Clock3 } from "lucide-react";
 import type { CaseEvent, CaseStatus } from "../../types/case";
-const labels: Record<CaseStatus, string> = { RECEIVED: "Başvuru Alındı", ANALYZING: "AI Analizi Sürüyor", WAITING_INITIAL_REVIEW: "Ön İnceleme Bekliyor", WAITING_CITIZEN_INFO: "Vatandaştan Bilgi Bekleniyor", READY_TO_ROUTE: "Yönlendirme Onayı Bekliyor", IN_DEPARTMENT: "İlgili Birime Atandı", IN_PROGRESS: "İşlemde", RESPONSE_DRAFTED: "Cevap Taslağı Hazır", WAITING_FINAL_APPROVAL: "Cevap Onayı Bekliyor", COMPLETED: "Tamamlandı", CLOSED: "Kapatıldı" };
+const labels: Record<CaseStatus, string> = { RECEIVED: "Başvuru Alındı", ANALYZING: "AI Analizi Sürüyor", WAITING_INITIAL_REVIEW: "Ön İnceleme Bekliyor", WAITING_CITIZEN_INFO: "Vatandaştan Bilgi Bekleniyor", READY_TO_ROUTE: "Yönlendirme Onayı Bekliyor", IN_DEPARTMENT: "Birim İşleminde", IN_PROGRESS: "İşlemde", RESPONSE_DRAFTED: "Cevap Taslağı Hazır", WAITING_FINAL_APPROVAL: "Cevap Onayı Bekliyor", COMPLETED: "Tamamlandı", CLOSED: "Kapatıldı" };
 export const statusLabel = (status: CaseStatus) => labels[status];
 export function StatusBadge({ status }: { status: CaseStatus }) { return <span className={`case-status status-${status.toLowerCase()}`}>{statusLabel(status)}</span>; }
 export function CaseTimeline({ events }: { events: CaseEvent[] }) { return <ol className="case-timeline">{events.map((event, index) => <li key={event.id}><span className="timeline-node">{index === events.length - 1 ? <Clock3 size={15}/> : <Check size={15}/>}</span><div><strong>{event.label}</strong>{event.actor_name && <span>{event.actor_name}</span>}<time>{new Date(event.created_at).toLocaleString("tr-TR")}</time></div></li>)}</ol>; }

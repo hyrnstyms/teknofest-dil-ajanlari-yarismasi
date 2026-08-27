@@ -29,7 +29,7 @@ describe('StatusBadge', () => {
     ['WAITING_INITIAL_REVIEW', 'Ön İnceleme Bekliyor'],
     ['WAITING_CITIZEN_INFO', 'Vatandaştan Bilgi Bekleniyor'],
     ['READY_TO_ROUTE', 'Yönlendirme Onayı Bekliyor'],
-    ['IN_DEPARTMENT', 'İlgili Birime Atandı'],
+    ['IN_DEPARTMENT', 'Birim İşleminde'],
     ['IN_PROGRESS', 'İşlemde'],
     ['RESPONSE_DRAFTED', 'Cevap Taslağı Hazır'],
     ['WAITING_FINAL_APPROVAL', 'Cevap Onayı Bekliyor'],
