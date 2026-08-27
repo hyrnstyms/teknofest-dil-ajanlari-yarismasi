@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Bot, Building2, CalendarClock, FileText, LockKeyhole, Route, Save, UserRound } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { CaseTimeline, ConfirmAction, StatusBadge } from "../components/case/CasePrimitives";
+import { CaseProductPanels } from "../components/case/CaseProductPanels";
 import { useAuth } from "../contexts/AuthContext";
 import { caseApi } from "../services/caseApi";
 import type { CaseRecord, DepartmentAction } from "../types/case";
@@ -127,9 +128,9 @@ export function CaseWorkspacePage() {
             <button className="btn btn-primary" disabled={busy}><Save size={16}/> Doğrulanmış işlem sonucunu kaydet</button>
           </form>
         </section>}
-        <section className="case-panel draft-guard"><header><h2>Resmî cevap hazırlığı</h2><FileText/></header>
+        {token && <CaseProductPanels item={item} token={token} onRefresh={async () => setItem(await caseApi.get(token, id))} onNotice={setNotice}/>}<section className="case-panel draft-guard"><header><h2>Resmî cevap hazırlığı</h2><FileText/></header>
           {verifiedAction
-            ? <p>Copilot’a “Vatandaşa cevap hazırla” diyerek doğrulanmış işlem sonucuna dayalı taslak oluşturabilirsiniz.</p>
+            ? <p>Doğrulanmış kurum işlemi kaydedildi. EVRAG resmî cevap taslağını otomatik hazırlar; Copilot yalnız isteğe bağlı yardımcıdır.</p>
             : <div className="guard-message"><LockKeyhole/><div><strong>Önce kurum işlem sonucu kaydedilmelidir.</strong><p>AI gerçekleşmemiş bir kamu işlemi adına nihai cevap oluşturamaz.</p></div></div>}
         </section>
       </main>

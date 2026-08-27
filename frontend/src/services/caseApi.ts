@@ -22,6 +22,11 @@ interface CaseAggregateWire {
       question_type: "free_text" | "choice" | "single_choice";
       options: Array<string | { value: string; label: string }>;
     };
+    document?: Record<string, unknown>;
+    extraction?: { fields?: Record<string, { value?: unknown; validated?: boolean }> };
+    missing_fields?: { missing_fields?: string[]; blocking_fields?: string[] };
+    legal_analysis?: { verified?: boolean; evidence?: unknown[]; sources?: unknown[]; text?: string };
+    raw_text?: string;
   } | null;
   deadline?: CaseRecord["deadline"];
 }
@@ -69,6 +74,7 @@ function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
       ai_generated: true,
     })),
     permissions: aggregate.permissions,
+    analysis_details: aggregate.analysis,
   };
 }
 
@@ -153,6 +159,10 @@ export const caseApi = {
     `/api/cases/${item.id}/citizen-requests`,
     { ...item.clarification, expected_version: item.version, confirmed: true },
     "Eksik bilgi talebi kaydedildi.",
+  ),
+  approveDraft: (token: string, item: CaseRecord, draftId: string) => mutate(
+    token, item, `/api/cases/${item.id}/drafts/${draftId}/approve`,
+    { expected_version: item.version, confirmed: true }, "Resmî cevap taslağı onaylandı.",
   ),
   departments: (token: string, institution: string) => caseRequest<{ institution_id: string; departments: Department[] }>(`/api/institutions/${institution}/departments`, token),
 };

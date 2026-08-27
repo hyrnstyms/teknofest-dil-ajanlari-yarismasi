@@ -30,7 +30,7 @@ export const Header: React.FC = () => {
       <div className="flex items-center gap-4">
         <ShieldCheck size={32} className="text-primary" />
         <div className="app-title">
-          <h1>KAMUAI</h1>
+          <h1>EVRAG</h1>
           <span>Kamu Evrak ve Yazışma Süreçleri için Akıllı Agent Destek Sistemi</span>
         </div>
       </div>

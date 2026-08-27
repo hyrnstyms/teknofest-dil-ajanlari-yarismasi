@@ -31,7 +31,7 @@ function welcomeMessage(hasAnalysis: boolean): ChatUiMessage {
     status: "answered",
     text: hasAnalysis
       ? "Aktif evrak bağlamını kullanıyorum. Özeti, eksikleri, mevzuatı, yönlendirme gerekçesini sorabilir veya taslak üzerinde kontrollü değişiklik isteyebilirsiniz."
-      : "Merhaba, ben KAMUAI Kurumsal Copilot. Kamu evrakı, mevzuat, yönlendirme ve resmî yazışma süreçlerinde yardımcı olabilirim.",
+      : "Merhaba, ben EVRAG Copilot. Kamu evrakı, mevzuat, yönlendirme ve resmî yazışma süreçlerinde yardımcı olabilirim.",
   };
 }
 
