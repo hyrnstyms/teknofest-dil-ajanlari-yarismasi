@@ -42,10 +42,12 @@ from backend.app.auth.dependencies import (
 from backend.app.cases.institution_router import router as case_institution_router
 from backend.app.cases.intelligence_bridge import register_intelligence_hooks
 from backend.app.cases.intake import maybe_create_case_for_analysis
+from backend.app.cases.notifications import NotificationService
 from backend.app.cases.public_router import router as public_case_router
 from backend.app.cases.router import router as case_router
 from backend.app.intelligence.preview_router import router as ai_preview_router
 from backend.app.demo.router import router as demo_router
+from backend.app.utils.pii import mask_extraction
 
 
 # Initialize FastAPI app
@@ -98,6 +100,15 @@ def _get_stored_analysis(analysis_id: str) -> dict[str, Any]:
             detail={"code": "analysis_not_found", "message": "İstenen analiz kaydı bulunamadı."},
         )
     return state
+
+
+def _serialize_analysis_response(state: dict[str, Any], *, mask: bool) -> dict[str, Any]:
+    """Build the public analysis representation without modifying DB state."""
+
+    response = deepcopy(state)
+    if mask:
+        response["extraction"] = mask_extraction(response.get("extraction"))
+    return response
 
 
 class _PersistentAnalysisStore(MutableMapping[str, dict[str, Any]]):
@@ -321,7 +332,7 @@ def readiness_check():
 
 
 @app.post("/api/documents/analyze-text")
-def analyze_text(req: AnalyzeRequest, request: Request):
+def analyze_text(req: AnalyzeRequest, request: Request, mask: bool = True):
     try:
         doc_id = req.document_id or str(uuid.uuid4())
         wf = (
@@ -358,7 +369,7 @@ def analyze_text(req: AnalyzeRequest, request: Request):
             # The persisted Analysis remains the AI work product; Case owns the
             # institutional lifecycle.
             final_state.update(case_link)
-        return final_state
+        return _serialize_analysis_response(final_state, mask=mask)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail={"code": "analysis_error", "message": f"Analiz sırasında bir hata oluştu: {str(e)}"})
@@ -369,6 +380,7 @@ async def upload_document(
     request: Request,
     file: UploadFile = File(...),
     institution: Optional[str] = Form(None),
+    mask: bool = True,
 ):
     file_path = None
     try:
@@ -429,7 +441,7 @@ async def upload_document(
             document_id=file.filename,
             institution=institution,
         )
-        return analyze_text(req, request)
+        return analyze_text(req, request, mask=mask)
         
     except HTTPException:
         raise
@@ -440,8 +452,8 @@ async def upload_document(
 
 
 @app.get("/api/analysis/{analysis_id}")
-def get_analysis(analysis_id: str):
-    return _get_stored_analysis(analysis_id)
+def get_analysis(analysis_id: str, mask: bool = True):
+    return _serialize_analysis_response(_get_stored_analysis(analysis_id), mask=mask)
 
 
 @app.post("/api/analysis/{analysis_id}/approve")
@@ -539,6 +551,10 @@ def reject_analysis(analysis_id: str, req: RejectRequest):
     telemetry_service.update_human_review(analysis_id, "rejected")
     get_analysis_repository().update_analysis_with_event(
         analysis_id, state, "reject", {"reason": req.reason}
+    )
+    NotificationService().queue_analysis_rejected(
+        analysis_id=analysis_id,
+        reason=req.reason,
     )
     
     return {"status": "success", "message": "Analiz reddedildi."}
