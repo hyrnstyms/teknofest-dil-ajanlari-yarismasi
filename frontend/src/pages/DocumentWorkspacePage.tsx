@@ -24,6 +24,7 @@ import { LegalCard } from '../components/cards/LegalCard';
 import { RoutingCard } from '../components/cards/RoutingCard';
 import { QualityFormatCard } from '../components/cards/QualityFormatCard';
 import { HumanReviewPanel } from '../components/cards/HumanReviewPanel';
+import { SimilarDocumentsCard } from '../components/cards/SimilarDocumentsCard';
 import { formatDate, formatDisplayName, formatInstitution, formatPriority, formatReviewStatus } from '../utils/presentation';
 
 interface Props {
@@ -271,6 +272,7 @@ export const DocumentWorkspacePage: React.FC<Props> = ({
           <div><h2>AI İşlem Akışı</h2><p>Yalnız tamamlanmış backend aşamaları gösterilir.</p></div>
           <div className="workspace-process-steps">{compactStages.map(([key, label]) => <div className={state.node_timings?.[key] ? 'complete' : ''} key={key}><span>{state.node_timings?.[key] ? '✓' : '○'}</span><strong>{label}</strong></div>)}</div>
         </section>
+        <SimilarDocumentsCard />
       </div>}
 
       {workspaceTab === 'document' && <div className="workspace-detail-grid">

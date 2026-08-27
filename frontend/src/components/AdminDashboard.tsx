@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock3, FilePenLine, Files, RefreshCw, UserCheck, XCircle } from "lucide-react";
 import {
   api,
@@ -42,6 +42,17 @@ export const AdminDashboard: React.FC<Props> = ({ onOpenAnalysis }) => {
 
   useEffect(() => { void load(); }, [load]);
 
+  const departmentDistribution = useMemo(() => {
+    const counts = new Map<string, number>();
+    analyses.forEach((item) => {
+      const department = item.recommended_unit?.trim();
+      if (department) counts.set(department, (counts.get(department) || 0) + 1);
+    });
+    return [...counts.entries()]
+      .map(([department, count]) => ({ department, count }))
+      .sort((left, right) => right.count - left.count || left.department.localeCompare(right.department, "tr"));
+  }, [analyses]);
+
   return (
     <div className="admin-dashboard">
       <div className="page-intro admin-intro">
@@ -66,6 +77,8 @@ export const AdminDashboard: React.FC<Props> = ({ onOpenAnalysis }) => {
         <Metric icon={<XCircle />} label="Reddedilen" value={roi ? String(roi.rejected_count) : "—"} />
         <Metric icon={<UserCheck />} label="İnceleme bekleyen" value={loading ? "—" : String(pendingTotal)} accent />
       </div>
+
+      <DepartmentDistributionChart data={departmentDistribution} loading={loading} />
 
       <section className="admin-table-card">
         <div className="table-card-header"><div><span className="section-kicker">Kayıtlar</span><h3>Son Evraklar</h3></div><span>{analyses.length} kayıt gösteriliyor</span></div>
@@ -107,6 +120,27 @@ export const AdminDashboard: React.FC<Props> = ({ onOpenAnalysis }) => {
         </div>
       </section>
     </div>
+  );
+};
+
+const DepartmentDistributionChart: React.FC<{
+  data: Array<{ department: string; count: number }>;
+  loading: boolean;
+}> = ({ data, loading }) => {
+  const maximum = Math.max(...data.map((item) => item.count), 1);
+  return (
+    <section className="department-chart-card" aria-labelledby="department-chart-title">
+      <header className="table-card-header">
+        <div><span className="section-kicker">Gerçek analiz kayıtları</span><h3 id="department-chart-title">Birim Dağılımı</h3></div>
+        <span>{loading ? "Yükleniyor…" : `${data.reduce((sum, item) => sum + item.count, 0)} yönlendirme`}</span>
+      </header>
+      {data.length ? <div className="department-bars" role="img" aria-label="Önerilen birimlere göre evrak dağılımı">
+        {data.map((item) => <div className="department-bar-row" key={item.department}>
+          <div><strong>{item.department}</strong><span>{item.count} evrak</span></div>
+          <span className="department-bar-track" aria-hidden="true"><i style={{ width: `${(item.count / maximum) * 100}%` }} /></span>
+        </div>)}
+      </div> : <div className="chart-empty">{loading ? "Birim dağılımı hesaplanıyor…" : "Birim önerisi bulunan analiz kaydı yok."}</div>}
+    </section>
   );
 };
 

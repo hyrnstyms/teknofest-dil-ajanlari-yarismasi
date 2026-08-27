@@ -71,6 +71,15 @@ export interface EvaluationSummary {
   message?: string;
   report?: Record<string, unknown>;
 }
+
+export interface VerificationResult {
+  id: string;
+  status: string;
+  document_type: string;
+  created_at: string;
+  valid?: boolean;
+  verified_at?: string;
+}
 type AnalysisQuery = number | {
   limit?: number;
   offset?: number;
@@ -106,6 +115,14 @@ async function throwApiError(response: Response): Promise<never> {
 }
 
 export const api = {
+  async verifyDocument(id: string): Promise<VerificationResult> {
+    const response = await apiFetch(`${API_BASE_URL}/api/verify/${encodeURIComponent(id)}`);
+    if (!response.ok) {
+      return throwApiError(response);
+    }
+    return response.json();
+  },
+
   async getSystemStatus(): Promise<SystemStatus> {
     const response = await apiFetch(API_BASE_URL + "/api/system/status");
     if (!response.ok) {
