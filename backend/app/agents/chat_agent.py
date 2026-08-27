@@ -6,6 +6,7 @@ import json
 import os
 import re
 import unicodedata
+import uuid
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
@@ -670,7 +671,7 @@ def is_mevzuat_sorusu(message: str) -> bool:
     if re.search(r"\bmevzuat\b.*\b(?:esle|oran)\w*", normalized):
         return False
     explicit_reference = bool(re.search(
-        r"\b(?:\d{3,4}\s+say\w+|madde\s+\d+|kanun\w*|\w*netmeli\w*)\b",
+        r"\b(?:\d{3,4}(?:\s+say\w+|\s+kapsam\w+)|madde\s+\d+|kanun\w*|\w*netmeli\w*)\b",
         normalized,
     ))
     if re.match(r"^(?:merhaba|selam)\b", normalized) and not explicit_reference:
@@ -1429,12 +1430,24 @@ def resolve_chat_mode(message: str, history: list[dict] | None = None, has_activ
 
     if is_taslak_duzenleme_talebi(message):
         return "taslak_duzenleme"
+    normalized = _normalize_text(message)
+    if re.search(r"\b(?:gelen kutu|bana gelen|uzerimdeki|üzerimdeki)\b", normalized):
+        return "inbox_query"
+    if re.search(r"\bvatanda\w*tan\b.*\b(?:eksik|bilgi|aciklama|açıklama)\b.*\biste\w*", normalized):
+        return "clarification_action"
+    if re.search(
+        r"\b(?:gonder|gönder|yonlendir|yönlendir|isleme al|işleme al|cevab\w* onayla|"
+        r"dosya\w* sonu\w*landir|dosya\w* sonuçlandır|cevap hazirla|cevap hazırla)\b",
+        normalized,
+    ):
+        return "workflow_action"
+    if re.search(r"\bdosya\b.*\b(?:neden bekliyor|ne durumda|durumu|hangi asama|hangi aşama)\b", normalized):
+        return "case_query_state"
     if is_active_document_question(message, history, has_active_document):
         return "active_document"
     if is_institution_question(message):
         return "institution"
 
-    normalized = _normalize_text(message)
     # Check follow up to mevzuat
     if history and history[-1].get("mode") == "mevzuat":
         if bool(re.search(r"\b(?:hangi|madde|süre|sure|nedir)\b", normalized)):
@@ -1469,6 +1482,98 @@ def resolve_chat_mode(message: str, history: list[dict] | None = None, has_activ
     if router_label == "X":
         return "out_of_domain"
     return "kilavuz"
+
+
+def _pending_case_action(
+    message: str,
+    state: dict[str, Any],
+    *,
+    clarification: bool = False,
+) -> dict[str, Any] | str:
+    case_id = str(state.get("id") or "").strip()
+    version = state.get("version")
+    if not case_id or not isinstance(version, int):
+        return "Bu işlem için önce yetkili olduğunuz güncel bir Case açın."
+
+    normalized = _normalize_text(message)
+    action_type = "REQUEST_CITIZEN_INFO" if clarification else "ROUTE_CASE"
+    if not clarification:
+        if re.search(r"\b(?:isleme al|işleme al)\b", normalized):
+            action_type = "START_CASE"
+        elif re.search(r"\bcevab\w*\b.*\bonayla\w*", normalized):
+            action_type = "APPROVE_DRAFT"
+        elif re.search(r"\b(?:sonu\w*landir|sonuçlandır)\b", normalized):
+            action_type = "FINALIZE_CASE"
+        elif re.search(r"\bcevap\b.*\b(?:hazirla|hazırla|olustur|oluştur)\w*", normalized):
+            action_type = "CREATE_OFFICIAL_DRAFT"
+
+    required_permission = {
+        "ROUTE_CASE": "ROUTE_CASE",
+        "START_CASE": "START_CASE",
+        "REQUEST_CITIZEN_INFO": "REQUEST_CITIZEN_INFO",
+        "CREATE_OFFICIAL_DRAFT": "SAVE_DRAFT",
+        "APPROVE_DRAFT": "APPROVE_DRAFT",
+        "FINALIZE_CASE": "FINALIZE_CASE",
+    }[action_type]
+    if required_permission not in set(state.get("permissions") or []):
+        if action_type == "CREATE_OFFICIAL_DRAFT" and not state.get("department_actions"):
+            return "Doğrulanmış birim işlemi olmadan resmî cevap hazırlanamaz."
+        return "Bu işlem dosyanın mevcut durumu veya rol yetkiniz nedeniyle kullanılamıyor."
+
+    payload: dict[str, Any] = {"expected_version": version}
+    if action_type == "ROUTE_CASE":
+        routing = state.get("routing") or {}
+        department_code = routing.get("recommended_department_code")
+        if not department_code:
+            return "Onaylanabilir bir birim önerisi bulunmuyor."
+        payload.update(
+            {
+                "department_code": department_code,
+                "reason": routing.get("reason") or routing.get("routing_reason"),
+                "routing_snapshot": routing,
+            }
+        )
+    elif action_type == "REQUEST_CITIZEN_INFO":
+        clarification_payload = dict(state.get("clarification") or {})
+        if not clarification_payload.get("question") or not clarification_payload.get("requested_fields"):
+            return "Onaylanabilir bir eksik bilgi sorusu bulunmuyor."
+        payload.update(clarification_payload)
+    elif action_type in {"APPROVE_DRAFT", "FINALIZE_CASE"}:
+        drafts = list(state.get("drafts") or [])
+        wanted = "DRAFT" if action_type == "APPROVE_DRAFT" else "APPROVED"
+        draft = next(
+            (
+                item
+                for item in reversed(drafts)
+                if item.get("status") in ({"DRAFT", "EDITED"} if wanted == "DRAFT" else {wanted})
+            ),
+            None,
+        )
+        if draft is None:
+            return "Bu işlem için uygun bir taslak bulunmuyor."
+        payload["draft_id"] = draft["id"]
+
+    labels = {
+        "ROUTE_CASE": "Dosyayı önerilen birime yönlendirme",
+        "START_CASE": "Dosyayı işleme alma",
+        "REQUEST_CITIZEN_INFO": "Vatandaştan eksik bilgi isteme",
+        "CREATE_OFFICIAL_DRAFT": "Doğrulanmış işlemden resmî cevap hazırlama",
+        "APPROVE_DRAFT": "Resmî cevap taslağını onaylama",
+        "FINALIZE_CASE": "Dosyayı sonuçlandırma",
+    }
+    return {
+        "mode": "clarification_action" if clarification else "workflow_action",
+        "status": "pending_confirmation",
+        "sohbet_yaniti": f"{labels[action_type]} işlemi için onayınız gerekiyor.",
+        "pending_action": {
+            "action_id": str(uuid.uuid4()),
+            "type": action_type,
+            "case_id": case_id,
+            "payload": payload,
+            "confirmation_required": True,
+            "confirmation_text": f"{labels[action_type]} işlemini onaylıyor musunuz?",
+        },
+    }
 
 
 def handle_chat_message(
@@ -1536,39 +1641,17 @@ def handle_chat_message(
         return handle_legal_question(message)
     if mode == "workflow_action":
         state = (workflow_context or {}).get("analysis_state", {})
-        return {
-            "mode": "workflow_action",
-            "status": "applied",
-            "sohbet_yaniti": "İşlemi gerçekleştirmek için onayınız gerekiyor:",
-            "pending_action": {
-                "type": "route_case",
-                "case_id": state.get("id") or "unknown",
-                "payload": {"instruction": message},
-                "confirmation_required": True,
-                "confirmation_text": f"Şu işlemi onaylıyor musunuz: {message}"
-            }
-        }
+        return _pending_case_action(message, state)
     if mode == "clarification_action":
         state = (workflow_context or {}).get("analysis_state", {})
-        return {
-            "mode": "clarification_action",
-            "status": "applied",
-            "sohbet_yaniti": "Bilgi/Açıklama talebi oluşturmak için onayınız gerekiyor:",
-            "pending_action": {
-                "type": "request_clarification",
-                "case_id": state.get("id") or "unknown",
-                "payload": {"instruction": message},
-                "confirmation_required": True,
-                "confirmation_text": f"Şu açıklama talebini onaylıyor musunuz: {message}"
-            }
-        }
+        return _pending_case_action(message, state, clarification=True)
     if mode == "inbox_query":
         from backend.app.copilot.case_adapter import get_inbox_adapter
         adapter = get_inbox_adapter()
         return adapter.get_inbox_summary(user_context)
     if mode == "case_query_state":
         state = (workflow_context or {}).get("analysis_state", {})
-        status = state.get("status", "Bilinmiyor")
+        status = state.get("workflow_status") or state.get("status", "Bilinmiyor")
         return f"Bu dosyanın mevcut durumu: {status}. Bir sonraki işlem için bekliyor."
 
     if mode == "kucuk_sohbet":
@@ -1671,6 +1754,27 @@ def stream_copilot_response(
 
     # 3. RAG/Legal Mode (Requires LLM Streaming)
     elif mode == "mevzuat":
+        lower_msg = message.casefold()
+        deadline_question = any(
+            keyword in lower_msg
+            for keyword in ("ne zaman", "kaç gün", "son tarih", "yasal süre", "süresi")
+        )
+        deadline = (analysis_state or {}).get("deadline") or {}
+        if deadline_question and analysis_state is not None and deadline:
+            legal_basis = deadline.get("legal_basis") or {}
+            if deadline.get("applicable") and legal_basis.get("verified"):
+                parts = [f"Doğrulanmış yasal süre {deadline.get('deadline_days')} gündür."]
+                if deadline.get("due_at"):
+                    parts.append(f"Son tarih: {deadline['due_at']}.")
+                if legal_basis.get("citation"):
+                    parts.append(f"Dayanak: {legal_basis['citation']}.")
+                yield f"event: delta\ndata: {json.dumps({'text': ' '.join(parts)}, ensure_ascii=False)}\n\n"
+            else:
+                yield f"event: delta\ndata: {json.dumps({'text': 'Bu dosya için doğrulanmış bir yasal süre bulunamadı.'}, ensure_ascii=False)}\n\n"
+            total_ms = int((time.time() - start_time) * 1000)
+            yield f"event: done\ndata: {json.dumps({'ttft_ms': total_ms, 'total_ms': total_ms}, ensure_ascii=False)}\n\n"
+            return
+
         rag_sources = _build_rag_sources(message, filtered_history, analysis_state)
 
         if not rag_sources:
@@ -1679,7 +1783,6 @@ def stream_copilot_response(
         else:
             # Deadline / received_at fallback edge case
             deadline_keywords = ["ne zaman", "kaç gün", "son tarih"]
-            lower_msg = message.lower()
             if any(k in lower_msg for k in deadline_keywords):
                 if not analysis_state or not analysis_state.get("received_at"):
                     msg = "Yasal süreyi doğruladım ancak son tarihi hesaplamak için güvenilir alınma tarihi gerekli."

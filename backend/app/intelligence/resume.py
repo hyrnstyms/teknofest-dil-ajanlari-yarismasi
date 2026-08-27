@@ -8,7 +8,11 @@ from backend.app.agents.missing_field_agent import MissingFieldAgent
 from backend.app.agents.routing_agent import RoutingAgent
 from backend.app.intelligence.clarification import ClarificationAgent
 from backend.app.intelligence.contracts import CaseIntelligenceContext, CitizenResponse
-from backend.app.intelligence.process_profiles import PERMIT_DEPARTMENT_BY_OPTION, field_label
+from backend.app.intelligence.process_profiles import (
+    PERMIT_DEPARTMENT_BY_OPTION,
+    PERMIT_OPTIONS,
+    field_label,
+)
 
 
 def _as_field_evidence(value: Any, source: str = "citizen_response") -> dict[str, Any]:
@@ -133,7 +137,15 @@ def resume_after_citizen_info(
         subject = document.get("subject_excerpt") or ""
         request = document.get("request_excerpt") or ""
         if permit_type:
-            request = f"{request} {field_label('permit_type')}: {permit_type}".strip()
+            permit_label = next(
+                (
+                    option["label"]
+                    for option in PERMIT_OPTIONS
+                    if option["id"] == permit_type
+                ),
+                str(permit_type),
+            )
+            request = f"{request} {field_label('permit_type')}: {permit_label}".strip()
         routing = routing_agent.route(
             document_type,
             process_intent,
@@ -142,6 +154,24 @@ def resume_after_citizen_info(
             extracted_fields,
             document_subtype=document.get("document_subtype"),
         )
+        if candidate:
+            unit = next(
+                (
+                    item
+                    for item in getattr(routing_agent, "_units", [])
+                    if item.get("unit_id") == candidate
+                ),
+                {},
+            )
+            routing.update(
+                {
+                    "recommended_department_code": candidate,
+                    "recommended_unit": unit.get("name") or candidate,
+                    "reason": "Vatandaşın doğrulanmış ruhsat türü yanıtına göre sorumlu birim.",
+                    "requires_human_review": True,
+                    "needs_human_review": True,
+                }
+            )
         routing["assigned"] = False
 
     return {

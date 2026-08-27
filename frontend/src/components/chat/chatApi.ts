@@ -101,6 +101,8 @@ export async function streamChatMessage(
   abortSignal: AbortSignal,
   analysisId?: string,
   institution?: string,
+  caseId?: string,
+  token?: string,
 ): Promise<void> {
   let completed = false;
   const complete = (data?: { ttft_ms?: number; total_ms?: number }) => {
@@ -144,11 +146,16 @@ export async function streamChatMessage(
   try {
     const response = await fetch(`${API_BASE_URL}/api/copilot/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         message,
         history,
         analysis_id: analysisId || null,
+        case_id: caseId || null,
         institution: institution || null,
       }),
       signal: abortSignal,

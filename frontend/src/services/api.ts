@@ -130,11 +130,12 @@ export const api = {
     return data.institution_options || [];
   },
 
-  async analyzeText(text: string, institution?: string): Promise<DocumentState> {
+  async analyzeText(text: string, institution?: string, token?: string): Promise<DocumentState> {
     const response = await apiFetch(`${API_BASE_URL}/api/documents/analyze-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ text, ...(institution ? { institution } : {}) }),
     });
@@ -146,13 +147,14 @@ export const api = {
     return response.json();
   },
 
-  async uploadDocument(file: File, institution?: string): Promise<DocumentState> {
+  async uploadDocument(file: File, institution?: string, token?: string): Promise<DocumentState> {
     const formData = new FormData();
     formData.append("file", file);
     if (institution) formData.append("institution", institution);
 
     const response = await apiFetch(`${API_BASE_URL}/api/documents/upload`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: formData,
     });
 
