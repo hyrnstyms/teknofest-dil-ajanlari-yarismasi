@@ -68,12 +68,12 @@ export const ChatPanel: React.FC<Props> = ({
     } else if (isKaymakamlik) {
       quickActions = ["Dilekçe cevap süresi nedir?", "Sosyal yardım başvurusu nasıl yönlendirilir?", "Bilgi edinme başvurularında süreç nedir?"];
     } else {
-      quickActions = ["KAMUAI ne yapıyor?", "Nasıl evrak yüklerim?", "Dilekçe cevap süresi nedir?"];
+      quickActions = ["EVRAG ne yapıyor?", "Nasıl evrak yüklerim?", "Dilekçe cevap süresi nedir?"];
     }
   }
 
   return (
-    <section className="kamuai-chat-panel" aria-label="KAMUAI Copilot">
+    <section className="kamuai-chat-panel" aria-label="EVRAG Copilot">
       <header className="kamuai-chat-header">
         <div>
           <h2><EVRAGBrand variant="icon" theme="light" className="copilot-brand-mark" /><span>EVRAG Copilot</span></h2>

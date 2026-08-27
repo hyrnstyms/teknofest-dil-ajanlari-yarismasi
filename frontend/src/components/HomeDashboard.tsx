@@ -61,8 +61,8 @@ export const HomeDashboard: React.FC<Props> = ({ institution, onNewDocument, onO
     <div className="home-dashboard no-print">
       <header className="home-header">
         <div>
-          <span className="section-kicker">KAMUAI karar destek sistemi</span>
-          <h1>KAMUAI Evrak Masası</h1>
+          <span className="section-kicker">EVRAG karar destek sistemi</span>
+          <h1>EVRAG Evrak Masası</h1>
           <p>Kamu evraklarını analiz eder, eksikleri tespit eder, ilgili mevzuatı bulur, doğru birime yönlendirir ve resmî yazı taslağı hazırlar.</p>
           <span className="institution-profile-badge">Kurum Profili: <strong>{institution?.label || "Kurum seçilmedi"}</strong></span>
         </div>

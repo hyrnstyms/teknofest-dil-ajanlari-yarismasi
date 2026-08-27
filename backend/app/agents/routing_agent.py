@@ -6,8 +6,7 @@ from backend.app.institutions.profile_loader import (
     InstitutionProfile,
 )
 
-# Yarışma demosunda aktif kurum
-_DEFAULT_INSTITUTION = "kaymakamlik"
+# institution_id her zaman caller tarafından geçirilmeli; hardcoded default kaldırıldı.
 _GENERIC_KEYWORDS = {"ruhsat", "yardım", "yardim", "itiraz", "şikayet", "sikayet", "başvuru", "basvuru", "talep", "istek", "dilekçe", "dilekce"}
 _EXEMPLAR_MIN_SCORE = 0.55
 _EXEMPLAR_MIN_GAP = 0.04
@@ -52,7 +51,8 @@ class RoutingAgent:
     """
     Deterministic, açıklanabilir kural tabanlı yönlendirme ajanı.
 
-    Kaynak: data/institutions/kaymakamlik/kurum_profili_kaymakamlik.yaml
+    ``institution`` parametresi ZORUNLUDUR — hardcoded default kaldırıldı.
+    Kaynak: data/institutions/{institution}/kurum_profili_{institution}.yaml
     unit_registry.json KULLANILMIYOR.
 
     V2 Özellikleri:
@@ -64,7 +64,12 @@ class RoutingAgent:
       - rule_margin semantics
     """
 
-    def __init__(self, institution: str = _DEFAULT_INSTITUTION):
+    def __init__(self, institution: str):
+        if not institution:
+            raise ValueError(
+                "RoutingAgent: 'institution' parametresi zorunludur. "
+                "Caller'ın institution_id'yi açıkça geçmesi gerekiyor."
+            )
         self.institution = institution
         self._profile_source = (
             f"data/institutions/{institution}/kurum_profili_{institution}.yaml"

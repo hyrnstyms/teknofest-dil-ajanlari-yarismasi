@@ -7,7 +7,7 @@ _VALID_UNIT = "Yazı İşleri Müdürlüğü"
 
 @pytest.fixture
 def agent():
-    return QualityAgent()
+    return QualityAgent("kaymakamlik")
 
 def test_quality_pass(agent):
     res = agent.check_quality(

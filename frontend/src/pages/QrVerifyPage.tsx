@@ -37,8 +37,8 @@ export function QrVerifyPage() {
         <span>Kamusal belge doğrulama</span>
       </header>
       <section className="qr-verify-shell">
-        <div className={`qr-verify-mark ${result && result.valid !== false ? "verified" : ""}`}>
-          {loading ? <Loader2 className="spinner" /> : result && result.valid !== false ? <CheckCircle2 /> : <ShieldAlert />}
+        <div className={`qr-verify-mark ${result?.found ? "verified" : ""}`}>
+          {loading ? <Loader2 className="spinner" /> : result?.found ? <CheckCircle2 /> : <ShieldAlert />}
         </div>
         <span className="section-kicker">DOĞRULAMA KODU</span>
         <h1>{id || "Geçersiz doğrulama kodu"}</h1>
@@ -48,9 +48,9 @@ export function QrVerifyPage() {
         {result && <>
           <div className="qr-verify-success"><FileCheck2 size={18} /> Bu kayıt EVRAG doğrulama servisi tarafından bulundu.</div>
           <dl className="qr-verify-details">
-            <div><dt><FileCheck2 /> Durum</dt><dd>{formatDisplayName(result.status)}</dd></div>
-            <div><dt><FileText /> Evrak türü</dt><dd>{formatDisplayName(result.document_type)}</dd></div>
-            <div><dt><CalendarDays /> Tarih</dt><dd>{formatDate(result.created_at)}</dd></div>
+            <div><dt><FileCheck2 /> Durum</dt><dd>{formatDisplayName(result.status_label || result.status || "Bilinmiyor")}</dd></div>
+            <div><dt><FileText /> Evrak türü</dt><dd>{formatDisplayName(result.document_type || "Belirtilmemiş")}</dd></div>
+            <div><dt><CalendarDays /> Tarih</dt><dd>{formatDate(result.received_at)}</dd></div>
           </dl>
         </>}
         <p className="qr-verify-privacy">Bu herkese açık ekran yalnız doğrulama için gerekli sınırlı belge bilgisini gösterir.</p>
@@ -59,7 +59,8 @@ export function QrVerifyPage() {
   );
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string | null): string {
+  if (!value) return "Belirtilmemiş";
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? value

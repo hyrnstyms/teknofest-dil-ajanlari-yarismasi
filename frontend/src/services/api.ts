@@ -73,12 +73,14 @@ export interface EvaluationSummary {
 }
 
 export interface VerificationResult {
-  id: string;
-  status: string;
-  document_type: string;
-  created_at: string;
-  valid?: boolean;
-  verified_at?: string;
+  found: true;
+  evrak_id: string;
+  source: "case" | "analysis";
+  document_type: string | null;
+  received_at: string | null;
+  status: string | null;
+  status_label: string | null;
+  institution_id: string | null;
 }
 type AnalysisQuery = number | {
   limit?: number;

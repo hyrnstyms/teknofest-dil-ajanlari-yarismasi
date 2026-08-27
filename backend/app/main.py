@@ -45,6 +45,7 @@ from backend.app.cases.intake import maybe_create_case_for_analysis
 from backend.app.cases.public_router import router as public_case_router
 from backend.app.cases.router import router as case_router
 from backend.app.intelligence.preview_router import router as ai_preview_router
+from backend.app.demo.router import router as demo_router
 
 
 # Initialize FastAPI app
@@ -75,6 +76,7 @@ app.include_router(case_router)
 app.include_router(public_case_router)
 app.include_router(case_institution_router)
 app.include_router(ai_preview_router, dependencies=[Depends(get_current_user)])
+app.include_router(demo_router)
 register_intelligence_hooks()
 
 analysis_repository: AnalysisRepository | None = None
@@ -946,6 +948,151 @@ def _analysis_list_subject(state: Dict[str, Any]) -> str:
         return str(document["subject_excerpt"])
 
     return ""
+
+
+
+# ── QR DOĞRULAMA ENDPOINTİ (tokensiz, kişisel veri YOK) ─────────────────
+@app.get("/api/verify/{evrak_id}")
+def verify_document(evrak_id: str):
+    """
+    DOCX içindeki QR kodundan taranan endpoint.
+    Tokensiz — sadece evrak türü, tarih ve durum etiket bilgisi döndürür.
+    Kişisel veri (isim, TC, ham metin) YOK.
+
+    evrak_id: analysis UUID veya EVRAG-XXXX tracking_code olabilir.
+    """
+    # 1. Case DB'de tracking_code olarak ara (EVRAG-XXXX format)
+    try:
+        from backend.app.cases.runtime import get_case_engine
+        from backend.app.cases.enums import PUBLIC_STATUS_LABELS
+        from sqlalchemy import select
+        from backend.app.db.case_models import CaseRecord
+
+        engine_obj = get_case_engine()
+        with engine_obj.session_factory() as session:
+            stmt = select(CaseRecord).where(CaseRecord.tracking_code == evrak_id)
+            row = session.scalars(stmt).first()
+            if row is not None:
+                return {
+                    "found": True,
+                    "evrak_id": evrak_id,
+                    "source": "case",
+                    "document_type": row.source_type,
+                    "received_at": row.received_at.strftime("%d.%m.%Y") if row.received_at else None,
+                    "status": row.workflow_status,
+                    "status_label": PUBLIC_STATUS_LABELS.get(row.workflow_status, row.workflow_status),
+                    "institution_id": row.institution_id,
+                }
+    except Exception:
+        pass  # Case DB erişilemiyorsa Analysis DB'e düş
+
+    # 2. Analysis UUID olarak ara
+    state = get_analysis_repository().get_analysis(evrak_id)
+    if state is not None:
+        doc = state.get("document", {})
+        return {
+            "found": True,
+            "evrak_id": evrak_id,
+            "source": "analysis",
+            "document_type": doc.get("document_type"),
+            "received_at": state.get("created_at"),
+            "status": state.get("status"),
+            "status_label": state.get("status"),
+            "institution_id": state.get("institution_id") or state.get("kurum_profili_id"),
+        }
+
+    raise HTTPException(
+        status_code=404,
+        detail={
+            "code": "evrak_not_found",
+            "message": f"'{evrak_id}' kimlikli evrak bulunamadı.",
+        },
+    )
+
+@app.get("/api/admin/stats")
+def get_admin_stats(institution_id: Optional[str] = None):
+    """
+    Yönetici paneli için istatistikleri döndürür.
+    """
+    from backend.app.cases.runtime import get_case_engine
+    from backend.app.db.case_models import CaseRecord, CaseEvent, CaseDraft
+    from sqlalchemy import select, func
+    from datetime import datetime, timezone
+
+    engine_obj = get_case_engine()
+    with engine_obj.session_factory() as session:
+        # Tüm case'leri (veya kuruma ait olanları) al
+        base_query = select(CaseRecord)
+        if institution_id:
+            base_query = base_query.where(CaseRecord.institution_id == institution_id)
+        
+        all_cases = session.scalars(base_query).all()
+        total_cases = len(all_cases)
+        
+        now = datetime.now(timezone.utc)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_cases = sum(1 for c in all_cases if c.created_at >= today_start)
+        
+        # Dağılım hesapla
+        dist = {}
+        for c in all_cases:
+            key = (c.institution_id, c.current_department_code)
+            dist[key] = dist.get(key, 0) + 1
+            
+        department_distribution = [
+            {"institution_id": inst, "department_code": dept, "count": count}
+            for (inst, dept), count in dist.items()
+        ]
+        
+        # Ortalama işlem süresi
+        completed = [c for c in all_cases if c.workflow_status in ("COMPLETED", "CLOSED")]
+        total_seconds = 0
+        valid_times = 0
+        for c in completed:
+            end_time = c.closed_at or c.updated_at
+            if end_time and c.created_at:
+                diff = (end_time - c.created_at).total_seconds()
+                if diff > 0:
+                    total_seconds += diff
+                    valid_times += 1
+        
+        average_processing_hours = (total_seconds / 3600.0) / valid_times if valid_times > 0 else 0.0
+        
+        # Human review oranı (İnsan müdahalesi gören evraklar)
+        human_review_ratio = 0.0
+        if total_cases > 0:
+            current_case_ids = {c.id for c in all_cases}
+            user_events_query = select(CaseEvent.case_id).where(CaseEvent.actor_type == "USER").where(CaseEvent.case_id.in_(current_case_ids)).distinct()
+            user_case_ids = set(session.scalars(user_events_query).all())
+            human_reviewed_cases = len(user_case_ids)
+            human_review_ratio = human_reviewed_cases / total_cases
+            
+        # Taslak metrikleri
+        drafts_query = select(CaseDraft)
+        if institution_id:
+            case_ids_subquery = select(CaseRecord.id).where(CaseRecord.institution_id == institution_id)
+            drafts_query = drafts_query.where(CaseDraft.case_id.in_(case_ids_subquery))
+            
+        drafts = session.scalars(drafts_query).all()
+        approved_drafts = sum(1 for d in drafts if d.status == "APPROVED")
+        
+        # Reddedilen / Revizyon İstenen taslak olayları
+        rejected_query = select(func.count(CaseEvent.id)).where(CaseEvent.event_type == "DRAFT_REVISION_REQUESTED")
+        if institution_id:
+            rejected_query = rejected_query.where(CaseEvent.case_id.in_(case_ids_subquery))
+        rejected_events = session.scalars(rejected_query).first() or 0
+        
+        return {
+            "total_cases": total_cases,
+            "today_cases": today_cases,
+            "average_processing_hours": round(average_processing_hours, 2),
+            "human_review_ratio": round(human_review_ratio, 2),
+            "department_distribution": department_distribution,
+            "draft_metrics": {
+                "approved": approved_drafts,
+                "rejected": rejected_events
+            }
+        }
 
 
 @app.get("/api/analyses")

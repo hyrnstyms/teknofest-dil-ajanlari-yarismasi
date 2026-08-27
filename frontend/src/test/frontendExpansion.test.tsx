@@ -1,11 +1,12 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { api } from "../services/api";
+import * as adminApi from "../services/adminApi";
 import { QrVerifyPage } from "../pages/QrVerifyPage";
 import { SimilarDocumentsCard } from "../components/cards/SimilarDocumentsCard";
-import { AdminDashboard } from "../components/AdminDashboard";
+import { AdminPage } from "../pages/AdminPage";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -22,10 +23,14 @@ describe("QR verification", () => {
       ok: true,
       status: 200,
       json: () => Promise.resolve({
-        id: "EVR/42",
-        status: "verified",
+        found: true,
+        evrak_id: "EVR/42",
+        source: "case",
+        status: "in_progress",
+        status_label: "İşlemde",
         document_type: "dilekce",
-        created_at: "2026-08-27T10:00:00+03:00",
+        received_at: "2026-08-27T10:00:00+03:00",
+        institution_id: "belediye",
       }),
     } as Response);
     vi.stubGlobal("fetch", mockFetch);
@@ -40,11 +45,14 @@ describe("QR verification", () => {
 
   it("renders status, document type and date from the backend response", async () => {
     vi.spyOn(api, "verifyDocument").mockResolvedValue({
-      id: "EVR-42",
-      status: "verified",
+      found: true,
+      evrak_id: "EVR-42",
+      source: "case",
+      status: "in_progress",
+      status_label: "İşlemde",
       document_type: "dilekce",
-      created_at: "2026-08-27T10:00:00+03:00",
-      valid: true,
+      received_at: "2026-08-27T10:00:00+03:00",
+      institution_id: "belediye",
     });
 
     render(
@@ -54,7 +62,7 @@ describe("QR verification", () => {
     );
 
     expect(await screen.findByText("Bu kayıt EVRAG doğrulama servisi tarafından bulundu.")).toBeInTheDocument();
-    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getByText("İşlemde")).toBeInTheDocument();
     expect(screen.getByText("Dilekçe")).toBeInTheDocument();
     expect(screen.getByText(/27 Ağustos 2026/)).toBeInTheDocument();
   });
@@ -70,34 +78,25 @@ describe("similar documents", () => {
 });
 
 describe("department distribution", () => {
-  it("derives chart values from real analysis response items", async () => {
-    vi.spyOn(api, "getRoiSummary").mockResolvedValue({
-      processed_documents: 3,
-      average_processing_seconds: 1.5,
-      human_review_required_rate: 0.5,
-      approved_count: 1,
-      edited_count: 0,
-      rejected_count: 0,
-      estimated_saved_seconds: 10,
-    });
-    vi.spyOn(api, "getPendingReviews").mockResolvedValue({ items: [], total: 0, limit: 20, offset: 0 });
-    vi.spyOn(api, "getAnalyses").mockResolvedValue({
-      total: 3,
-      limit: 20,
-      offset: 0,
-      items: [
-        { analysis_id: "1", document_id: "1", recommended_unit: "Fen İşleri" },
-        { analysis_id: "2", document_id: "2", recommended_unit: "Fen İşleri" },
-        { analysis_id: "3", document_id: "3", recommended_unit: "İmar ve Şehircilik" },
+  it("renders chart values from the admin stats endpoint", async () => {
+    vi.spyOn(adminApi, "fetchAdminStats").mockResolvedValue({
+      total_cases: 3,
+      today_cases: 1,
+      average_processing_hours: 2.5,
+      human_review_ratio: 0.5,
+      department_distribution: [
+        { institution_id: "belediye", department_code: "fen_isleri", count: 2 },
+        { institution_id: "belediye", department_code: "imar", count: 1 },
       ],
+      draft_metrics: { approved: 1, rejected: 1 },
     });
 
-    render(<AdminDashboard onOpenAnalysis={() => undefined} />);
+    render(<AdminPage />);
 
     expect(await screen.findByRole("heading", { name: "Birim Dağılımı" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText("2 evrak")).toBeInTheDocument());
-    const chart = screen.getByRole("img", { name: "Önerilen birimlere göre evrak dağılımı" });
-    expect(within(chart).getByText("Fen İşleri")).toBeInTheDocument();
-    expect(within(chart).getByText("İmar ve Şehircilik")).toBeInTheDocument();
+    const chart = screen.getByRole("img", { name: "Birimlere göre evrak dağılımı" });
+    expect(within(chart).getByText("belediye / fen_isleri")).toBeInTheDocument();
+    expect(within(chart).getByText("2 evrak")).toBeInTheDocument();
+    expect(within(chart).getByText("belediye / imar")).toBeInTheDocument();
   });
 });

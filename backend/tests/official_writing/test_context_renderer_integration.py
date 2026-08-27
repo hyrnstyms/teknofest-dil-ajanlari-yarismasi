@@ -61,7 +61,7 @@ def _state(extraction: dict, routing: dict | None = None) -> dict:
 
 
 def _quality(extraction: dict, routing: dict, draft: dict) -> dict:
-    return QualityAgent().check_quality(
+    return QualityAgent("kaymakamlik").check_quality(
         document={"document_type": "dilekce", "process_intent": "basvuru"},
         extraction=extraction,
         legal_analysis={"evidence": ["Doğrulanmış test kanıtı"]},

@@ -148,6 +148,7 @@ class CaseWritingService:
         legal_analysis: dict[str, Any] | None = None,
         document: dict[str, Any] | None = None,
         case_id: str | None = None,
+        institution_id: str = "belediye",
     ) -> dict[str, Any]:
         action = _verified_action(department_action)
         
@@ -171,7 +172,7 @@ class CaseWritingService:
         
         doc = document or {}
         context = WritingContext(
-            institution_id="belediye",
+            institution_id=institution_id,
             document_type=doc.get("document_type", ""),
             document_subtype=doc.get("document_subtype"),
             process_intent=doc.get("process_intent", ""),

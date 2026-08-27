@@ -43,7 +43,7 @@ def test_official_response_allowed():
     assert "Yol bakıma alındı" in result["draft"]["body"]
 
 def test_quality_block_unsupported_completion():
-    qa = QualityAgent()
+    qa = QualityAgent("kaymakamlik")
     draft = {
         "canonical_draft_type": "OFFICIAL_RESPONSE",
         "draft_type": "cevap_yazisi",
@@ -60,7 +60,7 @@ def test_quality_block_unsupported_completion():
     assert result["checks"]["unverified_outcome_claim"]["status"] == "fail"
 
 def test_quality_pass_grounded_completion():
-    qa = QualityAgent()
+    qa = QualityAgent("kaymakamlik")
     draft = {
         "canonical_draft_type": "OFFICIAL_RESPONSE",
         "draft_type": "cevap_yazisi",
@@ -91,7 +91,7 @@ def test_intake_cannot_produce_official_response():
     assert result["canonical_draft_type"] == "INTERIM_INFORMATION"
 
 def test_quality_wrong_recipient_warning():
-    qa = QualityAgent()
+    qa = QualityAgent("kaymakamlik")
     draft = {
         "canonical_draft_type": "OFFICIAL_RESPONSE",
         "draft": {"body": "Deneme", "recipient": "Ahmet Yılmaz"}

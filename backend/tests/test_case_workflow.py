@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.auth.tokens import issue_token
 from backend.app.cases.runtime import get_case_engine
+from backend.app.db.repository import AnalysisRepository
 from backend.app.db.case_models import CaseUser
 from backend.app.main import app
 
@@ -114,6 +116,51 @@ def _route_to_fen(case: dict, ayse: dict[str, str]) -> dict:
     return response.json()
 
 
+def test_related_documents_receive_same_zincir_id():
+    ayse = _login("ayse_kaya")
+    engine = get_case_engine()
+    repository = AnalysisRepository(engine=engine.engine)
+    received_at = datetime(2026, 8, 1, 9, 0, tzinfo=timezone.utc)
+
+    def create_with_subject(analysis_id: str, subject: str, received: datetime) -> dict:
+        repository.save_analysis(
+            analysis_id,
+            {
+                "analysis_id": analysis_id,
+                "institution_id": "belediye",
+                "document": {"subject_excerpt": subject},
+                "extraction": {"fields": {"subject": {"value": subject}}},
+            },
+        )
+        response = client.post(
+            "/api/cases",
+            headers=ayse,
+            json={
+                "source_type": "VATANDAS",
+                "source_channel": "WEB_FORM",
+                "originator_type": "VATANDAS",
+                "originator_name": "Ali Yilmaz",
+                "analysis_id": analysis_id,
+                "received_at": received.isoformat(),
+                "confirmed": True,
+            },
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    first = create_with_subject(
+        "chain-analysis-1", "Cinar Mahallesi yol bakim talebi", received_at
+    )
+    second = create_with_subject(
+        "chain-analysis-2",
+        "Cinar Mahallesi icin yol bakim basvurusu",
+        received_at + timedelta(days=20),
+    )
+
+    refreshed_first = client.get(f"/api/cases/{first['id']}", headers=ayse).json()["case"]
+    assert second["zincir_id"]
+    assert refreshed_first["zincir_id"] == second["zincir_id"]
+
 def test_demo_auth_resolves_backend_current_user():
     ayse = _login("ayse_kaya")
 
@@ -196,7 +243,17 @@ def test_route_requires_confirmation_and_is_atomic():
     assert len(aggregate["assignments"]) == 1
     assert aggregate["assignments"][0]["ended_at"] is None
     event_types = [event["event_type"] for event in aggregate["events"]]
-    assert event_types[-2:] == ["ROUTING_CONFIRMED", "CASE_ROUTED"]
+    assert event_types[-3:] == ["ROUTING_CONFIRMED", "CASE_ROUTED", "DRAFT_SAVED"]
+    routing_event = next(
+        event for event in aggregate["events"] if event["event_type"] == "CASE_ROUTED"
+    )
+    assert routing_event["before_value"]["department_code"] == "yazi_isleri"
+    assert routing_event["after_value"]["department_code"] == "fen_isleri"
+
+    forwarding = aggregate["drafts"][0]
+    assert forwarding["draft_type"] == "FORWARDING_COVER_LETTER"
+    assert forwarding["content"]["recipient"] == aggregate["case"]["current_department_name"]
+    assert forwarding["content"]["recipient_kind"] == "INTERNAL_DEPARTMENT"
 
     invalid_state = client.post(
         f"/api/cases/{case['id']}/route",
@@ -260,6 +317,61 @@ def test_department_start_and_action_are_human_authorized():
     assert action.status_code == 200
     assert action.json()["verified"] is True
     assert action.json()["recorded_by_user_id"].startswith("b2e0b2e0")
+    aggregate = client.get(f"/api/cases/{case['id']}", headers=mehmet).json()
+    assert len(aggregate["drafts"]) == 2
+    official = aggregate["drafts"][-1]
+    assert official["draft_type"] == "OFFICIAL_RESPONSE"
+    assert official["content"]["recipient"] == aggregate["case"]["originator_name"]
+    edited = client.post(
+        f"/api/cases/{case['id']}/drafts", headers=mehmet,
+        json={"draft_type": "OFFICIAL_RESPONSE", "content": {**official["content"], "subject": "Personel DÃ¼zeltmesi"}, "grounded_action_id": official["grounded_action_id"], "expected_version": aggregate["case"]["version"], "confirmed": True},
+    )
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["draft"]["status"] == "EDITED"
+    assert edited.json()["draft"]["revision"] == 2
+    approved = client.post(
+        f"/api/cases/{case['id']}/drafts/{edited.json()['draft']['id']}/approve",
+        headers=mehmet,
+        json={"expected_version": edited.json()["case"]["version"], "confirmed": True},
+    )
+    assert approved.status_code == 200, approved.text
+    approved_aggregate = client.get(f"/api/cases/{case['id']}", headers=mehmet).json()
+    approval_event = next(
+        event
+        for event in reversed(approved_aggregate["events"])
+        if event["event_type"] == "DRAFT_APPROVED"
+    )
+    assert approval_event["before_value"]["status"] == "EDITED"
+    assert approval_event["after_value"]["status"] == "APPROVED"
+    assert approval_event["after_value"]["approved_by_user_id"]
+
+    queue = client.get("/api/cases/official-writings", headers=mehmet)
+    assert queue.status_code == 200
+    assert {item["draft_type"] for item in queue.json()["items"]} == {"FORWARDING_COVER_LETTER", "OFFICIAL_RESPONSE"}
+
+
+@pytest.mark.parametrize(
+    ("registry_key", "department_headers", "department_code"),
+    [
+        ("ayse_kaya", None, "imar_sehircilik"),
+        ("selin_aksoy", "murat_celik", "milli_egitim"),
+    ],
+)
+def test_official_writing_is_generic_for_other_department_and_kaymakamlik(registry_key, department_headers, department_code):
+    registry = _login(registry_key)
+    worker = _login(department_headers) if department_headers else _custom_user_headers(institution_id="belediye", department_code=department_code)
+    case = _advance_to_ready(_create_case(registry, name="Kurumsal BaÅŸvuru Sahibi"), registry)
+    routed_response = client.post(f"/api/cases/{case['id']}/route", headers=registry, json={"department_code": department_code, "expected_version": case["version"], "confirmed": True})
+    assert routed_response.status_code == 200, routed_response.text
+    routed = routed_response.json()
+    started = client.post(f"/api/cases/{case['id']}/start", headers=worker, json={"expected_version": routed["version"], "confirmed": True}).json()
+    action = client.post(f"/api/cases/{case['id']}/department-action", headers=worker, json={"action_type": "INCELEME", "result": "BaÅŸvuru birim tarafÄ±ndan incelendi.", "decision": "Ä°ÅŸlem planÄ±na alÄ±ndÄ±.", "expected_version": started["version"], "confirmed": True})
+    assert action.status_code == 200, action.text
+    aggregate = client.get(f"/api/cases/{case['id']}", headers=worker).json()
+    assert aggregate["case"]["institution_id"] == ("kaymakamlik" if registry_key == "selin_aksoy" else "belediye")
+    assert aggregate["case"]["current_department_code"] == department_code
+    assert [draft["draft_type"] for draft in aggregate["drafts"]] == ["FORWARDING_COVER_LETTER", "OFFICIAL_RESPONSE"]
+    assert aggregate["drafts"][-1]["content"]["recipient"] == aggregate["case"]["originator_name"]
 
 
 def test_citizen_token_isolation_allowlist_and_safe_projection():

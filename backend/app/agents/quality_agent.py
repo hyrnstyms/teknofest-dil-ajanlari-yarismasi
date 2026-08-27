@@ -15,8 +15,7 @@ from backend.app.institutions.profile_loader import (
     InstitutionProfile,
 )
 
-# Yarışma demosunda aktif kurum — RoutingAgent ile aynı
-_DEFAULT_INSTITUTION = "kaymakamlik"
+# institution_id her zaman caller tarafından geçirilmeli; hardcoded default kaldırıldı.
 _UNVERIFIED_OUTCOME_PATTERNS = (
     r"\bkabul\s+edilmiştir\b",
     r"\bonaylanmıştır\b",
@@ -76,13 +75,19 @@ class QualityAgent:
     """
     Kalite kontrol ajanı.
 
-    Geçerli birim seti: data/institutions/kaymakamlik/kurum_profili_kaymakamlik.yaml
+    ``institution`` parametresi ZORUNLUDUR — hardcoded default kaldırıldı.
+    Kaynak: data/institutions/{institution}/kurum_profili_{institution}.yaml
     unit_registry.json KULLANILMIYOR.
 
     RoutingAgent ile aynı source-of-truth'u paylaşır.
     """
 
-    def __init__(self, institution: str = _DEFAULT_INSTITUTION):
+    def __init__(self, institution: str):
+        if not institution:
+            raise ValueError(
+                "QualityAgent: 'institution' parametresi zorunludur. "
+                "Caller'\u0131n institution_id'yi açıkça geçmesi gerekiyor."
+            )
         self.institution = institution
         self.valid_units: set[str] = set()
         try:

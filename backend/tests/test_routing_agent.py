@@ -342,6 +342,18 @@ def test_kaymakamlik_routing_regression(
             "Mahallede biriken çöp ve atıkların temizlenmesini talep ediyorum.",
             "Temizlik İşleri Müdürlüğü",
         ),
+        (
+            "ruhsat_basvurusu",
+            "İşyeri açma ruhsatı",
+            "Yeni işyerim için açma ve çalışma ruhsatı başvurusu yapmak istiyorum.",
+            "Zabıta Müdürlüğü",
+        ),
+        (
+            "bilgi_edinme",
+            "Bilgi edinme başvurusu",
+            "Belediye meclisi kararları hakkında bilgi edinme talebinde bulunuyorum.",
+            "Yazı İşleri Müdürlüğü",
+        ),
     ],
 )
 def test_belediye_routing_regression(

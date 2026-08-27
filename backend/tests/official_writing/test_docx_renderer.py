@@ -369,7 +369,9 @@ class TestRenderToDocxQRCode:
         detector = cv2.QRCodeDetector()
         decoded_value, _, _ = detector.detectAndDecode(img)
 
-        expected = "KAMUAI-DOGRULAMA:" + self.SAMPLE_EVRAK_ID
+        import os
+        base_url = os.environ.get("KAMUAI_BASE_URL", "http://localhost:8000").rstrip("/")
+        expected = f"{base_url}/api/verify/{self.SAMPLE_EVRAK_ID}"
         assert decoded_value == expected, (
             f"QR içeriği eşleşmiyor. Beklenen: '{expected}', "
             f"Okunan: '{decoded_value}'"
@@ -440,7 +442,9 @@ class TestExportDocxEndpointQR:
             detector = cv2.QRCodeDetector()
             decoded_value, _, _ = detector.detectAndDecode(img)
 
-            expected = "KAMUAI-DOGRULAMA:" + test_id
+            import os
+            base_url = os.environ.get("KAMUAI_BASE_URL", "http://localhost:8000").rstrip("/")
+            expected = f"{base_url}/api/verify/{test_id}"
             assert decoded_value == expected, (
                 f"Endpoint QR içeriği eşleşmiyor. "
                 f"Beklenen: '{expected}', Okunan: '{decoded_value}'"

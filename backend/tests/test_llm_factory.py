@@ -193,7 +193,7 @@ def test_evren_client_rejects_empty_response(monkeypatch):
 
 
 def test_quality_agent_remains_deterministic_without_llm():
-    agent = QualityAgent()
+    agent = QualityAgent("kaymakamlik")
 
     assert not hasattr(agent, "llm")
 

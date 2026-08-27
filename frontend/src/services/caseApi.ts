@@ -6,6 +6,7 @@ import type {
   CaseRecord,
   Department,
   DepartmentAction,
+  OfficialWritingListItem,
 } from "../types/case";
 import { caseRequest } from "./caseHttp";
 
@@ -14,7 +15,7 @@ interface CaseAggregateWire {
   permissions: string[];
   events: Array<CaseEvent & { actor_user_id?: string | null; payload?: Record<string, unknown> }>;
   department_actions: DepartmentAction[];
-  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; content: { subject?: string; body?: string; recipient?: string }; created_by_user_id?: string; grounded_action_id?: string | null }>;
+  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
   analysis?: {
     summary?: { short_summary?: string; structured_summary?: { subject?: string; request?: string } };
     routing?: CaseRecord["routing_recommendation"];
@@ -22,6 +23,11 @@ interface CaseAggregateWire {
       question_type: "free_text" | "choice" | "single_choice";
       options: Array<string | { value: string; label: string }>;
     };
+    document?: Record<string, unknown>;
+    extraction?: { fields?: Record<string, { value?: unknown; validated?: boolean }> };
+    missing_fields?: { missing_fields?: string[]; blocking_fields?: string[] };
+    legal_analysis?: { verified?: boolean; evidence?: unknown[]; sources?: unknown[]; text?: string };
+    raw_text?: string;
   } | null;
   deadline?: CaseRecord["deadline"];
 }
@@ -62,13 +68,20 @@ function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
       id: draft.id,
       draft_type: draft.draft_type,
       draft_status: draft.status,
+      revision: draft.revision,
       recipient: draft.content?.recipient,
+      sender_unit: draft.content?.sender_unit,
+      recipient_kind: draft.content?.recipient_kind,
       subject: draft.content?.subject || "Başvurunuz Hk.",
       body: draft.content?.body || "",
       prepared_by_department: aggregate.case.current_department_code,
       ai_generated: true,
+      grounded_action_id: draft.grounded_action_id,
+      created_at: draft.created_at,
+      updated_at: draft.updated_at,
     })),
     permissions: aggregate.permissions,
+    analysis_details: aggregate.analysis,
   };
 }
 
@@ -154,5 +167,22 @@ export const caseApi = {
     { ...item.clarification, expected_version: item.version, confirmed: true },
     "Eksik bilgi talebi kaydedildi.",
   ),
+  approveDraft: (token: string, item: CaseRecord, draftId: string) => mutate(
+    token, item, `/api/cases/${item.id}/drafts/${draftId}/approve`,
+    { expected_version: item.version, confirmed: true }, "Resmî cevap taslağı onaylandı.",
+  ),
+  editDraft: (token: string, item: CaseRecord, draft: CaseDraft, content: { subject: string; recipient: string; body: string }) => mutate(
+    token, item, `/api/cases/${item.id}/drafts`,
+    { draft_type: draft.draft_type, content: { ...content, sender_unit: draft.sender_unit, recipient_kind: draft.recipient_kind }, grounded_action_id: draft.grounded_action_id, expected_version: item.version, confirmed: true },
+    "Personel düzenlemesi yeni taslak sürümü olarak kaydedildi.",
+  ),
+  regenerateDraft: (token: string, item: CaseRecord) => mutate(
+    token, item, `/api/cases/${item.id}/drafts/regenerate`,
+    { expected_version: item.version, confirmed: true }, "Taslak doğrulanmış vaka verileriyle yeniden oluşturuldu.",
+  ),
+  officialWritings: async (token: string): Promise<{ items: OfficialWritingListItem[]; count: number }> => {
+    const response = await caseRequest<{ items: Array<Record<string, any>>; count: number }>("/api/cases/official-writings", token);
+    return { count: response.count, items: response.items.map((row) => ({ ...row, draft_status: row.status, subject: row.content?.subject || "Resmî Yazı", recipient: row.content?.recipient, sender_unit: row.content?.sender_unit, recipient_kind: row.content?.recipient_kind, body: row.content?.body || "", ai_generated: true })) as OfficialWritingListItem[] };
+  },
   departments: (token: string, institution: string) => caseRequest<{ institution_id: string; departments: Department[] }>(`/api/institutions/${institution}/departments`, token),
 };
