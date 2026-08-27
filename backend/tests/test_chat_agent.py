@@ -944,7 +944,7 @@ def test_resolve_chat_mode_never_calls_router_for_existing_modes(
         ("M", "mevzuat"),
         ("D", "taslak_duzenleme"),
         ("S", "kilavuz"),
-        ("X", "kilavuz"),
+        ("X", "out_of_domain"),
     ],
 )
 def test_resolve_chat_mode_maps_router_labels(
@@ -1059,6 +1059,7 @@ def test_evren_client_cache_stays_zero_after_mocked_mod_a_b_c_d_tests():
 
 def _active_state():
     return {
+        "document": {"document_type": "dilekce"},
         "summary": {"short_summary": "Vatandaş yol onarımı talep etmektedir."},
         "extraction": {"fields": {"subject": {"value": "Bozuk yol"}}},
         "missing_fields": {
@@ -1085,7 +1086,7 @@ def _active_state():
     [
         ("Bu evrakın konusu ne?", "Bozuk yol"),
         ("Bu evrakı özetle", "Vatandaş yol onarımı"),
-        ("Bu evrakın eksikleri neler?", "address"),
+        ("Bu evrakın eksikleri neler?", "Adres"),
         ("Neden bu evrakı bu birime yönlendirdin?", "Fen İşleri Müdürlüğü"),
         ("Bu evraka hangi mevzuat uygulanıyor?", "[K1]"),
         ("Şu an bu evrak için personelden ne bekleniyor?", "pending_review"),
@@ -1109,8 +1110,8 @@ def test_active_document_mode_uses_provided_state():
         workflow_context={"analysis_state": _active_state()},
         resolved_mode="active_document",
     )
-    assert "address" in result
-    assert "signature_present" in result
+    assert "Adres" in result
+    assert "İmza" in result
 
 def test_local_openai_compat_returns_chat_completion_shape():
     class FakeLocalLLM:

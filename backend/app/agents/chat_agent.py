@@ -10,7 +10,18 @@ from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
+
+class ChatDocumentContext(TypedDict, total=False):
+    document: dict[str, Any]
+    extraction: dict[str, Any]
+    missing_fields: dict[str, Any]
+    summary: dict[str, Any]
+    legal_analysis: dict[str, Any]
+    routing: dict[str, Any]
+    draft: dict[str, Any]
+    quality: dict[str, Any]
+    institution_id: str
 
 from rapidfuzz import fuzz
 
@@ -33,7 +44,7 @@ ESLESME_ESIGI = 70
 KUCUK_SOHBET_MESAJ_MAX_UZUNLUK = 60
 KUCUK_SOHBET_YANIT_MAX_UZUNLUK = 200
 
-ROUTER_GECERLI_ETIKETLER = frozenset({"M", "D", "S", "X"})
+ROUTER_GECERLI_ETIKETLER = frozenset({"A", "M", "D", "S", "X"})
 ROUTER_MODEL = "router"
 ROUTER_TIMEOUT_SANIYE = 8.0
 
@@ -118,7 +129,11 @@ S = KAMUAI sisteminin kullanımı, butonları, panelleri veya özellikleri
 
 X = Bunların dışındaki, alakasız veya yeterince açık olmayan mesaj.
 
-Geçerli çıktılar yalnızca: M, D, S, X
+A = Sisteme yüklenmiş aktif belge veya analiz edilen evrak hakkındaki
+    sorular (örneğin: bu evrakın konusu nedir, belge kime gönderilecek,
+    hangi birime yönlendirilmiş, eksiği var mı vb.).
+
+Geçerli çıktılar yalnızca: A, M, D, S, X
 """.strip()
 
 DESTEKLENEN_TASLAK_TURLERI = {
@@ -1215,7 +1230,7 @@ def _state_list(value: Any) -> list[str]:
     return [str(item).strip() for item in value if str(item).strip()]
 
 
-def handle_active_document_question(message: str, state: dict[str, Any]) -> str:
+def handle_active_document_question(message: str, state: ChatDocumentContext) -> str:
     """Aktif analiz state'ini yorumlamadan, kısa ve kaynak-sınırlı biçimde sunar."""
 
     normalized = _normalize_text(message)
@@ -1232,9 +1247,44 @@ def handle_active_document_question(message: str, state: dict[str, Any]) -> str:
         value = subject.get("value") or summary.get("structured_summary", {}).get("subject")
         return f"Evrakın konusu: {value}" if value else "Aktif evrakta doğrulanmış konu bilgisi bulunmuyor."
 
+    FIELD_LABELS = {
+        "signature_present": "İmza",
+        "authority_document_present": "Yetki Belgesi",
+        "sender_unit": "Gönderen Birim",
+        "recipient": "Alıcı/Muhatap",
+        "subject": "Konu",
+        "request": "Talep",
+        "person_name": "Kişi Adı",
+        "address": "Adres",
+        "institution": "Kurum",
+        "document_date": "Belge Tarihi",
+        "document_number": "Belge Sayısı",
+    }
+    
+    if "tür" in normalized or "tur" in normalized or "tip" in normalized:
+        doc = state.get("document") if isinstance(state.get("document"), dict) else {}
+        doc_type = str(doc.get("document_type") or "bilinmiyor")
+        type_labels = {
+            "dilekce": "Dilekçe",
+            "basvuru": "Başvuru",
+            "sikayet": "Şikayet",
+            "resmi_yazi": "Resmî Yazı",
+            "ust_yazi": "Üst Yazı",
+            "cevap_yazisi": "Cevap Yazısı",
+            "bilgilendirme_metni": "Bilgilendirme Metni",
+            "bilinmiyor": "Belirlenemedi",
+            "diger": "Diğer",
+        }
+        human_label = type_labels.get(doc_type, doc_type)
+        return f"Evrakın türü: {human_label}."
+
     if "eksik" in normalized:
         missing_items = _state_list(missing.get("missing_fields"))
         uncertain_items = _state_list(missing.get("uncertain_fields"))
+        
+        missing_items = [FIELD_LABELS.get(i, i) for i in missing_items]
+        uncertain_items = [FIELD_LABELS.get(i, i) for i in uncertain_items]
+        
         parts = []
         if missing_items:
             parts.append("Eksik alanlar: " + ", ".join(missing_items) + ".")
@@ -1372,10 +1422,14 @@ def resolve_chat_mode(message: str) -> str:
         return "kilavuz"
 
     router_label = classify_with_router(message)
+    if router_label == "A":
+        return "active_document"
     if router_label == "M":
         return "mevzuat"
     if router_label == "D":
         return "taslak_duzenleme"
+    if router_label == "X":
+        return "out_of_domain"
     return "kilavuz"
 
 
@@ -1399,10 +1453,28 @@ def handle_chat_message(
             workflow_context or {},
         )
     if mode == "active_document":
+        # extract the typed dict from workflow context
         state = (workflow_context or {}).get("analysis_state")
         if not isinstance(state, dict):
+            state = workflow_context or {}
+        
+        # cast to our specific contract
+        doc_context: ChatDocumentContext = {
+            "document": state.get("document", {}),
+            "extraction": state.get("extraction", {}),
+            "missing_fields": state.get("missing_fields", {}),
+            "summary": state.get("summary", {}),
+            "legal_analysis": state.get("legal_analysis", {}),
+            "routing": state.get("routing", {}),
+            "draft": state.get("draft", {}),
+            "quality": state.get("quality", {}),
+            "institution_id": str(state.get("kurum_profili_id") or state.get("institution_id") or "")
+        }
+        
+        if not doc_context["document"]:
             return "Bu soruyu yanıtlamak için önce bir evrak analizi açın."
-        return handle_active_document_question(message, state)
+            
+        return handle_active_document_question(message, doc_context)
     if mode == "institution":
         return handle_institution_question(
             message,
@@ -1412,6 +1484,8 @@ def handle_chat_message(
         return handle_legal_question(message)
     if mode == "kucuk_sohbet":
         return handle_kucuk_sohbet(message)
+    if mode == "out_of_domain":
+        return FALLBACK_MESAJI
     return match_faq(message)
 
 
