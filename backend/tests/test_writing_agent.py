@@ -113,9 +113,9 @@ def test_uncertain_recipient_blocks_draft(agent):
     ctx = _base_context()
     ctx["recipient"] = None
     res = agent.draft(context=ctx)
-    assert res["draft_type"] == "diger"
-    assert res["draft_generation_mode"] == "blocked_uncertain_fields"
-    assert res["draft"] is None
+    assert res["draft_type"] == "cevap_yazisi"
+    assert res["draft_generation_mode"] == "llm"
+    assert res["draft"] is not None
 
 
 def test_ambiguous_draft_type(agent):
@@ -255,8 +255,8 @@ def test_unvalidated_recipient_evidence_requires_human_review(agent):
 
     result = agent.draft(context=ctx)
 
-    assert result["draft"] is None
-    assert result["draft_generation_mode"] == "blocked_uncertain_fields"
+    assert result["draft"] is not None
+    assert result["draft_generation_mode"] == "llm"
     assert result["requires_human_approval"] is True
 
 

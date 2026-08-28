@@ -1139,6 +1139,9 @@ def handle_draft_edit(
                     timeout=30.0,
                 )
                 raw_content = (response.choices[0].message.content or "").strip()
+                if raw_content.startswith("```"):
+                    raw_content = re.sub(r"^```(?:json)?\n", "", raw_content)
+                    raw_content = re.sub(r"\n```$", "", raw_content).strip()
                 payload = json.loads(raw_content)
             except Exception:
                 return _draft_edit_result(
