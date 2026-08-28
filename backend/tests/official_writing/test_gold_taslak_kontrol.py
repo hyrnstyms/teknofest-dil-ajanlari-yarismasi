@@ -117,6 +117,53 @@ def test_validate_format_gecersiz_tarih():
     assert "TARIH_FORMAT" in hata_kodlari
 
 
+def test_validate_format_eksik_bilgi_talebi_placeholder_sureyle_gecerli():
+    taslak = {
+        **_MINIMAL_VALID_TASLAK,
+        "eksik_alanlar": [
+            {"kod": "address", "etiket": "Açık adres"},
+            {"kod": "parcel", "etiket": "Ada / parsel bilgisi"},
+        ],
+        "tamamlama_suresi_gun": "[SÜRE]",
+        "metin_paragraflari": [
+            "Eksik bilgi ve belgeleri [SÜRE] gün içinde tamamlayınız ve "
+            "kurumumuza iletiniz."
+        ],
+    }
+
+    sonuc = validate_format(
+        taslak,
+        "eksik_bilgi_talebi",
+        missing_fields=["tamamlama_suresi_gun"],
+    )
+
+    assert sonuc.gecerli is True
+    assert not sonuc.hatalar
+    assert any(
+        warning.kural_kodu == "TASLAK_ALANI_EKSIK"
+        and "Tamamlama süresi" in warning.mesaj
+        for warning in sonuc.uyarilar
+    )
+
+
+def test_validate_format_eksik_bilgi_talebi_bos_alan_listesi_hata():
+    taslak = {
+        **_MINIMAL_VALID_TASLAK,
+        "eksik_alanlar": [],
+        "tamamlama_suresi_gun": 15,
+        "metin_paragraflari": [
+            "Eksik bilgi ve belgeleri 15 gün içinde tamamlayınız ve "
+            "kurumumuza iletiniz."
+        ],
+    }
+
+    sonuc = validate_format(taslak, "eksik_bilgi_talebi")
+
+    assert "EKSIK_ALAN_LISTESI" in {
+        error.kural_kodu for error in sonuc.hatalar
+    }
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # gold_taslaklar.jsonl entegrasyon testi (dosya varsa)
 # ──────────────────────────────────────────────────────────────────────────────

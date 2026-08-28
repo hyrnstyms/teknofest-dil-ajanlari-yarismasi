@@ -416,3 +416,72 @@ def test_routing_subtype_none_uses_broad_type():
     assert res["score_breakdown"]["doc_type_score"] == 30
     assert res["score_breakdown"]["subtype_score"] == 0
 
+
+@pytest.mark.parametrize("request_text", ["Kira yardımı talep ediyorum.", "Gıda desteği talep ediyorum.", "Gıda yardımı talep ediyorum."])
+def test_sydv_support_synonyms_route_to_sydv(request_text):
+    result = RoutingAgent("kaymakamlik").route(
+        document_type="dilekce",
+        document_subtype="sosyal_yardim_basvuru",
+        process_intent="basvuru",
+        subject="Sosyal destek başvurusu",
+        request_text=request_text,
+        extracted_fields={},
+    )
+
+    assert result["recommended_department_code"] == "sydv"
+    assert result["needs_human_review"] is False
+
+
+def test_identity_header_does_not_trigger_population_routing():
+    result = RoutingAgent("kaymakamlik").route(
+        document_type="dilekce",
+        document_subtype="bilgi_edinme",
+        process_intent="bilgi_talebi",
+        subject="Kimlik numaralı genel bilgi",
+        request_text="Kaymakamlığın faaliyet raporuna erişim adresini istiyorum.",
+        extracted_fields={},
+    )
+
+    assert result["recommended_department_code"] == "yazi_isleri"
+    assert result["needs_human_review"] is False
+
+
+def test_identity_in_request_still_triggers_population_routing():
+    result = RoutingAgent("kaymakamlik").route(
+        document_type="dilekce",
+        process_intent="basvuru",
+        subject="Kart yenileme",
+        request_text="Kimlik kartımı yenilemek istiyorum.",
+        extracted_fields={},
+    )
+
+    assert result["recommended_department_code"] == "nufus"
+    assert result["needs_human_review"] is False
+
+
+def test_yol_haritasi_does_not_trigger_public_works_routing():
+    result = RoutingAgent("belediye").route(
+        document_type="dilekce",
+        document_subtype="bilgi_edinme",
+        process_intent="bilgi_talebi",
+        subject="Dijital dönüşüm yol haritası",
+        request_text="Belediyenin dijital dönüşüm yol haritasının paylaşılmasını istiyorum.",
+        extracted_fields={},
+    )
+
+    assert result["recommended_department_code"] == "yazi_isleri"
+    assert result["needs_human_review"] is False
+
+
+def test_physical_yol_request_still_triggers_public_works_routing():
+    result = RoutingAgent("belediye").route(
+        document_type="dilekce",
+        process_intent="sikayet",
+        subject="Yol çukuru",
+        request_text="Sokaktaki yol çukurunun onarılmasını istiyorum.",
+        extracted_fields={},
+    )
+
+    assert result["recommended_department_code"] == "fen_isleri"
+    assert result["needs_human_review"] is False
+

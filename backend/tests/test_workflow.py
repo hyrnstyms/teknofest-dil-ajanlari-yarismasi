@@ -151,3 +151,36 @@ def test_node_legal_keeps_explicit_document_law_reference():
     assert result["node_timings"]["legal_agent"]["status"] == "completed"
     assert "4734 sayılı Kanun" in captured["query"]
     assert captured["strict_explicit_law"] is True
+
+
+def test_node_routing_passes_document_subtype():
+    captured = {}
+
+    class EmptyDocumentRetriever:
+        def search_documents(self, **kwargs):
+            return []
+
+    class CapturingRoutingAgent:
+        def route(self, *args, **kwargs):
+            captured.update(kwargs)
+            return {"recommended_unit": "Yazı İşleri Müdürlüğü", "warnings": []}
+
+    workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
+    workflow.institution = "kaymakamlik"
+    workflow.document_retriever = EmptyDocumentRetriever()
+    workflow.routing_agent = CapturingRoutingAgent()
+
+    result = workflow.node_routing(DocumentState(
+        raw_text="Faaliyet raporuna erişim talep ediyorum.",
+        document={
+            "document_type": "dilekce",
+            "document_subtype": "bilgi_edinme",
+            "process_intent": "bilgi_talebi",
+            "subject_excerpt": "Faaliyet raporu",
+            "request_excerpt": "Erişim talep ediyorum",
+        },
+        extraction={"fields": {}},
+    ))
+
+    assert result["node_timings"]["routing_agent"]["status"] == "completed"
+    assert captured["document_subtype"] == "bilgi_edinme"

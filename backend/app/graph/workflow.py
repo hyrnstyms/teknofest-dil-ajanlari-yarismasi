@@ -228,6 +228,7 @@ class KamuaiWorkflow:
                 req,
                 ext,
                 retrieved_documents=retrieved_documents,
+                document_subtype=doc_ctx.get("document_subtype"),
             )
             if retrieval_warning:
                 res.setdefault("warnings", []).append(retrieval_warning)
@@ -324,6 +325,7 @@ class KamuaiWorkflow:
                     "legal_analysis": s.legal_analysis,
                     "legal_context": legal_context,
                     "document_legal_references": document_legal_references,
+                    "missing_fields": s.missing_fields,
                     "kurum_profili_id": s.kurum_profili_id,
                     "muhatap": s.muhatap,
                     "muhatap_turu": s.muhatap_turu,

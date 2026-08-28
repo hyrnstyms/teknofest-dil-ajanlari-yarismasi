@@ -121,6 +121,129 @@ class RoutingAgent:
         result["assigned"] = False
         return result
 
+import re
+from typing import Dict, Any
+
+from backend.app.institutions.profile_loader import (
+    load_institution_profile,
+    InstitutionProfile,
+)
+
+# institution_id her zaman caller tarafından geçirilmeli; hardcoded default kaldırıldı.
+_GENERIC_KEYWORDS = {"ruhsat", "yardım", "yardim", "itiraz", "şikayet", "sikayet", "başvuru", "basvuru", "talep", "istek", "dilekçe", "dilekce"}
+_EXEMPLAR_MIN_SCORE = 0.55
+_EXEMPLAR_MIN_GAP = 0.04
+
+
+def normalize_turkish_text(text: str) -> str:
+    if not text:
+        return ""
+    trans = str.maketrans("IİÖÜÇĞŞ", "ıiöüçğş")
+    text = text.translate(trans).lower()
+    text = re.sub(r'[^\w\s]', ' ', text)
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def _has_explicit_target(norm_text: str, unit_name: str) -> bool:
+    norm_name = normalize_turkish_text(unit_name)
+    aliases = {norm_name}
+    if norm_name.startswith("ilçe "):
+        aliases.add(norm_name.removeprefix("ilçe "))
+
+    for alias in aliases:
+        if not alias:
+            continue
+        # Yalın birim adı gönderen/antet bilgisi olabilir. Yalnız hedefi veya
+        # görevlendirilen birimi gösteren yönelme/eyleyen bağlamını güçlendir.
+        suffixed_target = (
+            r"\b"
+            + re.escape(alias)
+            + r"(?:ne|na|nce|nca)\b"
+        )
+        by_unit = (
+            r"\b"
+            + re.escape(alias)
+            + r"\s+tarafından\b"
+        )
+        if re.search(suffixed_target, norm_text) or re.search(by_unit, norm_text):
+            return True
+    return False
+
+
+class RoutingAgent:
+    """
+    Deterministic, açıklanabilir kural tabanlı yönlendirme ajanı.
+
+    ``institution`` parametresi ZORUNLUDUR — hardcoded default kaldırıldı.
+    Kaynak: data/institutions/{institution}/kurum_profili_{institution}.yaml
+    unit_registry.json KULLANILMIYOR.
+
+    V2 Özellikleri:
+      - score_breakdown (her kural adımı açıklanıyor)
+      - ranked_units Top-3
+      - alternative_units
+      - ambiguity detection
+      - needs_human_review
+      - rule_margin semantics
+    """
+
+    def __init__(self, institution: str):
+        if not institution:
+            raise ValueError(
+                "RoutingAgent: 'institution' parametresi zorunludur. "
+                "Caller'ın institution_id'yi açıkça geçmesi gerekiyor."
+            )
+        self.institution = institution
+        self._profile_source = (
+            f"data/institutions/{institution}/kurum_profili_{institution}.yaml"
+        )
+        try:
+            self._profile: InstitutionProfile = load_institution_profile(institution)
+        except Exception:
+            self._profile = None
+
+        self._units = []
+        self._doc_type_mapping = {}
+
+        if self._profile:
+            self._units = self._parse_units(self._profile)
+            self._doc_type_mapping = self._parse_doc_types(self._profile)
+
+    @staticmethod
+    def _apply_recommendation_contract(result: Dict[str, Any]) -> Dict[str, Any]:
+        """Add frozen routing-recommendation fields without removing legacy keys.
+
+        ``score`` is a diagnostic rule-match ratio, not user-facing accuracy.
+        ``assigned`` is always false: Case Engine owns assignment.
+        """
+        ranked = result.get("ranked_units") or []
+        recommended_name = result.get("recommended_unit")
+        recommended_code = None
+        alternatives: list[dict[str, Any]] = []
+        for item in ranked:
+            code = item.get("unit_id") or item.get("department_code")
+            item["department_code"] = code
+            if recommended_name and item.get("name") == recommended_name:
+                recommended_code = code
+            elif item.get("name") != recommended_name:
+                alternatives.append(
+                    {
+                        "unit": item.get("name"),
+                        "department_code": code,
+                        "score": item.get("score"),
+                    }
+                )
+
+        routing_score = float(result.get("routing_score") or 0)
+        result["recommended_department_code"] = (
+            recommended_code if recommended_name else None
+        )
+        result["alternatives"] = alternatives
+        result["score"] = round(min(1.0, routing_score / 100.0), 4) if routing_score else 0.0
+        result["requires_human_review"] = bool(result.get("needs_human_review"))
+        result["assigned"] = False
+        return result
+
     def _parse_units(self, profile: InstitutionProfile) -> list[dict]:
         units = []
         for birim in profile.birimler:
@@ -130,6 +253,7 @@ class RoutingAgent:
                 "unit_id": birim.get("id", ""),
                 "name": birim.get("ad", ""),
                 "keywords": birim.get("anahtar_kelimeler", []),
+                "exclusions": birim.get("baglamsal_dislamalar", []),
                 "supported_intents": birim.get("supported_intents", []),
             })
         return units
@@ -207,6 +331,9 @@ class RoutingAgent:
         # Combined search text
         search_text = f"{subject or ''} {request_text or ''} {ext_subject} {ext_request}"
         norm_text = normalize_turkish_text(search_text)
+        norm_request_text = normalize_turkish_text(
+            f"{request_text or ''} {ext_request}"
+        )
 
         labelled_exemplars = sorted(
             (
@@ -306,9 +433,36 @@ class RoutingAgent:
                 norm_kw = normalize_turkish_text(kw)
                 if not norm_kw:
                     continue
+
+                excluded = False
+                for excl in unit.get("exclusions", []):
+                    if normalize_turkish_text(excl.get("kelime", "")) == norm_kw:
+                        for anti_kw in excl.get("varsa_disla", []):
+                            if normalize_turkish_text(anti_kw) in norm_text:
+                                excluded = True
+                                break
+                    if excluded:
+                        break
+                if excluded:
+                    continue
+
+                keyword_search_text = norm_text
+                if unit["unit_id"] == "nufus" and norm_kw == "kimlik":
+                    # Kimlik yalnız gerçek talep içinde sinyal üretir; konu
+                    # başlığındaki veya T.C. Kimlik No satırındaki kullanım
+                    # Nüfus Müdürlüğüne yönlendirme nedeni değildir.
+                    keyword_search_text = norm_request_text
+                elif unit["unit_id"] == "fen_isleri" and norm_kw == "yol":
+                    # "Yol haritası" fiziksel yol talebi değildir. İfadeyi
+                    # çıkar; metinde başka bir yol kullanımı varsa o yine eşleşir.
+                    keyword_search_text = re.sub(
+                        r"\byol haritası[a-zçğıöşü]*\b",
+                        " ",
+                        keyword_search_text,
+                    )
                 # Sonekleri yakalamak için kelime sonuna [a-zçğıöşü]* ekliyoruz
                 pattern = r"\b" + re.escape(norm_kw) + r"[a-zçğıöşü]*\b"
-                if re.search(pattern, norm_text):
+                if re.search(pattern, keyword_search_text):
                     matched_keywords.append(kw)
                     if norm_kw in _GENERIC_KEYWORDS:
                         keyword_value = 20

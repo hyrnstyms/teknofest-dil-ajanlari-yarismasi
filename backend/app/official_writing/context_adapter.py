@@ -27,6 +27,7 @@ PLACEHOLDER_BIRIM_ADI = "[BİRİM ADI]"
 PLACEHOLDER_KONU = "[KONU]"
 PLACEHOLDER_MUHATAP = "[MUHATAP]"
 PLACEHOLDER_METIN = "[METİN]"
+PLACEHOLDER_SURE = "[SÜRE]"
 
 _VALID_MUHATAP_TURLERI = {
     "kurum_alt",
@@ -35,6 +36,8 @@ _VALID_MUHATAP_TURLERI = {
     "kurum_karisik",
     "gercek_kisi",
 }
+
+_TRAILING_SUBJECT_PUNCTUATION_RE = re.compile(r"[\s.,;:!?…]+$")
 
 _cached_profiles: dict[str, InstitutionProfile] = {}
 
@@ -89,6 +92,18 @@ def _format_reference_date(value: Any) -> str | None:
         year, month, day = match.groups()
         return f"{day}.{month}.{year}"
     return text or None
+
+
+def _normalize_subject(value: Any) -> str:
+    """Remove terminal punctuation that is forbidden in an official subject."""
+    return _TRAILING_SUBJECT_PUNCTUATION_RE.sub("", str(value or "").strip())
+
+
+def _missing_field_label(field: str) -> str:
+    """Load the shared label registry lazily to avoid agent import cycles."""
+    from backend.app.intelligence.process_profiles import field_label
+
+    return field_label(field)
 
 
 def _resolve_sender_unit(
@@ -188,10 +203,10 @@ def build_official_writing_context(
     # 3. Konu: doğrulanmış extraction alanı, ardından WritingAgent taslağı.
     extracted_subject = get_extracted_value(extraction, "subject")
     if extracted_subject:
-        context["konu"] = str(extracted_subject).strip()
+        context["konu"] = _normalize_subject(extracted_subject)
         source_map["konu"] = "extraction.fields.subject.value"
     elif draft.get("subject"):
-        context["konu"] = str(draft["subject"]).strip()
+        context["konu"] = _normalize_subject(draft["subject"])
         source_map["konu"] = "draft.subject"
         warnings.append("Konu extraction ile doğrulanamadı; WritingAgent konusu kullanıldı.")
     else:
@@ -300,18 +315,61 @@ def build_official_writing_context(
                 "için ilgi satırı uydurulmadan çıkarıldı."
             )
 
-    # 6. Gövde.
-    body = str(draft.get("body") or "").strip()
-    if body:
-        context["metin_paragraflari"] = [
-            paragraph.strip()
-            for paragraph in body.splitlines()
-            if paragraph.strip()
+    # 6. Gövde. Eksik bilgi talebi, LLM gövdesinden bağımsız olarak eksik alan
+    # analizinden deterministik ve kullanıcı-dostu biçimde oluşturulur.
+    if draft_type == "eksik_bilgi_talebi":
+        missing_analysis = state.get("missing_fields") or {}
+        if isinstance(missing_analysis, dict):
+            missing_codes = missing_analysis.get("missing_fields") or []
+        elif isinstance(missing_analysis, list):
+            missing_codes = missing_analysis
+        else:
+            missing_codes = []
+        missing_codes = list(dict.fromkeys(
+            str(code).strip() for code in missing_codes if str(code).strip()
+        ))
+        context["eksik_alanlar"] = [
+            {"kod": code, "etiket": _missing_field_label(code)}
+            for code in missing_codes
         ]
-        source_map["metin_paragraflari"] = "draft.body"
+        source_map["eksik_alanlar"] = "state.missing_fields.missing_fields"
+        if not missing_codes:
+            missing.append("eksik_alanlar")
+
+        completion_days = state.get("tamamlama_suresi_gun")
+        if (
+            isinstance(completion_days, int)
+            and not isinstance(completion_days, bool)
+            and completion_days > 0
+        ):
+            context["tamamlama_suresi_gun"] = completion_days
+            source_map["tamamlama_suresi_gun"] = "state.tamamlama_suresi_gun"
+        else:
+            context["tamamlama_suresi_gun"] = PLACEHOLDER_SURE
+            missing.append("tamamlama_suresi_gun")
+            source_map["tamamlama_suresi_gun"] = (
+                "placeholder: verified completion period unavailable"
+            )
+
+        context["metin_paragraflari"] = [
+            "Başvurunuzun incelenmesine devam edilebilmesi için aşağıda "
+            "belirtilen eksik bilgi ve belgeleri "
+            f"{context['tamamlama_suresi_gun']} gün içinde tamamlayınız ve "
+            "kurumumuza iletiniz."
+        ]
+        source_map["metin_paragraflari"] = "deterministic_missing_information_request"
     else:
-        context["metin_paragraflari"] = [PLACEHOLDER_METIN]
-        missing.append("metin_paragraflari")
+        body = str(draft.get("body") or "").strip()
+        if body:
+            context["metin_paragraflari"] = [
+                paragraph.strip()
+                for paragraph in body.splitlines()
+                if paragraph.strip()
+            ]
+            source_map["metin_paragraflari"] = "draft.body"
+        else:
+            context["metin_paragraflari"] = [PLACEHOLDER_METIN]
+            missing.append("metin_paragraflari")
 
     # 7. İmzalayan kişi workflow'da bulunmuyor. Açık placeholder kullanılır.
     context["imza"] = {

@@ -157,3 +157,120 @@ def test_missing_fields_unknown_intent(agent):
     assert res["uncertain_fields"] == ["signature_present"]
     assert res["needs_human_review"] is True
     assert res["warnings"] == []
+
+
+def test_imar_request_requires_missing_parcel(agent):
+    extracted = {
+        "person_name": {"value": "Ayşe Yılmaz"},
+        "subject": {"value": "İmar durumu"},
+        "request": {"value": "İmar durumunu öğrenmek istiyorum."},
+    }
+
+    result = agent.check_missing_fields(
+        document_type="dilekce",
+        process_intent="bilgi_talebi",
+        extracted_fields=extracted,
+        document_subtype="imar_talebi",
+        institution_id="belediye",
+        raw_text="Arsam için imar durumunu istiyorum ancak ada ve parseli bilmiyorum.",
+        document={"document_type": "dilekce", "document_subtype": "imar_talebi"},
+    )
+
+    assert "parcel" in result["required_fields"]
+    assert "parcel" in result["missing_fields"]
+
+
+def test_numeric_parcel_reference_is_present(agent):
+    result = agent.check_missing_fields(
+        document_type="dilekce",
+        process_intent="basvuru",
+        extracted_fields={},
+        document_subtype="imar_talebi",
+        raw_text="214 ada 6 parsel için imar durumu talep ediyorum.",
+    )
+
+    assert "parcel" in result["required_fields"]
+    assert "parcel" in result["present_fields"]
+    assert "parcel" not in result["missing_fields"]
+
+
+@pytest.mark.parametrize(
+    "raw_text",
+    [
+        "214 ada 6 parselde iki katlı konut için yapı ruhsatı istiyorum.",
+        "306 ada 18 parselin imar durumu belgesini talep ediyorum.",
+    ],
+)
+def test_inflected_numeric_parcel_reference_is_present(agent, raw_text):
+    result = agent.check_missing_fields(
+        document_type="dilekce",
+        process_intent="basvuru",
+        extracted_fields={},
+        document_subtype="imar_talebi",
+        raw_text=raw_text,
+    )
+
+    assert "parcel" in result["required_fields"]
+    assert "parcel" in result["present_fields"]
+    assert "parcel" not in result["missing_fields"]
+
+
+@pytest.mark.parametrize(
+    "raw_text",
+    [
+        "Mimari projesi sunulan depo için yapı ruhsatı işlemlerini başlatınız.",
+        "Tadilat projesi için gerekli yapı ruhsatı işlemleri hakkında bilgi istiyorum.",
+        "Askıdaki imar planı paftasının onaylı örneğini talep ediyorum.",
+    ],
+)
+def test_imar_context_without_explicit_parcel_signal_does_not_invent_gap(agent, raw_text):
+    result = agent.check_missing_fields(
+        document_type="dilekce",
+        process_intent="basvuru",
+        extracted_fields={},
+        document_subtype="imar_talebi",
+        raw_text=raw_text,
+    )
+
+    assert "parcel" not in result["required_fields"]
+    assert "parcel" not in result["missing_fields"]
+
+
+def test_appeal_requires_missing_contested_action(agent):
+    result = agent.check_missing_fields(
+        document_type="diger",
+        process_intent="diger",
+        extracted_fields={},
+        raw_text=(
+            "Hangi işleme itiraz ettiğim yoktur; "
+            "kararın iptal edildiğinin yazılmasını istiyorum."
+        ),
+    )
+
+    assert "contested_action" in result["required_fields"]
+    assert "contested_action" in result["missing_fields"]
+
+
+def test_named_contested_action_is_present(agent):
+    result = agent.check_missing_fields(
+        document_type="dilekce",
+        process_intent="itiraz",
+        extracted_fields={},
+        raw_text="Emlak vergisi tahakkukuna itiraz ediyorum.",
+    )
+
+    assert "contested_action" in result["required_fields"]
+    assert "contested_action" in result["present_fields"]
+    assert "contested_action" not in result["missing_fields"]
+
+
+def test_upstream_appeal_intent_without_source_appeal_expression_does_not_invent_gap(agent):
+    result = agent.check_missing_fields(
+        document_type="dilekce",
+        process_intent="itiraz",
+        extracted_fields={},
+        raw_text="Mahkeme kararının belediye tarafından iptal edilmesini istiyorum.",
+    )
+
+    assert "contested_action" not in result["required_fields"]
+    assert "contested_action" not in result["missing_fields"]

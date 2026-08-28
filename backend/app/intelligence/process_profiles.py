@@ -27,6 +27,8 @@ FIELD_LABELS: dict[str, str] = {
     "national_id": "T.C. kimlik no",
     "permit_type": "Ruhsat türü",
     "authority_document_present": "Yetki belgesi",
+    "parcel": "Ada / parsel bilgisi",
+    "contested_action": "İtiraz edilen işlem veya karar",
 }
 
 CITIZEN_SUPPLYABLE_FIELDS = frozenset(
@@ -40,6 +42,8 @@ CITIZEN_SUPPLYABLE_FIELDS = frozenset(
         "request",
         "permit_type",
         "national_id",
+        "parcel",
+        "contested_action",
     }
 )
 
