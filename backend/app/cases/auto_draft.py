@@ -29,7 +29,7 @@ def generate_official_response_after_action(*, engine: Any, user: CurrentUser, c
         )
         if not generated.get("allowed") or not generated.get("draft"):
             return {"status": "failed", "message": "Taslak oluşturulamadı."}
-        saved = engine.save_draft(user, case_id, draft_type="OFFICIAL_RESPONSE", content=generated["draft"], grounded_action_id=action_id, expected_version=action_result["case"]["version"], confirmed=True)
+        saved = engine.save_draft(user, case_id, draft_type="OFFICIAL_RESPONSE", content=generated["draft"], grounded_action_id=action_id, expected_version=action_result["case"]["version"], confirmed=True, personnel_edited=False)
         return {"status": "ready", "draft": saved["draft"], "case": saved["case"]}
     except Exception as exc:
         logger.exception("Automatic grounded Case draft failed for %s", case_id)

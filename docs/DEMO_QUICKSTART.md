@@ -18,7 +18,7 @@ Evrak kayıt ana sayfasındaki **Demo Senaryoları** kartından Yol Onarım, Bel
 
 ## Vatandaş görünümü
 
-Case Workspace'teki **Vatandaş görünümü** butonu yalnız demo vakasında backend'den geçerli `tracking_code + token` bağlantısı alır. Sabit veya tahmin edilebilir üretim token'ı kullanılmaz; deterministik token yalnız `DEMO_MODE` kapsamındadır.
+Login ekranındaki **Vatandaş Başvuru Takibi** örnekleri backend'den geçerli `tracking_code + token` bağlantısı alır. İç Case Workspace vatandaş navigasyonu sunmaz. Sabit veya tahmin edilebilir üretim token'ı kullanılmaz; deterministik token yalnız `DEMO_MODE` kapsamındadır.
 
 ## Kayıt öncesi kontrol
 

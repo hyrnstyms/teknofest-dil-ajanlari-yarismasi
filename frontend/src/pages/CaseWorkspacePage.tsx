@@ -25,7 +25,6 @@ export function CaseWorkspacePage() {
   const [pending, setPending] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(blankAction);
-  const [citizenUrl, setCitizenUrl] = useState("");
 
   useEffect(() => {
     if (!token) return;
@@ -86,20 +85,6 @@ export function CaseWorkspacePage() {
     }
   }
 
-async function getCitizenUrl() {
-    if (citizenUrl) return citizenUrl;
-    if (!token) throw new Error("Oturum bulunamadı.");
-    const result = await caseApi.citizenAccess(token, item!.id);
-    setCitizenUrl(result.citizen_url);
-    return result.citizen_url;
-  }
-
-  async function openCitizenView() {
-    try { window.location.assign(await getCitizenUrl()); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Vatandaş görünümü açılamadı."); }
-  }
-
-
   function handleOperationalAction(action: OperationalAction) {
     if (action === "assignment") return document.getElementById("case-assignment")?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (action === "result") return document.getElementById("department-action")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -120,7 +105,7 @@ async function getCitizenUrl() {
     <header className="case-workspace-header">
       <div><span className="eyebrow">{item.tracking_code}</span><h1>{item.title}</h1><StatusBadge status={item.workflow_status}/></div>
       <div className="ownership-strip">
-        <section><span><UserRound/> Kaynak / Başvuru Sahibi</span><strong>{item.originator_name}</strong><small>{formatSourceType(item.source_type)} · {formatChannel(item.source_channel)}</small><button className="link-button citizen-secondary-action" onClick={() => void openCitizenView()}>Vatandaş görünümünü aç</button></section>
+        <section><span><UserRound/> Kaynak / Başvuru Sahibi</span><strong>{item.originator_name}</strong><small>{formatSourceType(item.source_type)} · {formatChannel(item.source_channel)}</small></section>
         <section><span><Building2/> Mevcut Sahip</span><strong>{item.current_department_name}</strong><small>Kurumsal sorumluluk</small></section>
         <section className="ai-owner"><span><Bot/> AI Önerisi</span><strong>{item.routing_recommendation?.recommended_unit || "Öneri bulunmuyor"}</strong><small>İnsan onayı olmadan sahiplik değişmez</small></section>
       </div>

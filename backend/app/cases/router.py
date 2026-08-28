@@ -378,6 +378,20 @@ def approve_draft(
         raise exc.to_http_exception() from exc
 
 
+@router.post("/{case_id}/drafts/{draft_id}/revise")
+def revise_approved_draft(
+    case_id: str,
+    draft_id: str,
+    body: VersionedAction,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    try:
+        return _engine().revise_approved_draft(
+            current_user, case_id, draft_id, body.expected_version, body.confirmed
+        )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
 @router.post("/{case_id}/drafts/regenerate")
 def regenerate_draft(case_id: str, body: VersionedAction, current_user: CurrentUser = Depends(get_current_user)) -> dict:
     try:

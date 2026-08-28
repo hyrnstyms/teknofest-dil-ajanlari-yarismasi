@@ -28,7 +28,7 @@ interface CaseAggregateWire {
   clarification?: CaseRecord["clarification"] | Record<string, never>;
   priority_assessment?: CaseRecord["priority_assessment"];
   department_actions: DepartmentAction[];
-  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
+  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string; personnel_edited?: boolean }>;
   analysis?: {
     summary?: { short_summary?: string; structured_summary?: { subject?: string; request?: string } };
     routing?: CaseRecord["routing_recommendation"];
@@ -166,6 +166,7 @@ function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
       grounded_action_id: draft.grounded_action_id,
       created_at: draft.created_at,
       updated_at: draft.updated_at,
+      personnel_edited: draft.personnel_edited,
     })),
     permissions: aggregate.permissions,
     analysis_details: aggregate.analysis,
@@ -289,10 +290,13 @@ export const caseApi = {
     token, item, `/api/cases/${item.id}/drafts/${draftId}/approve`,
     { expected_version: item.version, confirmed: true }, "Resmî cevap taslağı onaylandı.",
   ),
-  editDraft: (token: string, item: CaseRecord, draft: CaseDraft, content: { subject: string; recipient: string; body: string }) => mutate(
-    token, item, `/api/cases/${item.id}/drafts`,
-    { draft_type: draft.draft_type, content: { ...content, sender_unit: draft.sender_unit, recipient_kind: draft.recipient_kind }, grounded_action_id: draft.grounded_action_id, expected_version: item.version, confirmed: true },
-    "Personel düzenlemesi yeni taslak sürümü olarak kaydedildi.",
+  reviseDraft: (token: string, item: CaseRecord, draftId: string) => caseRequest<{ draft: { id: string } }>(
+    `/api/cases/${item.id}/drafts/${draftId}/revise`, token,
+    { method: "POST", body: JSON.stringify({ expected_version: item.version, confirmed: true }) },
+  ),
+  editDraft: (token: string, item: CaseRecord, draft: CaseDraft, content: { subject: string; recipient: string; body: string }) => caseRequest<{ draft: { id: string } }>(
+    `/api/cases/${item.id}/drafts`, token,
+    { method: "POST", body: JSON.stringify({ draft_type: draft.draft_type, content: { ...content, sender_unit: draft.sender_unit, recipient_kind: draft.recipient_kind }, grounded_action_id: draft.grounded_action_id, expected_version: item.version, confirmed: true }) },
   ),
   regenerateDraft: (token: string, item: CaseRecord) => mutate(
     token, item, `/api/cases/${item.id}/drafts/regenerate`,
