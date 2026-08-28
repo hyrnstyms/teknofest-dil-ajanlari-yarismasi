@@ -608,9 +608,11 @@ class WritingAgent:
         ]
         
         # Eğer muhatap belli değilse cevap yazısı / üst yazı tehlikeli
+        # NOT: Artık person_name her zaman zorunlu olmadığı için, muhatabın belli olmaması
+        # taslağı tamamen bloke etmemelidir. Bunun yerine [MUHATAP] placeholder'ı kullanılacaktır.
         if not recipient and process_intent in ["basvuru", "sikayet", "itiraz", "bilgi_talebi"]:
             if "recipient" not in missing_fields and "recipient" not in critical_uncertain:
-                critical_uncertain.append("recipient")
+                pass # critical_uncertain.append("recipient") iptal edildi.
                 
         if critical_uncertain:
             return {
