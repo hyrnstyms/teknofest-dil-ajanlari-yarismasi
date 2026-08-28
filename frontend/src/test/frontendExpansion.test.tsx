@@ -37,8 +37,9 @@ describe("QR verification", () => {
 
     await api.verifyDocument("EVR/42");
 
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/verify/EVR%2F42",
+      `${apiBase}/api/verify/EVR%2F42`,
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });

@@ -174,6 +174,39 @@ describe('caseApi aggregate integration', () => {
     expect(body.target_type).toBe('KURUM_ICI');
     expect(body.target_department).toBe('yazi_isleri');
   });
+
+  it('maps the Analysis preview separately from official CaseDraft records', async () => {
+    vi.stubGlobal('fetch', makeFetch(200, {
+      case: { ...MINIMAL_CASE, analysis_id: 'analysis-1' },
+      permissions: ['ROUTE_CASE'], assignments: [], tasks: [], information_requests: [],
+      events: [], timeline: [], department_actions: [], drafts: [],
+      analysis_preview_draft: {
+        analysis_id: 'analysis-1', draft_type: 'cevap_yazisi', subject: 'Ön Konu',
+        body: 'Ön metin.', recipient: 'Ali Yılmaz', recipient_kind: 'gercek_kisi', edited: false,
+      },
+      analysis: null,
+      deadline: { applicable: false, due_at: null, risk_level: 'UNKNOWN' },
+    }));
+
+    const result = await caseApi.get(TOKEN, MINIMAL_CASE.id);
+
+    expect(result.drafts).toEqual([]);
+    expect(result.analysis_preview_draft?.subject).toBe('Ön Konu');
+    expect(result.analysis_preview_draft?.edited).toBe(false);
+  });
+
+  it('persists preview edits through the existing Analysis edit endpoint', async () => {
+    const mockFetch = makeFetch(200, { status: 'success', message: 'Taslak güncellendi.' });
+    vi.stubGlobal('fetch', mockFetch);
+    const item = { ...MINIMAL_CASE, analysis_id: 'analysis-1' };
+
+    await caseApi.editAnalysisPreview(TOKEN, item, { subject: 'Yeni Konu', body: 'Yeni metin.' });
+
+    const [url, init] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/analysis/analysis-1/edit');
+    expect(init.headers).toMatchObject({ Authorization: `Bearer ${TOKEN}` });
+    expect(JSON.parse(init.body as string)).toEqual({ subject: 'Yeni Konu', body: 'Yeni metin.' });
+  });
 });
 
 // ── start() ───────────────────────────────────────────────────────────────────

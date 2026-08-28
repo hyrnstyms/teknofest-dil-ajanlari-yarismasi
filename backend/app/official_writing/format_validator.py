@@ -41,7 +41,12 @@ from typing import Literal
 # Veri Yapıları
 # ──────────────────────────────────────────────────────────────────────────────
 
-YaziTuru = Literal["ust_yazi", "cevap_yazisi", "tekit_yazisi"]
+YaziTuru = Literal[
+    "ust_yazi",
+    "cevap_yazisi",
+    "tekit_yazisi",
+    "eksik_bilgi_talebi",
+]
 
 
 @dataclass
@@ -715,6 +720,52 @@ def validate_format(
             sonuc.hata_ekle(
                 "CEVAP_ILGI_ZORUNLU", mesaj, "[TASARIM KARARI]",
                 tasarim_karari=True
+            )
+
+    # ── 5c. Eksik bilgi talebi özel kuralları ────────────────────────────────
+    if yazi_turu == "eksik_bilgi_talebi":
+        eksik_alanlar = taslak.get("eksik_alanlar") or []
+        if not isinstance(eksik_alanlar, list) or not eksik_alanlar:
+            sonuc.hata_ekle(
+                "EKSIK_ALAN_LISTESI",
+                "Eksik bilgi talebinde en az bir eksik alan belirtilmelidir.",
+                "Görev 2 — Eksik bilgi talebi",
+            )
+        else:
+            invalid_items = [
+                item for item in eksik_alanlar
+                if not isinstance(item, dict)
+                or not str(item.get("kod") or "").strip()
+                or not str(item.get("etiket") or "").strip()
+            ]
+            if invalid_items:
+                sonuc.hata_ekle(
+                    "EKSIK_ALAN_ETIKETI",
+                    "Eksik alanların kodu ve kullanıcıya gösterilecek etiketi bulunmalıdır.",
+                    "Görev 2 — Eksik bilgi talebi",
+                )
+
+        completion_days = taslak.get("tamamlama_suresi_gun")
+        if is_declared_missing("tamamlama_suresi_gun"):
+            add_missing_warning("tamamlama_suresi_gun", "Tamamlama süresi")
+        elif (
+            not isinstance(completion_days, int)
+            or isinstance(completion_days, bool)
+            or not 1 <= completion_days <= 365
+        ):
+            sonuc.hata_ekle(
+                "TAMAMLAMA_SURESI",
+                "Tamamlama süresi 1-365 arasında pozitif tam sayı olmalıdır.",
+                "Görev 2 — Eksik bilgi talebi",
+            )
+
+        body_text = " ".join(taslak.get("metin_paragraflari") or [])
+        normalized_body = body_text.casefold().replace("ı", "i")
+        if "gün içinde tamamlayiniz" not in normalized_body:
+            sonuc.hata_ekle(
+                "EKSIK_BILGI_METIN_KALIBI",
+                "Eksik bilgi talebi metni 'gün içinde tamamlayınız' kalıbını içermelidir.",
+                "Görev 2 — Eksik bilgi talebi",
             )
 
     # ── 7. Kapanış İfadesi (Madde 16/12) ──────────────────────────────────────

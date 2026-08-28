@@ -395,11 +395,12 @@ class QualityAgent:
             "bilgilendirme_metni": "ust_yazi",  # Ayrı şablon yok [TASARIM KARARI]
             "cevap_yazisi": "cevap_yazisi",
             "tekit_yazisi": "tekit_yazisi",
+            "eksik_bilgi_talebi": "eksik_bilgi_talebi",
         }
 
         yazi_turu = RESMI_YAZI_TURLERI.get(draft_type)
         if not yazi_turu:
-            # eksik_bilgi_talebi, diger → biçimsel format kontrolü uygulanmaz
+            # diger → güvenli blokaj türü; biçimsel format kontrolü uygulanmaz
             return
 
         # Validation, LLM'in ham draft'ı üzerinden değil, official_render'ın

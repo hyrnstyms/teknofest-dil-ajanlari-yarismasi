@@ -84,13 +84,17 @@ def _draft_via_workflow_node(
     summary: str,
     requested_action: str,
     process_intent: str = None,
+    missing_fields: list[str] | None = None,
 ) -> dict:
     workflow = KamuaiWorkflow.__new__(KamuaiWorkflow)
     workflow.writing_agent = agent
     result = workflow.node_writing(DocumentState(
         document={"process_intent": process_intent or requested_action},
         extraction=extraction,
-        missing_fields={"missing_fields": []},
+        missing_fields={
+            "missing_fields": list(missing_fields or []),
+            "uncertain_fields": [],
+        },
         summary={"short_summary": summary},
         routing=routing,
         kurum_profili_id="kaymakamlik_v1",
@@ -168,6 +172,45 @@ def test_missing_official_metadata_still_renders_preview():
     assert "[AD SOYAD]" in draft["official_rendered_text"]
     assert quality["checks"]["official_writing_format"]["status"] == "warning"
     assert quality["requires_human_review"] is True
+
+
+def test_missing_information_request_full_format_chain():
+    extraction = {
+        "fields": {
+            "person_name": _field("Mehmet Kaya"),
+            "subject": _field("İskân Belgesi Başvurusu"),
+        }
+    }
+    routing = {
+        "recommended_unit": _UNIT,
+        "needs_human_review": False,
+    }
+    agent = WritingAgent(
+        llm=_StubLLM(
+            "Eksik Bilgilerin Tamamlanması",
+            "Eksik alanların tamamlanması talep edilmektedir.",
+        ),
+        retriever=_OfficialWritingRetriever(),
+    )
+
+    draft = _draft_via_workflow_node(
+        agent=agent,
+        extraction=extraction,
+        routing=routing,
+        summary="İskân belgesi başvurusu.",
+        requested_action="başvuru",
+        process_intent="basvuru",
+        missing_fields=["address", "parcel"],
+    )
+    quality = _quality(extraction, routing, draft)
+
+    assert draft["draft_type"] == "eksik_bilgi_talebi"
+    assert draft["official_render"]["attempted"] is True
+    assert draft["official_render"]["success"] is True
+    assert "Açık adres" in draft["official_rendered_text"]
+    assert "Ada / parsel bilgisi" in draft["official_rendered_text"]
+    assert "[SÜRE] gün içinde tamamlayınız" in draft["official_rendered_text"]
+    assert quality["checks"]["official_writing_format"]["status"] == "warning"
 
 
 def test_ust_yazi_uses_nested_recipient_and_routing_profile():

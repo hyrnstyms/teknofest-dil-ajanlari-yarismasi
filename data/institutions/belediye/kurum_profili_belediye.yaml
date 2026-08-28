@@ -240,8 +240,6 @@ evrak_turleri:
     aciklama: "3071 sayılı Kanun kapsamında genel talep/şikayet dilekçesi"
     yasal_dayanak: "3071 sayılı Dilekçe Hakkının Kullanılmasına Dair Kanun"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - subject
       - request
@@ -255,8 +253,6 @@ evrak_turleri:
     aciklama: "4982 sayılı Kanun kapsamında bilgi/belge talebi"
     yasal_dayanak: "4982 sayılı Bilgi Edinme Hakkı Kanunu"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - request
     tipik_hedef_birim:
@@ -267,8 +263,6 @@ evrak_turleri:
     aciklama: "Belediye sınırları içinde işyeri açmak için gerekli ruhsat"
     yasal_dayanak: "İşyeri Açma ve Çalışma Ruhsatlarına İlişkin Yönetmelik"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - phone
       - request
@@ -281,8 +275,6 @@ evrak_turleri:
     aciklama: "Parsel bazlı imar durumu belgesi veya yapı ruhsatı başvurusu"
     yasal_dayanak: "3194 sayılı İmar Kanunu"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - request
     tipik_hedef_birim:
@@ -293,8 +285,6 @@ evrak_turleri:
     aciklama: "Belediye hizmetlerine yönelik şikayet bildirimi"
     yasal_dayanak: "5393 sayılı Belediye Kanunu Md. 77"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - subject
       - request

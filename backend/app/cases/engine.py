@@ -574,6 +574,49 @@ class CaseEngine:
                 aggregate["clarification"] = clarification
                 aggregate["ai_operation"] = dict((stored.get("case_orchestration") or {}).get("ai_operation") or {})
                 aggregate["priority_assessment"] = dict((stored.get("case_orchestration") or {}).get("operational_priority") or {})
+                analysis_draft = dict(stored.get("draft") or {})
+                generated_draft = dict(analysis_draft.get("draft") or {})
+                edited_draft = dict(analysis_draft.get("edited_draft") or {})
+                official_render = analysis_draft.get("official_render") or {}
+                official_context = (
+                    dict(official_render.get("context") or {})
+                    if isinstance(official_render, dict)
+                    else {}
+                )
+                context_recipient = official_context.get("muhatap")
+                if isinstance(context_recipient, dict):
+                    context_recipient = context_recipient.get("isim")
+                preview_subject = (
+                    edited_draft.get("subject")
+                    or generated_draft.get("subject")
+                    or analysis_draft.get("subject")
+                    or official_context.get("konu")
+                )
+                preview_body = (
+                    edited_draft.get("body")
+                    or generated_draft.get("body")
+                    or analysis_draft.get("draft_text")
+                    or analysis_draft.get("official_rendered_text")
+                    or analysis_draft.get("rendered_text")
+                )
+                if preview_subject or preview_body:
+                    aggregate["analysis_preview_draft"] = {
+                        "analysis_id": stored.get("analysis_id") or analysis_id,
+                        "draft_type": analysis_draft.get("draft_type") or "diger",
+                        "subject": preview_subject or "Konu belirtilmedi",
+                        "body": preview_body or "",
+                        "recipient": (
+                            generated_draft.get("recipient")
+                            or context_recipient
+                            or stored.get("muhatap")
+                        ),
+                        "recipient_kind": (
+                            generated_draft.get("recipient_kind")
+                            or official_context.get("muhatap_turu")
+                            or stored.get("muhatap_turu")
+                        ),
+                        "edited": bool(edited_draft),
+                    }
                 aggregate["analysis"] = {
                     "analysis_id": stored.get("analysis_id"),
                     "document_type": (stored.get("document") or {}).get("document_type"),

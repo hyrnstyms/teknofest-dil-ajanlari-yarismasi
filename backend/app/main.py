@@ -600,11 +600,77 @@ def edit_analysis(analysis_id: str, req: EditRequest):
     return {"status": "success", "message": "Taslak güncellendi."}
 
 
+def _persist_chat_draft_update(
+    analysis_id: str,
+    current_state: dict[str, Any],
+    *,
+    message: str,
+    updated_draft: dict[str, Any],
+    edit_metadata: dict[str, Any] | None = None,
+) -> None:
+    """Persist a validated chat draft edit through the shared audit path."""
+
+    candidate_state = deepcopy(current_state)
+    human_review = candidate_state.setdefault("human_review", {})
+    if "mod_c_original_draft" not in human_review:
+        human_review["mod_c_original_draft"] = deepcopy(
+            candidate_state.get("draft", {})
+        )
+    metadata = edit_metadata if isinstance(edit_metadata, dict) else {}
+    operation = str(metadata.get("operation") or "edit")
+    before_structured = current_state.get("draft", {}).get("draft", {})
+    after_structured = updated_draft.get("draft", {})
+    changed_field = next(
+        (
+            field
+            for field in ("subject", "body")
+            if before_structured.get(field) != after_structured.get(field)
+        ),
+        None,
+    )
+    if operation == "undo":
+        human_review.pop("last_chat_draft_edit", None)
+    elif changed_field:
+        human_review["last_chat_draft_edit"] = {
+            "target_field": changed_field,
+            "before": str(before_structured.get(changed_field) or ""),
+            "after": str(after_structured.get(changed_field) or ""),
+        }
+    human_review["status"] = "edited"
+    candidate_state["draft"] = deepcopy(updated_draft)
+    audit_event = (
+        "draft_edit_undone_via_chat"
+        if operation == "undo"
+        else "draft_edited_via_chat"
+    )
+    audit_message = (
+        "Son sohbet taslak düzenlemesi geri alındı."
+        if operation == "undo"
+        else "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi."
+    )
+    candidate_state.setdefault("audit_history", []).append({
+        "event": audit_event,
+        "timestamp": datetime.utcnow().isoformat(),
+        "message": audit_message,
+    })
+    get_analysis_repository().update_analysis_with_event(
+        analysis_id,
+        candidate_state,
+        "chat_edit",
+        {
+            "message": message,
+            "updated_draft": updated_draft,
+            "edit_metadata": metadata,
+        },
+    )
+
+
 @app.post("/api/analysis/{analysis_id}/chat/edit-draft")
 def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
     current_state = _get_stored_analysis(analysis_id)
     current_draft = current_state.get("draft")
     workflow_context = {
+        "analysis_state": current_state,
         "extraction": current_state.get("extraction", {}),
         "routing": current_state.get("routing", {}),
         "kurum_profili_id": current_state.get(
@@ -623,26 +689,12 @@ def chat_edit_draft(analysis_id: str, req: ChatDraftEditRequest):
 
     updated_draft = result.get("updated_draft")
     if result.get("status") == "applied" and isinstance(updated_draft, dict):
-        candidate_state = deepcopy(current_state)
-        human_review = candidate_state.setdefault("human_review", {})
-        if "mod_c_original_draft" not in human_review:
-            human_review["mod_c_original_draft"] = deepcopy(
-                candidate_state.get("draft", {})
-            )
-        human_review["status"] = "edited"
-
-        candidate_state["draft"] = deepcopy(updated_draft)
-        candidate_state.setdefault("audit_history", []).append({
-            "event": "draft_edited_via_chat",
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi.",
-        })
-
-        get_analysis_repository().update_analysis_with_event(
+        _persist_chat_draft_update(
             analysis_id,
-            candidate_state,
-            "chat_edit",
-            {"message": req.message, "updated_draft": updated_draft},
+            current_state,
+            message=req.message,
+            updated_draft=updated_draft,
+            edit_metadata=result.get("edit_metadata"),
         )
 
     return result
@@ -718,24 +770,12 @@ def chat_message(req: ChatMessageRequest):
         and current_state is not None
         and req.analysis_id is not None
     ):
-        candidate_state = deepcopy(current_state)
-        human_review = candidate_state.setdefault("human_review", {})
-        if "mod_c_original_draft" not in human_review:
-            human_review["mod_c_original_draft"] = deepcopy(
-                candidate_state.get("draft", {})
-            )
-        human_review["status"] = "edited"
-        candidate_state["draft"] = deepcopy(updated_draft)
-        candidate_state.setdefault("audit_history", []).append({
-            "event": "draft_edited_via_chat",
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Taslak, doğrulanmış sohbet düzenlemesiyle güncellendi.",
-        })
-        get_analysis_repository().update_analysis_with_event(
+        _persist_chat_draft_update(
             req.analysis_id,
-            candidate_state,
-            "chat_edit",
-            {"message": req.message, "updated_draft": updated_draft},
+            current_state,
+            message=req.message,
+            updated_draft=updated_draft,
+            edit_metadata=response_data.get("edit_metadata"),
         )
 
     return response_data
@@ -780,6 +820,16 @@ def copilot_stream(
         user_context = build_user_context(current_user)
         institution_id = current_user.institution_id
 
+    persist_draft_update = None
+    if req.analysis_id is not None and current_state is not None:
+        persist_draft_update = lambda updated_draft, edit_metadata=None: _persist_chat_draft_update(
+            req.analysis_id,
+            current_state,
+            message=req.message,
+            updated_draft=updated_draft,
+            edit_metadata=edit_metadata,
+        )
+
     return StreamingResponse(
         stream_copilot_response(
             message=req.message,
@@ -788,6 +838,7 @@ def copilot_stream(
             institution_id=institution_id,
             current_draft=current_draft,
             user_context=user_context,
+            persist_draft_update=persist_draft_update,
         ),
         media_type="text/event-stream"
     )

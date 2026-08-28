@@ -1,0 +1,5622 @@
+{
+  "dataset": {
+    "name": "decision_boundary_120",
+    "source": "git-object:0c62f06bccd8c4ec456cd16f6de58dc7b6813a92",
+    "sha256": "319d74572806821a52534a96fa6672eefced58347860449297bc15e9f6c420e2",
+    "total_records": 120,
+    "successful_records": 120,
+    "failed_records": 0,
+    "bucket_counts": {
+      "belediye": 40,
+      "kaymakamlik": 30,
+      "ambiguous_hard_negative": 30,
+      "out_of_scope_missing_review": 20
+    }
+  },
+  "metrics": {
+    "document_agent": {
+      "metric": "broad_document_type_exact_accuracy",
+      "correct": 116,
+      "total": 120,
+      "accuracy_percent": 96.67,
+      "classification_modes": {
+        "llm": 118,
+        "deterministic_validation": 2
+      }
+    },
+    "routing_agent": {
+      "metric": "top1_acceptable_unit_accuracy_on_routable_cases",
+      "correct": 50,
+      "total": 85,
+      "accuracy_percent": 58.82,
+      "top3_correct": 75,
+      "top3_accuracy_percent": 88.24,
+      "full_set_decision_correct": 68,
+      "full_set_decision_accuracy_percent": 56.67
+    },
+    "missing_field_agent": {
+      "primary_metric": "any_missing_field_binary_accuracy",
+      "correct": 98,
+      "total": 120,
+      "accuracy_percent": 81.67,
+      "exact_set_correct": 94,
+      "exact_set_accuracy_percent": 78.33,
+      "field_true_positives": 3,
+      "field_false_positives": 21,
+      "field_false_negatives": 16,
+      "field_precision_percent": 12.5,
+      "field_recall_percent": 15.79,
+      "field_f1_percent": 13.95
+    }
+  },
+  "llm_usage": {
+    "attempted_calls": 240,
+    "successful_calls": 240,
+    "failed_calls": 0,
+    "attempted_calls_per_document": 2.0,
+    "provider": "evren",
+    "model": "llm-fast"
+  },
+  "runtime": {
+    "wall_clock_seconds": 158.51,
+    "mean_focused_pipeline_ms": 5213.5
+  },
+  "failures": [],
+  "rows": [
+    {
+      "id": "DB-001",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 7415.9
+    },
+    {
+      "id": "DB-002",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6967.7
+    },
+    {
+      "id": "DB-003",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 13216.7
+    },
+    {
+      "id": "DB-004",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 7045.2
+    },
+    {
+      "id": "DB-005",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4339.0
+    },
+    {
+      "id": "DB-006",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4302.0
+    },
+    {
+      "id": "DB-007",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4317.2
+    },
+    {
+      "id": "DB-008",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6522.7
+    },
+    {
+      "id": "DB-009",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6732.4
+    },
+    {
+      "id": "DB-010",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6198.5
+    },
+    {
+      "id": "DB-011",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "zabita",
+          "yazi_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6890.9
+    },
+    {
+      "id": "DB-012",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "imar_sehircilik",
+          "zabita",
+          "su_kanal"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6085.0
+    },
+    {
+      "id": "DB-013",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "imar_sehircilik",
+          "zabita",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6009.9
+    },
+    {
+      "id": "DB-014",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "imar_sehircilik",
+          "zabita",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5942.2
+    },
+    {
+      "id": "DB-015",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6173.0
+    },
+    {
+      "id": "DB-016",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "hukuk_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5434.9
+    },
+    {
+      "id": "DB-017",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "zabita",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6091.7
+    },
+    {
+      "id": "DB-018",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6415.0
+    },
+    {
+      "id": "DB-019",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5679.3
+    },
+    {
+      "id": "DB-020",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4940.2
+    },
+    {
+      "id": "DB-021",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4538.2
+    },
+    {
+      "id": "DB-022",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4978.7
+    },
+    {
+      "id": "DB-023",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4920.1
+    },
+    {
+      "id": "DB-024",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "imar_sehircilik"
+        ],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5714.2
+    },
+    {
+      "id": "DB-025",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "temizlik_isleri",
+          "yazi_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4994.6
+    },
+    {
+      "id": "DB-026",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5446.4
+    },
+    {
+      "id": "DB-027",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5332.6
+    },
+    {
+      "id": "DB-028",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4653.3
+    },
+    {
+      "id": "DB-029",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4615.7
+    },
+    {
+      "id": "DB-030",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4943.6
+    },
+    {
+      "id": "DB-031",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5513.3
+    },
+    {
+      "id": "DB-032",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5208.4
+    },
+    {
+      "id": "DB-033",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5250.8
+    },
+    {
+      "id": "DB-034",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6322.8
+    },
+    {
+      "id": "DB-035",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5347.1
+    },
+    {
+      "id": "DB-036",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4996.1
+    },
+    {
+      "id": "DB-037",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5688.7
+    },
+    {
+      "id": "DB-038",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5288.0
+    },
+    {
+      "id": "DB-039",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4640.3
+    },
+    {
+      "id": "DB-040",
+      "bucket": "belediye",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4735.8
+    },
+    {
+      "id": "DB-041",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5747.9
+    },
+    {
+      "id": "DB-042",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5767.9
+    },
+    {
+      "id": "DB-043",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": "yazi_isleri",
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5813.9
+    },
+    {
+      "id": "DB-044",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6065.7
+    },
+    {
+      "id": "DB-045",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5851.5
+    },
+    {
+      "id": "DB-046",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5660.1
+    },
+    {
+      "id": "DB-047",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5584.4
+    },
+    {
+      "id": "DB-048",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5114.8
+    },
+    {
+      "id": "DB-049",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5383.2
+    },
+    {
+      "id": "DB-050",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5135.9
+    },
+    {
+      "id": "DB-051",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "milli_egitim",
+        "ranked_top3": [
+          "milli_egitim",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4872.3
+    },
+    {
+      "id": "DB-052",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "milli_egitim",
+        "ranked_top3": [
+          "milli_egitim",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6486.2
+    },
+    {
+      "id": "DB-053",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "milli_egitim",
+        "ranked_top3": [
+          "milli_egitim",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5449.7
+    },
+    {
+      "id": "DB-054",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "deterministic_validation"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5113.5
+    },
+    {
+      "id": "DB-055",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5454.1
+    },
+    {
+      "id": "DB-056",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4768.3
+    },
+    {
+      "id": "DB-057",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "yazi_isleri",
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5091.1
+    },
+    {
+      "id": "DB-058",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "deterministic_validation"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "milli_egitim",
+        "ranked_top3": [
+          "milli_egitim",
+          "yazi_isleri",
+          "nufus"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6815.2
+    },
+    {
+      "id": "DB-059",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4940.2
+    },
+    {
+      "id": "DB-060",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5245.3
+    },
+    {
+      "id": "DB-061",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5102.6
+    },
+    {
+      "id": "DB-062",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": "sydv",
+        "ranked_top3": [
+          "sydv",
+          "yazi_isleri",
+          "nufus"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4779.0
+    },
+    {
+      "id": "DB-063",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5431.0
+    },
+    {
+      "id": "DB-064",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5807.0
+    },
+    {
+      "id": "DB-065",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5375.1
+    },
+    {
+      "id": "DB-066",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5447.8
+    },
+    {
+      "id": "DB-067",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5280.7
+    },
+    {
+      "id": "DB-068",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5189.2
+    },
+    {
+      "id": "DB-069",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5418.5
+    },
+    {
+      "id": "DB-070",
+      "bucket": "kaymakamlik",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5060.0
+    },
+    {
+      "id": "DB-071",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "imar_sehircilik",
+          "zabita"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "imar_sehircilik",
+          "zabita",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "address"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4796.8
+    },
+    {
+      "id": "DB-072",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "imar_sehircilik",
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3571.3
+    },
+    {
+      "id": "DB-073",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "fen_isleri",
+          "su_kanal"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "su_kanal",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4857.4
+    },
+    {
+      "id": "DB-074",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "fen_isleri",
+          "park_bahce"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "park_bahce",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4186.1
+    },
+    {
+      "id": "DB-075",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "imar_sehircilik",
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3997.7
+    },
+    {
+      "id": "DB-076",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "milli_egitim",
+          "saglik"
+        ],
+        "predicted": "milli_egitim",
+        "ranked_top3": [
+          "milli_egitim",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4489.1
+    },
+    {
+      "id": "DB-077",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "nufus",
+          "sydv"
+        ],
+        "predicted": "sydv",
+        "ranked_top3": [
+          "sydv",
+          "yazi_isleri",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4576.1
+    },
+    {
+      "id": "DB-078",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "tapu",
+          "yazi_isleri"
+        ],
+        "predicted": "tapu",
+        "ranked_top3": [
+          "tapu",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5253.1
+    },
+    {
+      "id": "DB-079",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "mal_mudurlugu",
+          "tarim"
+        ],
+        "predicted": "mal_mudurlugu",
+        "ranked_top3": [
+          "mal_mudurlugu",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4503.9
+    },
+    {
+      "id": "DB-080",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "saglik",
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "saglik"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4734.5
+    },
+    {
+      "id": "DB-081",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "temizlik_isleri",
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "temizlik_isleri",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4961.8
+    },
+    {
+      "id": "DB-082",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "fen_isleri",
+          "su_kanal"
+        ],
+        "predicted": "su_kanal",
+        "ranked_top3": [
+          "su_kanal",
+          "mali_hizmetler",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5980.3
+    },
+    {
+      "id": "DB-083",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "imar_sehircilik",
+          "temizlik_isleri",
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "temizlik_isleri",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 7200.9
+    },
+    {
+      "id": "DB-084",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "emniyet",
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "milli_egitim",
+          "emniyet",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6750.0
+    },
+    {
+      "id": "DB-085",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [
+          "tapu",
+          "tarim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "tarim",
+          "tapu",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4865.9
+    },
+    {
+      "id": "DB-086",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "park_bahce"
+        ],
+        "predicted": "park_bahce",
+        "ranked_top3": [
+          "park_bahce",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5693.8
+    },
+    {
+      "id": "DB-087",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4572.9
+    },
+    {
+      "id": "DB-088",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "nufus"
+        ],
+        "predicted": "nufus",
+        "ranked_top3": [
+          "nufus",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5499.4
+    },
+    {
+      "id": "DB-089",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "milli_egitim",
+        "ranked_top3": [
+          "milli_egitim",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4281.4
+    },
+    {
+      "id": "DB-090",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "hukuk_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "zabita",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6014.9
+    },
+    {
+      "id": "DB-091",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "zabita"
+        ],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "park_bahce",
+          "yazi_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4562.6
+    },
+    {
+      "id": "DB-092",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "mali_hizmetler"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "mali_hizmetler",
+          "imar_sehircilik",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4701.1
+    },
+    {
+      "id": "DB-093",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "mali_hizmetler"
+        ],
+        "predicted": "mali_hizmetler",
+        "ranked_top3": [
+          "mali_hizmetler",
+          "zabita",
+          "yazi_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4814.8
+    },
+    {
+      "id": "DB-094",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": "nufus",
+        "ranked_top3": [
+          "nufus",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4972.7
+    },
+    {
+      "id": "DB-095",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "yazi_isleri"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "zabita",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 6056.5
+    },
+    {
+      "id": "DB-096",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "milli_egitim"
+        ],
+        "predicted": null,
+        "ranked_top3": [
+          "saglik",
+          "milli_egitim",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": true,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5289.1
+    },
+    {
+      "id": "DB-097",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "fen_isleri"
+        ],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "park_bahce",
+          "yazi_isleri"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 7107.5
+    },
+    {
+      "id": "DB-098",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "tarim"
+        ],
+        "predicted": "tapu",
+        "ranked_top3": [
+          "tapu",
+          "yazi_isleri",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4367.4
+    },
+    {
+      "id": "DB-099",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "su_kanal"
+        ],
+        "predicted": "su_kanal",
+        "ranked_top3": [
+          "su_kanal",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4887.2
+    },
+    {
+      "id": "DB-100",
+      "bucket": "ambiguous_hard_negative",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": true,
+        "accepted_units": [
+          "sydv"
+        ],
+        "predicted": "sydv",
+        "ranked_top3": [
+          "sydv",
+          "yazi_isleri",
+          "nufus"
+        ],
+        "top1_correct": true,
+        "top3_correct": true,
+        "gold_review": false,
+        "predicted_review": false,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3944.1
+    },
+    {
+      "id": "DB-101",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "hukuk_isleri",
+          "zabita"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3706.8
+    },
+    {
+      "id": "DB-102",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3284.2
+    },
+    {
+      "id": "DB-103",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "zabita",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4170.5
+    },
+    {
+      "id": "DB-104",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3985.0
+    },
+    {
+      "id": "DB-105",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "zabita",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3757.7
+    },
+    {
+      "id": "DB-106",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4270.7
+    },
+    {
+      "id": "DB-107",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": "yazi_isleri",
+        "ranked_top3": [
+          "yazi_isleri",
+          "zabita",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5299.3
+    },
+    {
+      "id": "DB-108",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "document_date"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4509.2
+    },
+    {
+      "id": "DB-109",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [
+          "address",
+          "person_name",
+          "signature_present"
+        ],
+        "predicted": [
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": true,
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 2
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4711.3
+    },
+    {
+      "id": "DB-110",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "diger",
+        "correct": false,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "request"
+        ],
+        "predicted": [],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 1
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3602.4
+    },
+    {
+      "id": "DB-111",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "zabita",
+          "su_kanal",
+          "yazi_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "request",
+          "subject"
+        ],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 2
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3684.1
+    },
+    {
+      "id": "DB-112",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "nufus",
+          "sydv"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "address",
+          "person_name",
+          "signature_present"
+        ],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 3
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4231.5
+    },
+    {
+      "id": "DB-113",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": "imar_sehircilik",
+        "ranked_top3": [
+          "imar_sehircilik",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [
+          "parcel"
+        ],
+        "predicted": [
+          "parcel",
+          "person_name"
+        ],
+        "exact_match": false,
+        "any_missing_correct": true,
+        "true_positives": 1,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3444.0
+    },
+    {
+      "id": "DB-114",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [
+          "yazi_isleri",
+          "sydv",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "request"
+        ],
+        "predicted": [],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 1
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4347.6
+    },
+    {
+      "id": "DB-115",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": "fen_isleri",
+        "ranked_top3": [
+          "fen_isleri",
+          "yazi_isleri",
+          "zabita"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3752.8
+    },
+    {
+      "id": "DB-116",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "diger",
+        "correct": false,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "person_name",
+          "request",
+          "subject"
+        ],
+        "predicted": [],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 3
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4222.3
+    },
+    {
+      "id": "DB-117",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "diger",
+        "correct": false,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "person_name",
+          "request",
+          "signature_present",
+          "subject"
+        ],
+        "predicted": [],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 4
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 4421.4
+    },
+    {
+      "id": "DB-118",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": "sydv",
+        "ranked_top3": [
+          "sydv",
+          "yazi_isleri",
+          "nufus"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 3467.7
+    },
+    {
+      "id": "DB-119",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "belediye",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "dilekce",
+        "correct": true,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": "zabita",
+        "ranked_top3": [
+          "zabita",
+          "yazi_isleri",
+          "fen_isleri"
+        ],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": false,
+        "decision_correct": false
+      },
+      "missing_field": {
+        "gold": [],
+        "predicted": [
+          "phone"
+        ],
+        "exact_match": false,
+        "any_missing_correct": false,
+        "true_positives": 0,
+        "false_positives": 1,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 5177.6
+    },
+    {
+      "id": "DB-120",
+      "bucket": "out_of_scope_missing_review",
+      "institution": "kaymakamlik",
+      "status": "ok",
+      "document": {
+        "gold": "dilekce",
+        "predicted": "diger",
+        "correct": false,
+        "classification_mode": "llm"
+      },
+      "routing": {
+        "evaluable": false,
+        "accepted_units": [],
+        "predicted": null,
+        "ranked_top3": [],
+        "top1_correct": false,
+        "top3_correct": false,
+        "gold_review": true,
+        "predicted_review": true,
+        "decision_correct": true
+      },
+      "missing_field": {
+        "gold": [
+          "contested_action"
+        ],
+        "predicted": [
+          "contested_action"
+        ],
+        "exact_match": true,
+        "any_missing_correct": true,
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "llm": {
+        "provider": "evren",
+        "model": "llm-fast",
+        "attempted_calls": 2,
+        "successful_calls": 2,
+        "failed_calls": 0
+      },
+      "duration_ms": 2979.2
+    }
+  ]
+}

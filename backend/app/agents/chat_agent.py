@@ -11,7 +11,7 @@ from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Generator, TypedDict
+from typing import TYPE_CHECKING, Any, Callable, Generator, TypedDict
 
 class ChatDocumentContext(TypedDict, total=False):
     document: dict[str, Any]
@@ -23,6 +23,10 @@ class ChatDocumentContext(TypedDict, total=False):
     draft: dict[str, Any]
     quality: dict[str, Any]
     institution_id: str
+    priority: str | dict[str, Any] | None
+    priority_reason: str | None
+    zincir_id: str | None
+    ilgili_evrak_id: str | list[str] | None
 
 from rapidfuzz import fuzz
 
@@ -52,6 +56,11 @@ ROUTER_TIMEOUT_SANIYE = 8.0
 FALLBACK_MESAJI = (
     "Bu konuda genel sohbet yerine kamu evrakı, mevzuat, yönlendirme ve "
     "resmî yazışma süreçlerinde yardımcı olabilirim."
+)
+
+OUT_OF_DOMAIN_MESAJI = (
+    "Bu konuda size yardımcı olamıyorum. Kamu evrakı, mevzuat, yönlendirme "
+    "ve resmî yazışma süreçleriyle ilgili bir soru sorabilirsiniz."
 )
 
 KUCUK_SOHBET_GUVENLI_FALLBACK_MESAJI = (
@@ -187,6 +196,15 @@ _TASLAK_ISLEM_RE = re.compile(
     r"yerine\w*|yap|olsun)\b",
     flags=re.UNICODE,
 )
+
+_TASLAK_GERI_AL_RE = re.compile(
+    r"\b(?:az\s+önce|az\s+once|son\s+değişikli\w*|son\s+degisikli\w*|"
+    r"eklediğin|ekledigin|yaptığın|yaptigin)\b.*"
+    r"\b(?:geri\s+al\w*|sil\w*|çıkar\w*|cikar\w*|kaldır\w*|kaldir\w*)\b",
+    flags=re.UNICODE,
+)
+
+_ALINTILI_METIN_RE = re.compile(r"['\"]([^'\"]+)['\"]")
 
 _KULLANIM_SORUSU_RE = re.compile(
     r"\b(?:miyim|miyiz|mı|mi|mu|mü|nasıl|nasil|nedir|ne\s+demek|"
@@ -770,6 +788,12 @@ def is_taslak_duzenleme_talebi(message: str) -> bool:
     return True
 
 
+def _is_taslak_geri_alma_talebi(message: str) -> bool:
+    """Son sohbet düzenlemesini geri alan açık takip komutlarını tanır."""
+
+    return bool(_TASLAK_GERI_AL_RE.search(_normalize_text(message)))
+
+
 def is_kucuk_sohbet(message: str) -> bool:
     """Yalnızca kısa ve açık küçük sohbet kalıplarını deterministik seçer."""
 
@@ -796,6 +820,7 @@ def _draft_edit_result(
     updated_draft: dict[str, Any] | None = None,
     validation_errors: list[dict[str, Any]] | None = None,
     validation_warnings: list[dict[str, Any]] | None = None,
+    edit_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "status": status,
@@ -803,6 +828,7 @@ def _draft_edit_result(
         "updated_draft": updated_draft,
         "validation_errors": validation_errors or [],
         "validation_warnings": validation_warnings or [],
+        "edit_metadata": edit_metadata or {},
     }
 
 
@@ -964,6 +990,94 @@ def _build_draft_edit_user_prompt(
     )
 
 
+def _build_explicit_literal_edit(
+    message: str,
+    structured_draft: dict[str, Any],
+) -> tuple[str, dict[str, str]] | None:
+    """Açık hedef + tırnaklı metin ekleme/silme komutunu deterministik yamaya çevirir."""
+
+    literal_match = _ALINTILI_METIN_RE.search(str(message or ""))
+    if not literal_match:
+        return None
+    literal = literal_match.group(1).strip()
+    if not literal:
+        return None
+
+    normalized = _normalize_text(message)
+    if re.search(r"\bkonu\w*\b", normalized):
+        target_name, target_field = "konu", "subject"
+    elif re.search(r"\b(?:gövde\w*|govde\w*|metin\w*|paragraf\w*)\b", normalized):
+        target_name, target_field = "govde", "body"
+    else:
+        return None
+
+    current_text = str(structured_draft.get(target_field) or "").strip()
+    if not current_text:
+        return None
+
+    if re.search(r"\bekle\w*\b", normalized):
+        if literal.casefold() in current_text.casefold():
+            return (
+                f"{target_name.capitalize()} alanında istenen ifade zaten bulunuyor.",
+                None,
+            )
+        separator = " - " if target_field == "subject" else "\n"
+        new_text = f"{current_text}{separator}{literal}"
+        answer = f"{target_name.capitalize()} alanına '{literal}' ifadesi eklendi."
+    elif re.search(r"\b(?:sil\w*|çıkar\w*|cikar\w*|kaldır\w*|kaldir\w*)\b", normalized):
+        if literal not in current_text:
+            return None
+        new_text = current_text.replace(f" - {literal}", "", 1)
+        if new_text == current_text:
+            new_text = current_text.replace(literal, "", 1).strip(" -")
+        answer = f"{target_name.capitalize()} alanından '{literal}' ifadesi çıkarıldı."
+    else:
+        return None
+
+    return answer, {
+        "hedef_bolum": target_name,
+        "eski_metin": current_text,
+        "yeni_metin": new_text.strip(),
+    }
+
+
+def _build_persisted_undo_edit(
+    message: str,
+    structured_draft: dict[str, Any],
+    workflow_context: dict[str, Any],
+) -> tuple[str, dict[str, str]] | None:
+    """Son kalıcı sohbet düzenlemesini exact-patch olarak geri yükler."""
+
+    if not _is_taslak_geri_alma_talebi(message):
+        return None
+    analysis_state = workflow_context.get("analysis_state")
+    if not isinstance(analysis_state, dict):
+        return None
+    review = analysis_state.get("human_review")
+    if not isinstance(review, dict):
+        return None
+    last_edit = review.get("last_chat_draft_edit")
+    if not isinstance(last_edit, dict):
+        return None
+
+    target_field = str(last_edit.get("target_field") or "")
+    before = last_edit.get("before")
+    after = last_edit.get("after")
+    if target_field not in {"subject", "body"}:
+        return None
+    if not isinstance(before, str) or not isinstance(after, str):
+        return None
+    if str(structured_draft.get(target_field) or "") != after:
+        return None
+
+    target_name = "konu" if target_field == "subject" else "govde"
+    return "Son taslak değişikliği geri alındı.", {
+        "hedef_bolum": target_name,
+        "eski_metin": after,
+        "yeni_metin": before,
+    }
+
+
 def handle_draft_edit(
     message: str,
     current_draft: dict[str, Any],
@@ -991,29 +1105,48 @@ def handle_draft_edit(
     if not str(structured_draft.get("body") or "").strip():
         return _draft_edit_result("rejected", TASLAK_BULUNAMADI_MESAJI)
 
-    user_prompt = _build_draft_edit_user_prompt(message, current_draft)
-    try:
-        response = _get_evren_client().chat.completions.create(
-            model="llm-fast",
-            messages=[
-                {"role": "system", "content": TASLAK_DUZENLEME_SISTEM_PROMPTU},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0,
-            max_tokens=1200,
-            response_format={"type": "json_object"},
-            extra_body={"enable_thinking": False},
-            timeout=30.0,
-        )
-        raw_content = (response.choices[0].message.content or "").strip()
-        payload = json.loads(raw_content)
-    except Exception:
-        return _draft_edit_result(
-            "error",
-            TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI,
-        )
+    edit_operation = "edit"
+    validated_payload = _build_persisted_undo_edit(
+        message,
+        structured_draft,
+        workflow_context or {},
+    )
+    if _is_taslak_geri_alma_talebi(message):
+        if validated_payload is None:
+            return _draft_edit_result(
+                "rejected",
+                "Geri alınabilecek son bir taslak değişikliği bulunamadı. Mevcut taslak değiştirilmedi.",
+            )
+        edit_operation = "undo"
+    else:
+        validated_payload = _build_explicit_literal_edit(message, structured_draft)
+        if validated_payload is None:
+            user_prompt = _build_draft_edit_user_prompt(message, current_draft)
+            try:
+                response = _get_evren_client().chat.completions.create(
+                    model="llm-fast",
+                    messages=[
+                        {"role": "system", "content": TASLAK_DUZENLEME_SISTEM_PROMPTU},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0,
+                    max_tokens=1200,
+                    response_format={"type": "json_object"},
+                    extra_body={
+                        "enable_thinking": False,
+                        "chat_template_kwargs": {"enable_thinking": False},
+                    },
+                    timeout=30.0,
+                )
+                raw_content = (response.choices[0].message.content or "").strip()
+                payload = json.loads(raw_content)
+            except Exception:
+                return _draft_edit_result(
+                    "error",
+                    TASLAK_DUZENLEME_GUVENLI_FALLBACK_MESAJI,
+                )
+            validated_payload = _validate_evren_edit_payload(payload)
 
-    validated_payload = _validate_evren_edit_payload(payload)
     if validated_payload is None:
         return _draft_edit_result(
             "error",
@@ -1169,6 +1302,10 @@ def handle_draft_edit(
         sohbet_yaniti,
         updated_draft=candidate,
         validation_warnings=validation_warnings,
+        edit_metadata={
+            "operation": edit_operation,
+            "target_field": target_field,
+        },
     )
 
 
@@ -1187,7 +1324,8 @@ def is_active_document_question(message: str, history: list[dict] | None = None,
         return False
     return bool(re.search(
         r"\b(?:konu|özet|ozet|hakkında|hakkinda|eksik|belirsiz|risk|birim|yönlendir|yonlendir|gitmeli|"
-        r"mevzuat|kanun|personel|onay|taslak|önceliği|onceligi|sonraki|adım|adim)\w*",
+        r"mevzuat|kanun|personel|onay|taslak|öncelik|önceliğ|oncelik|oncelig|ilişkili|iliskili|zincir|"
+        r"ilgili\s+evrak|sonraki|adım|adim)\w*",
         normalized,
     ))
 
@@ -1348,6 +1486,46 @@ def handle_active_document_question(message: str, state: ChatDocumentContext, hi
             "kanıtlarını, yönlendirmeyi ve taslağı doğrulaması bekleniyor."
         )
 
+    if any(marker in normalized for marker in ("öncelik", "önceliğ", "oncelik", "oncelig")):
+        priority_value = state.get("priority")
+        priority_reason = state.get("priority_reason")
+        if isinstance(priority_value, dict):
+            priority_reason = priority_reason or priority_value.get("priority_reason")
+            priority_value = priority_value.get("priority")
+        if not priority_value:
+            document = state.get("document") if isinstance(state.get("document"), dict) else {}
+            priority_value = document.get("priority")
+            priority_reason = priority_reason or document.get("priority_reason")
+        if not priority_value:
+            return "Aktif evrakta kayıtlı öncelik bilgisi bulunmuyor."
+        labels = {"HIGH": "Yüksek", "MEDIUM": "Orta", "LOW": "Düşük"}
+        priority_text = str(priority_value)
+        answer = f"Evrakın önceliği: {labels.get(priority_text.upper(), priority_text)}."
+        if priority_reason:
+            answer += f" Gerekçe: {priority_reason}"
+        return answer
+
+    if (
+        "ilişkili" in normalized
+        or "iliskili" in normalized
+        or "ilgili evrak" in normalized
+        or "zincir" in normalized
+    ):
+        chain_id = str(state.get("zincir_id") or "").strip()
+        related_value = state.get("ilgili_evrak_id")
+        if isinstance(related_value, list):
+            related_ids = [str(item).strip() for item in related_value if str(item).strip()]
+        else:
+            related_ids = [str(related_value).strip()] if related_value else []
+        if not chain_id and not related_ids:
+            return "Aktif evrak için kayıtlı ilişkili evrak veya zincir bilgisi bulunmuyor."
+        parts = []
+        if chain_id:
+            parts.append(f"Evrak zinciri: {chain_id}.")
+        if related_ids:
+            parts.append("İlgili evrak: " + ", ".join(related_ids) + ".")
+        return " ".join(parts)
+
     short_summary = str(summary.get("short_summary") or "").strip()
     if short_summary:
         return short_summary
@@ -1428,7 +1606,7 @@ def classify_with_router(message: str) -> str:
 def resolve_chat_mode(message: str, history: list[dict] | None = None, has_active_document: bool = False) -> str:
     """Deterministik modları, SSS'yi ve son çare router'ı geçmişe de bakarak çözer."""
 
-    if is_taslak_duzenleme_talebi(message):
+    if is_taslak_duzenleme_talebi(message) or _is_taslak_geri_alma_talebi(message):
         return "taslak_duzenleme"
     normalized = _normalize_text(message)
     if re.search(r"\b(?:gelen kutu|bana gelen|uzerimdeki|üzerimdeki)\b", normalized):
@@ -1443,6 +1621,8 @@ def resolve_chat_mode(message: str, history: list[dict] | None = None, has_activ
         return "workflow_action"
     if re.search(r"\bdosya\b.*\b(?:neden bekliyor|ne durumda|durumu|hangi asama|hangi aşama)\b", normalized):
         return "case_query_state"
+    if is_mevzuat_sorusu(message):
+        return "mevzuat"
     if is_active_document_question(message, history, has_active_document):
         return "active_document"
     if is_institution_question(message):
@@ -1453,8 +1633,6 @@ def resolve_chat_mode(message: str, history: list[dict] | None = None, has_activ
         if bool(re.search(r"\b(?:hangi|madde|süre|sure|nedir)\b", normalized)):
             return "mevzuat"
 
-    if is_mevzuat_sorusu(message):
-        return "mevzuat"
     if is_kucuk_sohbet(message):
         return "kucuk_sohbet"
 
@@ -1588,7 +1766,7 @@ def handle_chat_message(
     valid_modes = {
         "taslak_duzenleme", "active_document", "institution", "mevzuat",
         "kucuk_sohbet", "kilavuz", "workflow_action", "clarification_action",
-        "inbox_query", "case_query_state"
+        "inbox_query", "case_query_state", "out_of_domain"
     }
     mode = resolved_mode if resolved_mode in valid_modes else resolve_chat_mode(message, history)
 
@@ -1622,7 +1800,11 @@ def handle_chat_message(
             "routing": state.get("routing", {}),
             "draft": state.get("draft", {}),
             "quality": state.get("quality", {}),
-            "institution_id": str(state.get("kurum_profili_id") or state.get("institution_id") or "")
+            "institution_id": str(state.get("kurum_profili_id") or state.get("institution_id") or ""),
+            "priority": state.get("priority"),
+            "priority_reason": state.get("priority_reason"),
+            "zincir_id": state.get("zincir_id"),
+            "ilgili_evrak_id": state.get("ilgili_evrak_id"),
         }
         
         has_any_analysis_content = any(
@@ -1657,7 +1839,10 @@ def handle_chat_message(
     if mode == "kucuk_sohbet":
         return handle_kucuk_sohbet(message)
     if mode == "out_of_domain":
-        return FALLBACK_MESAJI
+        # Streaming/API yolu modu onceden cozer; burada her zaman dolu ve
+        # aciklayici konu-disi yanit dondur. Dogrudan eski Mod A cagrilarinin
+        # yerlesik fallback sozlesmesini ise koru.
+        return OUT_OF_DOMAIN_MESAJI if resolved_mode == "out_of_domain" else FALLBACK_MESAJI
     return match_faq(message)
 
 
@@ -1703,6 +1888,7 @@ def stream_copilot_response(
     institution_id: str | None,
     current_draft: dict[str, Any] | None = None,
     user_context: dict[str, Any] | None = None,
+    persist_draft_update: Callable[[dict[str, Any], dict[str, Any] | None], None] | None = None,
 ) -> Generator[str, None, None]:
     """SSE Streaming Copilot."""
     import time
@@ -1738,10 +1924,19 @@ def stream_copilot_response(
     if mode in (
         "taslak_duzenleme", "active_document", "institution", "kucuk_sohbet",
         "kilavuz", "workflow_action", "clarification_action", "inbox_query",
-        "case_query_state"
+        "case_query_state", "out_of_domain"
     ):
         ans = handle_chat_message(message, current_draft, workflow_context, mode, filtered_history)
         text_ans = ans.get("sohbet_yaniti", "") if isinstance(ans, dict) else ans
+
+        if (
+            isinstance(ans, dict)
+            and mode == "taslak_duzenleme"
+            and ans.get("status") == "applied"
+            and isinstance(ans.get("updated_draft"), dict)
+            and persist_draft_update is not None
+        ):
+            persist_draft_update(ans["updated_draft"], ans.get("edit_metadata"))
 
         yield f"event: delta\ndata: {json.dumps({'text': text_ans}, ensure_ascii=False)}\n\n"
 
@@ -1833,6 +2028,7 @@ __all__ = [
     "KUCUK_SOHBET_YANIT_MAX_UZUNLUK",
     "MEVZUAT_KANIT_BULUNAMADI_MESAJI",
     "MEVZUAT_SERVIS_HATASI_MESAJI",
+    "OUT_OF_DOMAIN_MESAJI",
     "ROUTER_SISTEM_PROMPTU",
     "SSS_LISTESI",
     "TASLAK_BAGLAMI_GEREKLI_MESAJI",

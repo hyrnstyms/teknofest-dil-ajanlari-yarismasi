@@ -191,6 +191,21 @@ def render_cevap_yazisi(context: dict[str, Any]) -> str:
     return _normalize_official_layout(tmpl.render(**context))
 
 
+def render_eksik_bilgi_talebi(context: dict[str, Any]) -> str:
+    """Eksik bilgi talebini ortak resmî yazı yapısıyla render eder."""
+    if not context.get("eksik_alanlar"):
+        raise ValueError(
+            "Eksik bilgi talebinde 'eksik_alanlar' boş olamaz."
+        )
+    if "tamamlama_suresi_gun" not in context:
+        raise ValueError(
+            "Eksik bilgi talebinde 'tamamlama_suresi_gun' zorunludur; "
+            "doğrulanmış süre yoksa açık placeholder kullanılmalıdır."
+        )
+    tmpl = _ENV.get_template("eksik_bilgi_talebi.jinja2")
+    return _normalize_official_layout(tmpl.render(**context))
+
+
 def render_tekit_yazisi(context: dict[str, Any]) -> str:
     """
     tekit_yazisi.jinja2 şablonunu render eder ve düz metin döndürür.

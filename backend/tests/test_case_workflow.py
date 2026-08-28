@@ -552,6 +552,13 @@ def test_analysis_api_remains_compatible_and_can_add_case_link(monkeypatch):
             return {
                 "document": {"document_type": "dilekce"},
                 "human_review": {"required": True, "status": "pending_review"},
+                "draft": {
+                    "draft_type": "cevap_yazisi",
+                    "draft": {
+                        "subject": "Yol Onarım Talebi Hakkında",
+                        "body": "Başvurunuz değerlendirilmek üzere alınmıştır.",
+                    },
+                },
                 "routing": {
                     "recommended_unit": "Fen İşleri Müdürlüğü",
                     "recommended_department_code": "fen_isleri",
@@ -582,6 +589,30 @@ def test_analysis_api_remains_compatible_and_can_add_case_link(monkeypatch):
     assert aggregate.status_code == 200
     assert aggregate.json()["case"]["analysis_id"] == integrated.json()["analysis_id"]
     assert aggregate.json()["analysis"]["analysis_id"] == integrated.json()["analysis_id"]
+    assert aggregate.json()["drafts"] == []
+    assert aggregate.json()["analysis_preview_draft"] == {
+        "analysis_id": integrated.json()["analysis_id"],
+        "draft_type": "cevap_yazisi",
+        "subject": "Yol Onarım Talebi Hakkında",
+        "body": "Başvurunuz değerlendirilmek üzere alınmıştır.",
+        "recipient": None,
+        "recipient_kind": None,
+        "edited": False,
+    }
+
+    edited = client.post(
+        f"/api/analysis/{integrated.json()['analysis_id']}/edit",
+        headers=ayse,
+        json={"subject": "Düzenlenen Konu", "body": "Düzenlenen ön taslak."},
+    )
+    assert edited.status_code == 200
+    refreshed = client.get(
+        f"/api/cases/{integrated.json()['case_id']}", headers=ayse
+    ).json()
+    assert refreshed["drafts"] == []
+    assert refreshed["analysis_preview_draft"]["subject"] == "Düzenlenen Konu"
+    assert refreshed["analysis_preview_draft"]["body"] == "Düzenlenen ön taslak."
+    assert refreshed["analysis_preview_draft"]["edited"] is True
 
 
 def test_yazi_isleri_to_fen_isleri_e2e():

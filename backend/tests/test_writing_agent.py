@@ -59,6 +59,16 @@ def test_happy_path_citizen_petition(agent, mock_llm):
     assert mock_llm.chat.call_count == 1
 
 
+def test_db017_document_request_intent_creates_response_draft(agent):
+    ctx = _base_context()
+    ctx["process_intent"] = "belge_talebi"
+
+    res = agent.draft(context=ctx)
+
+    assert res["draft_type"] == "cevap_yazisi"
+    assert res["draft_generation_mode"] == "llm"
+
+
 def test_institution_forwarding(agent):
     # 2. institution forwarding -> ust_yazi
     ctx = _base_context()
@@ -78,9 +88,13 @@ def test_information_notification(agent):
 def test_missing_critical_required_fact(agent):
     # 4. missing critical required fact -> eksik_bilgi_talebi
     ctx = _base_context()
-    ctx["missing_fields"] = ["signature"]
+    ctx["missing_fields"] = ["signature_present"]
     res = agent.draft(context=ctx)
     assert res["draft_type"] == "eksik_bilgi_talebi"
+    assert res["official_render"]["attempted"] is True
+    assert res["official_render"]["success"] is True
+    assert "İmza" in res["official_rendered_text"]
+    assert "[SÜRE] gün içinde tamamlayınız" in res["official_rendered_text"]
 
 
 def test_uncertain_signature_only(agent):

@@ -12,6 +12,7 @@ try:
     from backend.app.official_writing.template_renderer import (
         render_ust_yazi,
         render_cevap_yazisi,
+        render_eksik_bilgi_talebi,
     )
     from backend.app.official_writing.context_adapter import build_official_writing_context
     _OFFICIAL_RENDERER_AVAILABLE = True
@@ -470,6 +471,12 @@ class WritingAgent:
             validated_rules
         )
 
+        render_state = dict(state or {})
+        render_state.setdefault(
+            "missing_fields",
+            {"missing_fields": list(c_missing_fields)},
+        )
+
         return {
             "draft_type": (
                 draft_type
@@ -496,7 +503,7 @@ class WritingAgent:
             # Official Writing format renderer denemesi.
             # Başarılı olursa ek alan olarak eklenir; mevcut rendered_text
             # fallback olarak korunur ve API contract bozulmaz.
-            **self._try_official_render(draft, draft_type, state),
+            **self._try_official_render(draft, draft_type, render_state),
 
             "process_explanation": (
                 process_explanation
@@ -601,9 +608,11 @@ class WritingAgent:
         ]
         
         # Eğer muhatap belli değilse cevap yazısı / üst yazı tehlikeli
+        # NOT: Artık person_name her zaman zorunlu olmadığı için, muhatabın belli olmaması
+        # taslağı tamamen bloke etmemelidir. Bunun yerine [MUHATAP] placeholder'ı kullanılacaktır.
         if not recipient and process_intent in ["basvuru", "sikayet", "itiraz", "bilgi_talebi"]:
             if "recipient" not in missing_fields and "recipient" not in critical_uncertain:
-                critical_uncertain.append("recipient")
+                pass # critical_uncertain.append("recipient") iptal edildi.
                 
         if critical_uncertain:
             return {
@@ -625,6 +634,7 @@ class WritingAgent:
         # 3) process_intent üzerinden karar
         intent_map = {
             "basvuru": "cevap_yazisi",
+            "belge_talebi": "cevap_yazisi",
             "sikayet": "cevap_yazisi",
             "itiraz": "cevap_yazisi",
             "bilgi_talebi": "cevap_yazisi",
@@ -1568,7 +1578,7 @@ subject ve body alanlarını eksiksiz üret.
             result["official_render_warning"] = "Official renderer modülü yüklenemedi."
             return result
 
-        if draft_type in ("eksik_bilgi_talebi", "diger"):
+        if draft_type == "diger":
             # Bu türler için template motoru kullanılmaz.
             return result
 
@@ -1598,6 +1608,9 @@ subject ve body alanlarını eksiksiz üret.
             elif draft_type == "cevap_yazisi":
                 rendered = render_cevap_yazisi(context)
                 result["official_render"]["template"] = "cevap_yazisi.jinja2"
+            elif draft_type == "eksik_bilgi_talebi":
+                rendered = render_eksik_bilgi_talebi(context)
+                result["official_render"]["template"] = "eksik_bilgi_talebi.jinja2"
 
             if rendered:
                 result["official_rendered_text"] = rendered

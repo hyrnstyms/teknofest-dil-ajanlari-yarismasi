@@ -11,8 +11,10 @@ from backend.app.official_writing.context_adapter import (
     PLACEHOLDER_IMZA_AD_SOYAD,
     PLACEHOLDER_IMZA_UNVAN,
     PLACEHOLDER_SAYI,
+    PLACEHOLDER_SURE,
     build_official_writing_context,
 )
+from backend.app.official_writing.format_validator import validate_format
 from backend.app.institutions.profile_loader import InstitutionProfile
 
 
@@ -128,11 +130,22 @@ def test_context_adapter_unknown_routing_unit():
     assert "Sender unit 'bilinmeyen_bir_id' kurum profilinde bulunamadı." in res["warnings"]
 
 def test_context_adapter_eksik_bilgi_talebi(writing_agent):
-    # Kural 7: eksik_bilgi_talebi -> template motoru zorlanmıyor
-    # _try_official_render method returns early
-    res = writing_agent._try_official_render(mock_draft(), "eksik_bilgi_talebi", mock_state())
-    
-    assert res["official_render"]["attempted"] is False
+    state = mock_state()
+    state["missing_fields"] = {
+        "missing_fields": ["address", "signature_present"],
+    }
+
+    res = writing_agent._try_official_render(
+        mock_draft(), "eksik_bilgi_talebi", state
+    )
+
+    assert res["official_render"]["attempted"] is True
+    assert res["official_render"]["success"] is True
+    assert res["official_render"]["template"] == "eksik_bilgi_talebi.jinja2"
+    assert res["official_render"]["context"]["tamamlama_suresi_gun"] == PLACEHOLDER_SURE
+    assert "Açık adres" in res["official_rendered_text"]
+    assert "İmza" in res["official_rendered_text"]
+    assert "[SÜRE] gün içinde tamamlayınız" in res["official_rendered_text"]
 
 def test_context_adapter_renderer_error_fallback(writing_agent, monkeypatch):
     # Kural 8: renderer hata -> mevcut rendered_text korunur
@@ -163,6 +176,33 @@ def test_context_adapter_source_map():
     assert "extraction.fields.subject.value" in sm["konu"]
     assert "draft.body" in sm["metin_paragraflari"]
     assert "institution_profile.birimler" in sm["tc_baslik.birim_adi"]
+
+
+def test_context_adapter_db031_normalizes_trailing_subject_punctuation():
+    state = mock_state()
+    state["extraction"]["fields"]["subject"] = {
+        "value": "Kırsal bağlantı yolunun çamurlaşması.",
+        "validated": True,
+    }
+    state["routing"]["recommended_unit"] = "yazi_isleri"
+
+    adapter_result = build_official_writing_context(
+        mock_draft(), state, "cevap_yazisi"
+    )
+    validation_result = validate_format(
+        taslak=adapter_result["context"],
+        yazi_turu="cevap_yazisi",
+        missing_fields=adapter_result["missing_required_fields"],
+    )
+
+    assert adapter_result["context"]["konu"] == (
+        "Kırsal bağlantı yolunun çamurlaşması"
+    )
+    assert validation_result.gecerli is True
+    assert all(
+        error.kural_kodu != "KONU_FORMAT"
+        for error in validation_result.hatalar
+    )
 
 def test_try_official_render_uses_placeholders_for_missing_metadata(writing_agent):
     # Eksik EBYS/imza metadata'sı açık placeholder ile render edilir.

@@ -74,7 +74,12 @@ birimler:
       - "muhtaçlık"
       - "burs"
       - "engelli maaşı"
+      - "kira yardımı"
+      - "gıda desteği"
       - "gıda yardımı"
+    baglamsal_dislamalar:
+      - kelime: "gıda"
+        varsa_disla: ["denetim", "zehirlenme"]
     supported_intents:
       - "basvuru"
       - "bilgi_talebi"
@@ -89,6 +94,9 @@ birimler:
       - "eğitim"
       - "nakil"
       - "öğrenci belgesi"
+    baglamsal_dislamalar:
+      - kelime: "eğitim"
+        varsa_disla: ["yardım", "destek", "burs"]
     supported_intents:
       - "basvuru"
       - "bilgi_talebi"
@@ -182,8 +190,6 @@ evrak_turleri:
     aciklama: "3071 sayılı Kanun kapsamında genel talep/şikayet dilekçesi"
     yasal_dayanak: "3071 sayılı Dilekçe Hakkının Kullanılmasına Dair Kanun"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - subject
       - request
@@ -197,8 +203,6 @@ evrak_turleri:
     aciklama: "4982 sayılı Kanun kapsamında bilgi/belge talebi"
     yasal_dayanak: "4982 sayılı Bilgi Edinme Hakkı Kanunu"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - request
     tipik_hedef_birim:
@@ -225,8 +229,6 @@ evrak_turleri:
     aciklama: "Kamu ihalesine ilişkin itiraz başvurusu"
     yasal_dayanak: "Kamu İhale Mevzuatı"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - subject
       - request
@@ -240,8 +242,6 @@ evrak_turleri:
     aciklama: "Maddi destek / muhtaçlık başvurusu"
     yasal_dayanak: "SYDV mevzuatı"
     required_fields:
-      - person_name
-      - address
       - signature_present
       - phone
       - request
@@ -253,7 +253,6 @@ evrak_turleri:
     aciklama: "Taşınmaz işlemlerine ilişkin başvuru"
     yasal_dayanak: "Tapu Kanunu"
     required_fields:
-      - person_name
       - signature_present
       - request
     tipik_hedef_birim:
