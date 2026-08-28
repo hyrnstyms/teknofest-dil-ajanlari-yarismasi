@@ -447,7 +447,7 @@ class DemoScenarioService:
             generated = generate_official_response_after_action(engine=self.engine, user=worker, case_id=created["id"], action_result=action)
             aggregate = self.engine.get_case_aggregate(worker, created["id"])
             draft = aggregate["drafts"][-1]
-            edited_body = draft["content"]["body"] + "\n\nBaşvurunuzun mevcut durumu hakkında işbu yazı ile bilgi verilmiştir."
+            edited_body = draft["content"]["body"]
             edited = self.engine.save_draft(worker, created["id"], draft_type="OFFICIAL_RESPONSE", content={**draft["content"], "body": edited_body}, grounded_action_id=draft["grounded_action_id"], expected_version=aggregate["case"]["version"], confirmed=True)
             approved = self.engine.approve_draft(worker, created["id"], edited["draft"]["id"], edited["case"]["version"], True)
             if spec.get("stage") == "completed":

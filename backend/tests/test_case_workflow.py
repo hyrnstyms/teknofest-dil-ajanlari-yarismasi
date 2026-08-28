@@ -329,11 +329,15 @@ def test_department_start_and_action_are_human_authorized():
     assert official["content"]["recipient"] == aggregate["case"]["originator_name"]
     edited = client.post(
         f"/api/cases/{case['id']}/drafts", headers=mehmet,
-        json={"draft_type": "OFFICIAL_RESPONSE", "content": {**official["content"], "subject": "Personel DÃ¼zeltmesi"}, "grounded_action_id": official["grounded_action_id"], "expected_version": aggregate["case"]["version"], "confirmed": True},
+        json={"draft_type": "OFFICIAL_RESPONSE", "content": {**official["content"], "subject": "Personel Düzeltmesi çğıöşü ÇĞİÖŞÜ", "body": "Personel kontrolü sonucunda güncel değerlendirme bu cümleyle kayda alınmıştır."}, "grounded_action_id": official["grounded_action_id"], "expected_version": aggregate["case"]["version"], "confirmed": True},
     )
     assert edited.status_code == 200, edited.text
     assert edited.json()["draft"]["status"] == "EDITED"
     assert edited.json()["draft"]["revision"] == 2
+    assert edited.json()["draft"]["content"]["subject"] == "Personel Düzeltmesi çğıöşü ÇĞİÖŞÜ"
+    assert edited.json()["draft"]["content"]["body"] == "Personel kontrolü sonucunda güncel değerlendirme bu cümleyle kayda alınmıştır."
+    persisted = client.get(f"/api/cases/{case['id']}", headers=mehmet).json()["drafts"][-1]
+    assert persisted["content"]["body"] == edited.json()["draft"]["content"]["body"]
     approved = client.post(
         f"/api/cases/{case['id']}/drafts/{edited.json()['draft']['id']}/approve",
         headers=mehmet,

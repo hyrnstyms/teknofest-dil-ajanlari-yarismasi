@@ -19,7 +19,10 @@ export function OfficialWritingWorkspace({ item, token, onRefresh, onNotice }: {
   const selected = drafts.find((draft) => draft.id === selectedId);
   const [form, setForm] = useState({ subject: "", recipient: "", body: "" });
   useEffect(() => { if (selected) setForm({ subject: selected.subject, recipient: selected.recipient || "", body: selected.body }); }, [selected]);
-  const canEdit = Boolean(selected && selected.draft_status !== "APPROVED" && item.permissions.includes("SAVE_DRAFT"));
+  const latestForType = selected ? drafts.filter((draft) => draft.draft_type === selected.draft_type).sort((left, right) => (left.revision || 1) - (right.revision || 1)).at(-1) : undefined;
+  const isArchived = Boolean(selected && latestForType && selected.id !== latestForType.id);
+  const latestApproved = selected ? drafts.filter((draft) => draft.draft_type === selected.draft_type && draft.draft_status === "APPROVED").sort((left, right) => (left.revision || 1) - (right.revision || 1)).at(-1) : undefined;
+  const canEdit = Boolean(selected && !isArchived && selected.draft_status !== "APPROVED" && item.permissions.includes("SAVE_DRAFT"));
 
   async function action(name: string, operation: () => Promise<unknown>, message: string, selectCreated = false) {
     setBusy(name);
@@ -53,14 +56,17 @@ export function OfficialWritingWorkspace({ item, token, onRefresh, onNotice }: {
         <div className="draft-action-toolbar">
           <div><strong>{typeLabels[selected.draft_type]}</strong><span className={`draft-status ${selected.draft_status === "APPROVED" ? "approved" : ""}`}>{statusLabels[selected.draft_status]} · v{selected.revision || 1}</span></div>
           <div className="draft-actions">
-            {selected.draft_status === "APPROVED" ? <>
+            {isArchived ? <>
+              <span className="archived-draft-notice">Bu sürüm arşivlenmiş bir taslaktır.</span>
+              {latestApproved && item.permissions.includes("SAVE_DRAFT") && <button className="btn btn-primary" disabled={Boolean(busy)} onClick={() => void action("revise", () => caseApi.reviseDraft(token, item, latestApproved.id), "Güncel onaylı sürüm korunarak yeni taslak revizyon oluşturuldu.", true)}><FilePenLine size={16}/> Yeni Revizyon Oluştur</button>}
+            </> : selected.draft_status === "APPROVED" ? <>
               {item.permissions.includes("SAVE_DRAFT") && <button className="btn btn-primary" disabled={Boolean(busy)} onClick={() => void action("revise", () => caseApi.reviseDraft(token, item, selected.id), "Onaylı sürüm korunarak düzenlenebilir yeni revizyon oluşturuldu.", true)}><FilePenLine size={16}/> Yeni Revizyon Oluştur</button>}
               <button className="btn btn-secondary" disabled={Boolean(busy)} onClick={() => void caseDownload(`/api/cases/${item.id}/drafts/${selected.id}/export/docx`, token, `${item.tracking_code}.docx`)}><Download size={16}/> DOCX İndir</button>
               <button className="btn btn-secondary" disabled={Boolean(busy)} onClick={() => void caseDownload(`/api/cases/${item.id}/drafts/${selected.id}/export/pdf`, token, `${item.tracking_code}.pdf`)}><Download size={16}/> PDF İndir</button>
             </> : <>
-              {canEdit && <button className="btn btn-secondary" onClick={() => setEditing(true)}><FilePenLine size={16}/> Düzenle</button>}
+              {canEdit && <button className="btn btn-primary" onClick={() => setEditing(true)}><FilePenLine size={16}/> Düzenle</button>}
               {selected.draft_type === "OFFICIAL_RESPONSE" && item.department_actions.length > 0 && <button className="btn btn-secondary" disabled={Boolean(busy)} onClick={() => void action("regen", () => caseApi.regenerateDraft(token, item), "Yeni AI taslak sürümü oluşturuldu.")}><RefreshCw size={16}/> Yeniden Oluştur</button>}
-              {item.permissions.includes("APPROVE_DRAFT") && <button className="btn btn-primary" disabled={Boolean(busy)} onClick={() => void action("approve", () => caseApi.approveDraft(token, item, selected.id), "Resmî yazı personel tarafından onaylandı.")}><CheckCircle2 size={16}/> Onayla</button>}
+              {item.permissions.includes("APPROVE_DRAFT") && <button className="btn btn-success" disabled={Boolean(busy)} onClick={() => void action("approve", () => caseApi.approveDraft(token, item, selected.id), "Resmî yazı personel tarafından onaylandı.")}><CheckCircle2 size={16}/> Onayla</button>}
             </>}
           </div>
         </div>
@@ -74,5 +80,5 @@ export function OfficialWritingWorkspace({ item, token, onRefresh, onNotice }: {
 }
 
 export function OfficialDocumentPreview({ item, draft }: { item: CaseRecord; draft: CaseDraft }) {
-  return <article className="case-a4 official-document-preview"><header><strong>T.C.</strong><strong>{item.institution_id === "belediye" ? "BELEDİYE BAŞKANLIĞI" : "KAYMAKAMLIK"}</strong><span>{draft.sender_unit || item.current_department_name}</span></header><div className="document-number-date"><span><b>Belge Referansı:</b> {item.tracking_code}</span><span><b>Tarih:</b> {new Date(draft.updated_at || item.updated_at).toLocaleDateString("tr-TR")}</span></div><p><b>Konu:</b> {draft.subject}</p><p><b>Muhatap:</b> {draft.recipient || item.originator_name || "Muhatap belirtilmedi"}</p>{draft.body.split("\n").filter(Boolean).map((line, index) => <p className="official-body-paragraph" key={index}>{line}</p>)}<div className="document-signature"><b>Yetkili Personel</b><span>{draft.sender_unit || item.current_department_name}</span><small>Elektronik onay kaydı</small></div><div className="case-qr"><QrCode/><small>{item.tracking_code}<br/>EVRAG doğrulama kaydı</small></div></article>;
+  return <article className="case-a4 official-document-preview"><header><strong>T.C.</strong><strong>{item.institution_id === "belediye" ? "BELEDİYE BAŞKANLIĞI" : "KAYMAKAMLIK"}</strong><span>{draft.sender_unit || item.current_department_name}</span></header><div className="document-number-date"><span><b>Belge Referansı:</b> {item.tracking_code}</span><span><b>Tarih:</b> {new Date(draft.updated_at || item.updated_at).toLocaleDateString("tr-TR")}</span></div><p><b>Konu:</b> {draft.subject}</p><p><b>Muhatap:</b> {draft.recipient || item.originator_name || "Muhatap belirtilmedi"}</p>{draft.body.split("\n").filter(Boolean).map((line, index) => <p className="official-body-paragraph" key={index}>{line}</p>)}<footer className="official-document-footer"><div className="document-signature"><b>Yetkili Personel</b><span>{draft.sender_unit || item.current_department_name}</span><small>Elektronik onay kaydı</small></div><div className="document-verification"><div className="case-qr" aria-label="Belge QR doğrulama kodu"><QrCode/></div><div className="verification-info"><b>{item.tracking_code}</b><span>EVRAG doğrulama kaydı</span><small>Belge referansı ile güvenli doğrulama</small></div></div></footer></article>;
 }
