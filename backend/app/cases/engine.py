@@ -1462,6 +1462,18 @@ class CaseEngine:
             self._transition(session, case, STATUS_CLOSED, EVENT_CASE_CLOSED, user)
             return self.serialize_case(case)
 
+    def issue_citizen_access(self, user: CurrentUser, case_id: str) -> dict[str, str]:
+        """Issue a fresh public link without exposing its token in the Case DTO."""
+        raw_token = secrets.token_urlsafe(32)
+        with self.session_factory.begin() as session:
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            case.citizen_token_hash = hash_citizen_token(raw_token)
+            case.updated_at = _now()
+            return {
+                "tracking_code": case.tracking_code,
+                "citizen_url": f"/takip/{case.tracking_code}?token={raw_token}",
+            }
+
     def public_projection(self, tracking_code: str, token: str) -> dict[str, Any]:
         with self.session_factory() as session:
             case = session.scalar(
@@ -1508,7 +1520,7 @@ class CaseEngine:
                 clarification = {
                     "requested_fields": pending.requested_fields or [],
                     "question": pending.question,
-                    "question_type": pending.question_type,
+                    "question_type": "choice" if pending.question_type in {"choice", "single_choice"} else "free_text",
                     "options": options,
                 }
             return {

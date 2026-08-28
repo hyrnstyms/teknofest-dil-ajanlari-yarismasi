@@ -64,3 +64,29 @@ def test_approved_case_draft_renders_docx_pdf_and_qr():
     pdf = render_case_pdf(context, "EVR-TEST-001").getvalue()
     assert docx.startswith(b"PK")
     assert pdf.startswith(b"%PDF")
+
+def test_citizen_example_is_explicit_allowlisted_post_with_real_demo_token():
+    response = client.post("/api/demo/citizen-examples/yol_onarim")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["scenario_key"] == "yol_onarim"
+    assert "demo-token" not in payload["citizen_url"]
+    tracking, token = payload["citizen_url"].split("/takip/", 1)[1].split("?token=", 1)
+    assert client.get(f"/api/public/cases/{tracking}", params={"token": token}).status_code == 200
+    assert client.post("/api/demo/citizen-examples/dis_kurum_afet").status_code == 404
+
+
+def test_yol_demo_persists_verified_indexed_legal_evidence_and_late_states():
+    ayse = login("ayse_kaya")
+    early = client.post("/api/demo/scenarios/yol_onarim/prepare", headers=ayse).json()
+    aggregate = client.get(f"/api/cases/{early['case']['id']}", headers=ayse).json()
+    legal = aggregate["analysis"]["legal_analysis"]
+    assert legal["verified"] is True
+    assert legal["sources"][0]["law_number"] == "2709"
+    assert legal["sources"][0]["madde_no"] == "127"
+    assert legal["sources"][0]["trusted_source"] is True
+    assert "2709 sayılı Türkiye Cumhuriyeti Anayasası, Madde 127" in aggregate["analysis"]["routing"]["evidence"]
+    late = client.post("/api/demo/scenarios/yol_onarim_yedek/prepare", headers=ayse).json()
+    completed = client.post("/api/demo/scenarios/tamamlanmis_dosya/prepare", headers=ayse).json()
+    assert late["case"]["workflow_status"] == "WAITING_FINAL_APPROVAL"
+    assert completed["case"]["workflow_status"] == "COMPLETED"

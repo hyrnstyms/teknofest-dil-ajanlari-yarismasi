@@ -87,14 +87,20 @@ def _verified_action(action: Any) -> dict[str, Any] | None:
     return payload
 
 
-def _grounded_official_body(action: dict[str, Any]) -> str:
-    result = str(action.get("result") or "").strip()
-    decision = str(action.get("decision") or "").strip()
-    sentences = [part for part in (result, decision) if part]
-    body = " ".join(sentences)
-    if not body.endswith("."):
-        body += "."
-    return body
+def _grounded_official_body(action: dict[str, Any], summary: dict[str, Any] | None = None) -> str:
+    result = str(action.get("result") or "").strip().rstrip(".")
+    decision = str(action.get("decision") or "").strip().rstrip(".")
+    subject = str((summary or {}).get("short_summary") or (summary or {}).get("structured_summary", {}).get("request") or "başvuruda belirtilen husus").strip().rstrip(".")
+    return (
+        f"İlgi başvurunuzda {subject[:320].lower()} hakkında inceleme yapılması talep edilmiştir. "
+        "Başvurunuz kurum kayıtlarına alınarak görevli birimin değerlendirmesine sunulmuştur.\n\n"
+        "Başvuru kapsamında ilgili birimimizce yapılan incelemede "
+        f"{result}. Bu tespit, yalnızca yetkili personel tarafından kayıt altına alınan işlem sonucuna dayanmaktadır.\n\n"
+        "Yapılan değerlendirme sonucunda "
+        f"{decision}. Belirtilen karar, başvurunun kurum kayıtlarındaki mevcut işlem aşamasını ifade etmektedir.\n\n"
+        "Başvurunuzun mevcut durumu ve ilgili birim tarafından gerçekleştirilen işlem hakkında işbu yazı ile bilgi verilmiştir. "
+        "Bilgilerinize sunulur."
+    )
 
 
 def _missing_request_body(clarification: dict[str, Any], missing_fields: dict[str, Any]) -> str:
@@ -186,7 +192,7 @@ class CaseWritingService:
             
         recipient = _originator_recipient(originator, extraction or {})
         recipient_kind = _recipient_kind(originator)
-        body = _grounded_official_body(action)
+        body = _grounded_official_body(action, summary)
         
         doc = document or {}
         context = WritingContext(

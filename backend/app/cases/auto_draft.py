@@ -21,6 +21,8 @@ def generate_official_response_after_action(*, engine: Any, user: CurrentUser, c
             originator={"originator_type": case.get("originator_type"), "originator_name": case.get("originator_name")},
             routing=analysis.get("routing") or {},
             summary=analysis.get("summary") or {},
+            extraction=analysis.get("extraction") or {},
+            legal_analysis=analysis.get("legal_analysis") or {},
             document={"document_type": analysis.get("document_type") or "dilekce", "process_intent": analysis.get("process_intent") or "basvuru"},
             case_id=case_id,
             institution_id=case.get("institution_id") or "belediye",

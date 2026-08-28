@@ -708,3 +708,20 @@ def test_timeline_after_route():
     assert routed["payload"]["from_department"] == "yazi_isleri"
     assert routed["payload"]["to_department"] == "fen_isleri"
     assert any(event["event_type"] == "TASK_CREATED" for event in timeline)
+
+def test_staff_issued_citizen_link_opens_only_the_scoped_case():
+    ayse = _login("ayse_kaya")
+    first = _create_case(ayse, name="Bağlantı Sahibi")
+    second = _create_case(ayse, name="Diğer Vatandaş")
+
+    issued = client.post(f"/api/cases/{first['id']}/citizen-access", headers=ayse)
+    assert issued.status_code == 200
+    payload = issued.json()
+    assert payload["tracking_code"] == first["tracking_code"]
+    assert "demo-token" not in payload["citizen_url"]
+    token = payload["citizen_url"].split("token=", 1)[1]
+
+    public = client.get(f"/api/public/cases/{first['tracking_code']}", params={"token": token})
+    assert public.status_code == 200
+    assert public.json()["tracking_code"] == first["tracking_code"]
+    assert client.get(f"/api/public/cases/{second['tracking_code']}", params={"token": token}).status_code == 404
