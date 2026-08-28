@@ -18,7 +18,7 @@ export function formatDisplayName(value?: string | null): string {
     L.DOCUMENT_TYPE_LABELS, L.DOCUMENT_SUBTYPE_LABELS, L.PROCESS_INTENT_LABELS,
     L.DRAFT_TYPE_LABELS, L.FIELD_LABELS, L.PRIORITY_LABELS, L.REVIEW_STATUS_LABELS,
     L.QUALITY_STATUS_LABELS, L.INSTITUTION_LABELS, L.GENERATION_MODE_LABELS,
-    L.CLASSIFICATION_MODE_LABELS, L.EVIDENCE_MODE_LABELS
+    L.CLASSIFICATION_MODE_LABELS, L.EVIDENCE_MODE_LABELS, L.CASE_STATUS_LABELS, L.SOURCE_TYPE_LABELS, L.CHANNEL_LABELS, L.DRAFT_STATUS_LABELS, L.CANONICAL_DRAFT_TYPE_LABELS
   ];
   
   for (const reg of allRegistries) {
@@ -44,6 +44,11 @@ export function formatDraftType(value?: string | null): string {
   return getLabel(value, L.DRAFT_TYPE_LABELS);
 }
 
+export const formatCaseStatus = (value?: string | null) => getLabel(value, L.CASE_STATUS_LABELS);
+export const formatSourceType = (value?: string | null) => getLabel(value, L.SOURCE_TYPE_LABELS);
+export const formatChannel = (value?: string | null) => getLabel(value, L.CHANNEL_LABELS);
+export const formatDraftStatus = (value?: string | null) => getLabel(value, L.DRAFT_STATUS_LABELS);
+
 export function formatFieldName(value?: string | null): string {
   return getLabel(value, L.FIELD_LABELS);
 }
@@ -62,6 +67,16 @@ export function formatInstitution(value?: string | null): string {
 
 export function formatQualityStatus(value?: string | null): string {
   return getLabel(value, L.QUALITY_STATUS_LABELS);
+}
+
+export function formatLegalSource(source: unknown): { title: string; citation: string; article?: string; excerpt?: string; url?: string; relationship?: string } {
+  if (typeof source === "string") return { title: source, citation: source };
+  if (!source || typeof source !== "object") return { title: "Doğrulanmış kaynak", citation: "Doğrulanmış kaynak" };
+  const row = source as Record<string, unknown>;
+  const title = String(row.title || row.source || "Doğrulanmış mevzuat kaynağı");
+  const law = String(row.law_number || "").trim();
+  const article = String(row.madde_no || row.article || "").trim() || undefined;
+  return { title, citation: law ? `${law} sayılı ${title}` : title, article, excerpt: String(row.text || row.evidence || "").trim() || undefined, url: String(row.url || "").trim() || undefined, relationship: String(row.relationship || "").trim() || undefined };
 }
 
 export function humanizeFilename(filename?: string | null): { title: string; extension?: string; original?: string } {

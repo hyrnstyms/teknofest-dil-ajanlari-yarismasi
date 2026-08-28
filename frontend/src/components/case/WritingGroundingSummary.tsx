@@ -1,6 +1,7 @@
 import React from "react";
 import { FileCheck2, ShieldCheck } from "lucide-react";
 import type { CaseRecord } from "../../types/case";
+import { formatDraftStatus, formatDraftType } from "../../utils/presentation";
 
 const draftLabels: Record<string, string> = {
   MISSING_INFORMATION_REQUEST: "Eksik bilgi talebi",
@@ -23,13 +24,13 @@ export function WritingGroundingSummary({ item }: { item: CaseRecord }) {
         ? "İnsan tarafından onaylanan kurumsal havale"
         : "Dosya analizi ve insan kontrolü";
   return <section className="case-panel writing-grounding">
-    <header><div><span className="eyebrow">BU TASLAK NEDEN ÜRETİLDİ?</span><h2>{draftLabels[draft.draft_type] || draft.draft_type}</h2></div><ShieldCheck/></header>
+    <header><div><span className="eyebrow">BU TASLAK NEDEN ÜRETİLDİ?</span><h2>{formatDraftType(draft.draft_type)}</h2></div><ShieldCheck/></header>
     <div className="grounding-facts">
       <span><small>Konu</small><strong>{draft.subject}</strong></span>
       <span><small>Muhatap</small><strong>{recipientKind}</strong></span>
       <span><small>Alıcı</small><strong>{draft.recipient || "Alıcı henüz belirlenmedi"}</strong></span>
       <span><small>Üretim nedeni / dayanak</small><strong>{grounding}</strong></span>
-      <span><small>Durum</small><strong>{draft.draft_status}</strong></span>
+      <span><small>Durum</small><strong>{formatDraftStatus(draft.draft_status)}</strong></span>
     </div>
     <p>Kaynak dosya: <b>{item.tracking_code}</b> · Kaynak: <b>{item.originator_name}</b>. Gönderim öncesinde insan onayı zorunludur.</p>
   </section>;

@@ -113,6 +113,17 @@ export const EVIDENCE_MODE_LABELS: Record<string, string> = {
   llm: "Yapay Zekâ Destekli",
 };
 
+export const CASE_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: "Alındı", ANALYZING: "AI Analizi Yapılıyor", WAITING_INITIAL_REVIEW: "İlk İnceleme Bekliyor",
+  WAITING_CITIZEN_INFO: "Vatandaştan Bilgi Bekleniyor", READY_TO_ROUTE: "Yönlendirme Onayı Bekliyor",
+  IN_DEPARTMENT: "Birime Atandı", IN_PROGRESS: "İşlemde", RESPONSE_DRAFTED: "Cevap Taslağı Hazır",
+  WAITING_FINAL_APPROVAL: "Cevap Onayı Bekleniyor", COMPLETED: "Tamamlandı", CLOSED: "Sonuçlandı",
+};
+export const SOURCE_TYPE_LABELS: Record<string, string> = { VATANDAS: "Vatandaş", DIS_KURUM: "Dış Kurum", KURUM_ICI: "Kurum İçi" };
+export const CHANNEL_LABELS: Record<string, string> = { WEB_FORM: "Web Formu", FIZIKI_EVRAK: "Fizikî Evrak", EPOSTA: "E-posta", KEP: "KEP", EBYS: "EBYS", KURUM_ICI: "Kurum İçi" };
+export const DRAFT_STATUS_LABELS: Record<string, string> = { DRAFT: "Taslak", EDITED: "Personel Tarafından Düzenlendi", WAITING_APPROVAL: "Onay Bekliyor", APPROVED: "Onaylandı", SENT: "İletildi", CANCELLED: "İptal Edildi" };
+export const CANONICAL_DRAFT_TYPE_LABELS: Record<string, string> = { OFFICIAL_RESPONSE: "Resmî Cevap", FORWARDING_COVER_LETTER: "Sevk / Üst Yazı", MISSING_INFORMATION_REQUEST: "Eksik Bilgi Talep Yazısı", INTERNAL_MEMO: "Kurum İçi Yazı", INTERIM_INFORMATION: "Ara Bilgilendirme" };
+
 export function getLabel(key: string | undefined | null, map: Record<string, string>): string {
   const normalized = String(key ?? "").trim();
   return map[normalized] || normalized.replaceAll("_", " ");

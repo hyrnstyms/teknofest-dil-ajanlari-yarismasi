@@ -24,17 +24,17 @@ import type { CaseEvent, CaseStatus } from '../types/case';
 
 describe('StatusBadge', () => {
   const statusCases: Array<[CaseStatus, string]> = [
-    ['RECEIVED', 'Başvuru Alındı'],
-    ['ANALYZING', 'AI Analizi Sürüyor'],
-    ['WAITING_INITIAL_REVIEW', 'Ön İnceleme Bekliyor'],
+    ['RECEIVED', 'Alındı'],
+    ['ANALYZING', 'AI Analizi Yapılıyor'],
+    ['WAITING_INITIAL_REVIEW', 'İlk İnceleme Bekliyor'],
     ['WAITING_CITIZEN_INFO', 'Vatandaştan Bilgi Bekleniyor'],
     ['READY_TO_ROUTE', 'Yönlendirme Onayı Bekliyor'],
-    ['IN_DEPARTMENT', 'İlgili Birime Atandı'],
+    ['IN_DEPARTMENT', 'Birime Atandı'],
     ['IN_PROGRESS', 'İşlemde'],
     ['RESPONSE_DRAFTED', 'Cevap Taslağı Hazır'],
-    ['WAITING_FINAL_APPROVAL', 'Cevap Onayı Bekliyor'],
+    ['WAITING_FINAL_APPROVAL', 'Cevap Onayı Bekleniyor'],
     ['COMPLETED', 'Tamamlandı'],
-    ['CLOSED', 'Kapatıldı'],
+    ['CLOSED', 'Sonuçlandı'],
   ];
 
   for (const [status, label] of statusCases) {

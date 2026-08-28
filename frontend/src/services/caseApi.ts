@@ -71,6 +71,7 @@ function eventLabel(event: CaseEventWire): string {
     CASE_RECEIVED: "Evrak sisteme alındı",
     ANALYSIS_STARTED: "EVRAG analizi başlatıldı",
     ANALYSIS_COMPLETED: "EVRAG analizi tamamlandı",
+    REVIEW_ACCEPTED: "İlk inceleme onaylandı",
     ROUTING_CONFIRMED: "Kurumsal havale insan tarafından onaylandı",
     CASE_STARTED: "Birim işlemi başlatıldı",
     DEPARTMENT_ACTION_RECORDED: "Birim işlem sonucu kaydedildi",
@@ -214,6 +215,7 @@ export const caseApi = {
     };
   },
   get: refresh,
+  citizenAccess: (token: string, id: string) => caseRequest<{ tracking_code: string; citizen_url: string }>(`/api/cases/${id}/citizen-access`, token, { method: "POST" }),
   acceptReview: (token: string, item: CaseRecord) => mutate(
     token,
     item,
