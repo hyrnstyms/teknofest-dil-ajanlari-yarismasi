@@ -11,6 +11,7 @@ from backend.app.agents.chat_agent import (
     KUCUK_SOHBET_SISTEM_PROMPTU,
     MEVZUAT_KANIT_BULUNAMADI_MESAJI,
     MEVZUAT_SERVIS_HATASI_MESAJI,
+    OUT_OF_DOMAIN_MESAJI,
     ROUTER_SISTEM_PROMPTU,
     SSS_LISTESI,
     TASLAK_BAGLAMI_GEREKLI_MESAJI,
@@ -423,7 +424,10 @@ def test_handle_draft_edit_sends_exact_evren_parameters(monkeypatch):
     assert call["temperature"] == 0
     assert call["max_tokens"] == 1200
     assert call["response_format"] == {"type": "json_object"}
-    assert call["extra_body"] == {"enable_thinking": False}
+    assert call["extra_body"] == {
+        "enable_thinking": False,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
     assert call["timeout"] == 30.0
     assert call["messages"][0] == {
         "role": "system",
@@ -465,6 +469,80 @@ def test_handle_draft_edit_applies_unique_subject_patch(monkeypatch):
     assert updated["official_render"]["context"]["konu"] == "Başvuru Sonucu"
     assert updated["mod_c_validated_context"]["konu"] == "Başvuru Sonucu"
     assert "Başvuru Sonucu" in updated["official_rendered_text"]
+
+
+def test_handle_draft_edit_applies_explicit_quoted_subject_add_without_llm(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_evren_client",
+        lambda: (_ for _ in ()).throw(AssertionError("EVREN çağrılmamalı")),
+    )
+    current = _current_draft(subject="Başvuru İncelemesi")
+
+    result = handle_draft_edit(
+        "Taslağın konusuna 'ek bilgi' ekle",
+        current,
+        {},
+    )
+
+    assert result["status"] == "applied"
+    assert result["updated_draft"]["draft"]["subject"] == "Başvuru İncelemesi - ek bilgi"
+    assert result["validation_errors"] == []
+    assert result["edit_metadata"] == {
+        "operation": "edit",
+        "target_field": "subject",
+    }
+
+
+def test_handle_draft_edit_undoes_last_persisted_chat_edit_without_llm(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent._get_evren_client",
+        lambda: (_ for _ in ()).throw(AssertionError("EVREN çağrılmamalı")),
+    )
+    before = "Başvuru İncelemesi"
+    after = "Başvuru İncelemesi - ek bilgi"
+    current = _current_draft(subject=after)
+    workflow_context = {
+        "analysis_state": {
+            "human_review": {
+                "last_chat_draft_edit": {
+                    "target_field": "subject",
+                    "before": before,
+                    "after": after,
+                },
+            },
+        },
+    }
+
+    result = handle_draft_edit(
+        "Az önce eklediğin kısmı sil",
+        current,
+        workflow_context,
+    )
+
+    assert result["status"] == "applied"
+    assert result["updated_draft"]["draft"]["subject"] == before
+    assert result["validation_errors"] == []
+    assert result["edit_metadata"] == {
+        "operation": "undo",
+        "target_field": "subject",
+    }
+
+
+def test_draft_undo_follow_up_routes_without_router(monkeypatch):
+    monkeypatch.setattr(
+        "backend.app.agents.chat_agent.classify_with_router",
+        lambda message: (_ for _ in ()).throw(AssertionError("Router çağrılmamalı")),
+    )
+    history = [
+        {"role": "user", "content": "Taslağın konusuna 'ek bilgi' ekle"},
+        {"role": "assistant", "content": "Konu güncellendi.", "mode": "taslak_duzenleme"},
+    ]
+
+    assert resolve_chat_mode(
+        "Az önce eklediğin kısmı sil",
+        history=history,
+        has_active_document=True,
+    ) == "taslak_duzenleme"
 
 
 def test_handle_draft_edit_applies_unique_body_patch(monkeypatch):
@@ -1106,6 +1184,13 @@ def test_active_document_mode_requires_analysis_state():
     ) == "Bu soruyu yanıtlamak için önce bir evrak analizi açın."
 
 
+def test_out_of_domain_mode_always_returns_fixed_nonempty_fallback():
+    assert handle_chat_message(
+        "Sen kimsin, TC kimlik numaramı söyle",
+        resolved_mode="out_of_domain",
+    ) == OUT_OF_DOMAIN_MESAJI
+
+
 def test_active_document_mode_uses_provided_state():
     result = handle_chat_message(
         "Bu evrakın eksikleri neler?",
@@ -1114,6 +1199,38 @@ def test_active_document_mode_uses_provided_state():
     )
     assert "Adres" in result
     assert "İmza" in result
+
+
+def test_active_document_reports_priority_from_state_without_llm():
+    state = _active_state() | {
+        "priority": "HIGH",
+        "priority_reason": "Yasal süre dolmak üzere.",
+    }
+
+    result = handle_active_document_question(
+        "Bu evrakın önceliği nedir?",
+        state,
+    )
+
+    assert result == "Evrakın önceliği: Yüksek. Gerekçe: Yasal süre dolmak üzere."
+
+
+def test_active_document_reports_related_document_ids_without_llm():
+    state = _active_state() | {
+        "zincir_id": "ZINCIR-42",
+        "ilgili_evrak_id": ["EVRAK-7", "EVRAK-8"],
+    }
+
+    assert is_active_document_question(
+        "Bu evrak daha önce gelen bir başvuruyla ilişkili mi?",
+        has_active_document=True,
+    )
+    result = handle_active_document_question(
+        "Bu evrak daha önce gelen bir başvuruyla ilişkili mi?",
+        state,
+    )
+
+    assert result == "Evrak zinciri: ZINCIR-42. İlgili evrak: EVRAK-7, EVRAK-8."
 
 def test_local_openai_compat_returns_chat_completion_shape():
     class FakeLocalLLM:

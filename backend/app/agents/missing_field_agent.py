@@ -7,10 +7,10 @@ from backend.app.agents.routing_agent import normalize_turkish_text
 # Using "*" for process_intent means it applies to all intents for that document_type.
 REQUIREMENT_RULES = {
     ("dilekce", "*"): {
-        "required_fields": ["signature_present", "subject", "request"],
+        "required_fields": ["person_name", "address", "signature_present", "subject", "request"],
     },
     ("bilgi_edinme", "*"): {
-        "required_fields": ["signature_present", "request"],
+        "required_fields": ["person_name", "address", "signature_present", "request"],
     },
     ("sosyal_yardim_basvuru", "*"): {
         "required_fields": ["signature_present", "phone"],
@@ -25,7 +25,7 @@ REQUIREMENT_RULES = {
         "required_fields": ["document_number", "document_date", "sender_unit", "recipient", "subject", "signature_present"],
     },
     ("*", "*"): {
-        "required_fields": ["signature_present", "subject", "request"], # Generic fallback
+        "required_fields": ["person_name", "signature_present", "subject", "request"], # Generic fallback
     }
 }
 

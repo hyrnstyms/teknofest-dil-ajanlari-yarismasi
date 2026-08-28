@@ -1,5 +1,6 @@
 import type {
   CaseActionResult,
+  AnalysisPreviewDraft,
   CaseAssignment,
   CaseDraft,
   CaseEvent,
@@ -29,6 +30,7 @@ interface CaseAggregateWire {
   priority_assessment?: CaseRecord["priority_assessment"];
   department_actions: DepartmentAction[];
   drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
+  analysis_preview_draft?: AnalysisPreviewDraft | null;
   analysis?: {
     summary?: { short_summary?: string; structured_summary?: { subject?: string; request?: string } };
     routing?: CaseRecord["routing_recommendation"];
@@ -166,6 +168,7 @@ function normalizeAggregate(aggregate: CaseAggregateWire): CaseRecord {
       created_at: draft.created_at,
       updated_at: draft.updated_at,
     })),
+    analysis_preview_draft: aggregate.analysis_preview_draft || null,
     permissions: aggregate.permissions,
     analysis_details: aggregate.analysis,
   };
@@ -292,6 +295,17 @@ export const caseApi = {
     { draft_type: draft.draft_type, content: { ...content, sender_unit: draft.sender_unit, recipient_kind: draft.recipient_kind }, grounded_action_id: draft.grounded_action_id, expected_version: item.version, confirmed: true },
     "Personel düzenlemesi yeni taslak sürümü olarak kaydedildi.",
   ),
+  editAnalysisPreview: (
+    token: string,
+    item: CaseRecord,
+    content: { subject: string; body: string },
+  ): Promise<{ status: string; message: string }> => {
+    if (!item.analysis_id) throw new Error("Bu dosyaya bağlı analiz bulunamadı.");
+    return caseRequest(`/api/analysis/${item.analysis_id}/edit`, token, {
+      method: "POST",
+      body: JSON.stringify(content),
+    });
+  },
   regenerateDraft: (token: string, item: CaseRecord) => mutate(
     token, item, `/api/cases/${item.id}/drafts/regenerate`,
     { expected_version: item.version, confirmed: true }, "Taslak doğrulanmış vaka verileriyle yeniden oluşturuldu.",
