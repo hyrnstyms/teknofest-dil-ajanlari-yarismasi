@@ -7,6 +7,7 @@ export interface PreparedScenario { scenario_key: string; created: boolean; case
 
 export const demoApi = {
   personas: () => caseRequest<{ items: DemoPersona[] }>("/api/demo/personas"),
+  prepareCitizenExample: (key: string) => caseRequest<PreparedScenario & { label: string }>(`/api/demo/citizen-examples/${key}`, undefined, { method: "POST" }),
   scenarios: (token: string) => caseRequest<{ items: DemoScenario[] }>("/api/demo/scenarios", token),
   prepare: (token: string, key: string) => caseRequest<PreparedScenario>(`/api/demo/scenarios/${key}/prepare`, token, { method: "POST" }),
   reset: (token: string) => caseRequest<{ deleted_demo_cases: number }>("/api/demo/scenarios/reset", token, { method: "POST" }),

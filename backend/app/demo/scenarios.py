@@ -74,6 +74,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         "priority": "Yüksek",
         "priority_reason": "Yayalar için düşme tehlikesi, olası araç hasarı.",
         "expected_draft_type": "cevap_yazisi",
+        "legal_key": "municipal_roads",
     },
 
     # -----------------------------------------------------------------------
@@ -81,6 +82,20 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     # Kaynak: Sentetik — 13_ambiguous_ruhsat ile 02_yol_onarim_talebi'nin birleşimi
     # Lifecycle: WAITING_CITIZEN_INFO (citizen eksik bilgi yanıtı bekleniyor)
     # -----------------------------------------------------------------------
+    "yol_onarim_yedek": {
+        "user_key": "ayse_kaya", "title": "Örnek Demo Verisi — Yol Onarım Cevabı",
+        "originator": "Ayşe Demir", "target": "fen_isleri", "unit": "Fen İşleri Müdürlüğü",
+        "summary": "Cumhuriyet Mahallesi Gül Sokak yol yüzeyindeki deformasyonun incelenmesi ve bakım programına alınması talebi.",
+        "document_type": "dilekce", "intent": "bildirim", "source_type": "VATANDAS",
+        "priority": "Normal", "expected_draft_type": "cevap_yazisi", "legal_key": "municipal_roads", "stage": "late",
+    },
+    "tamamlanmis_dosya": {
+        "user_key": "ayse_kaya", "title": "Örnek Demo Verisi — Sonuçlanmış Yol Başvurusu",
+        "originator": "Mert Yılmaz", "target": "fen_isleri", "unit": "Fen İşleri Müdürlüğü",
+        "summary": "Çınar Sokak yol yüzeyindeki deformasyona ilişkin sonuçlandırılan başvuru.",
+        "document_type": "dilekce", "intent": "bildirim", "source_type": "VATANDAS",
+        "priority": "Normal", "expected_draft_type": "cevap_yazisi", "legal_key": "municipal_roads", "stage": "completed",
+    },
     "eksik_adres": {
         "user_key": "ayse_kaya",
         "title": "Kaldırım Çökmesi — Konum Eksik",
@@ -117,13 +132,18 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         "unit": "Zabıta Müdürlüğü",
         "summary": (
             "Atatürk Caddesi No:14 adresindeki unlu mamüller satış ve üretim işyeri için "
-            "işyeri açma ve çalışma ruhsatı başvurusu. Ruhsat türü dilekçede belirtilmiş; "
+            "ruhsat başvurusu. Başvurunun yapı ruhsatı mı işyeri ruhsatı mı olduğu belirtilmemiş; "
             "belge kontrolü ve uygun birim tespiti gerekiyor."
         ),
         "document_type": "ruhsat_basvurusu",
         "intent": "basvuru",
         "source_type": "VATANDAS",
-        "clarification": False,
+        "clarification": True,
+        "clarification_field": "permit_type",
+        "clarification_question": "Başvurunuz hangi ruhsat türüyle ilgilidir?",
+        "clarification_question_type": "single_choice",
+        "clarification_options": [{"value": "YAPI_RUHSATI", "label": "Yapı Ruhsatı"}, {"value": "ISYERI_RUHSATI", "label": "İşyeri Açma ve Çalışma Ruhsatı"}],
+        "extra_fields": {"address": {"value": "Atatürk Caddesi No:14", "validated": True}, "request": {"value": "Ruhsat başvurusunun değerlendirilmesi", "validated": True}},
         "ai_operation": {
             "task_type": "BELGE_KONTROLU",
             "department_code": "zabita",
@@ -199,7 +219,12 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         "intent": "bilgi_talebi",
         "source_type": "DIS_KURUM",
         "source_channel": "KEP",
-        "clarification": False,
+        "clarification": True,
+        "clarification_field": "permit_type",
+        "clarification_question": "Başvurunuz hangi ruhsat türüyle ilgilidir?",
+        "clarification_question_type": "single_choice",
+        "clarification_options": [{"value": "YAPI_RUHSATI", "label": "Yapı Ruhsatı"}, {"value": "ISYERI_RUHSATI", "label": "İşyeri Açma ve Çalışma Ruhsatı"}],
+        "extra_fields": {"address": {"value": "Atatürk Caddesi No:14", "validated": True}, "request": {"value": "Ruhsat başvurusunun değerlendirilmesi", "validated": True}},
         "ai_operation": {
             "task_type": "GENEL_INCELEME",
             "department_code": "fen_isleri",
@@ -244,9 +269,9 @@ def _build_clarification(spec: dict[str, Any], key: str) -> dict[str, Any]:
         "needs_clarification": True,
         "blocking": True,
         "requested_fields": [field],
-        "question_type": "free_text",
+        "question_type": spec.get("clarification_question_type", "free_text"),
         "question": question,
-        "options": [],
+        "options": spec.get("clarification_options", []),
         "resume_target": "MISSING_FIELD",
         "reason": reason,
         "target_type": target_type,
@@ -257,6 +282,24 @@ def _build_clarification(spec: dict[str, Any], key: str) -> dict[str, Any]:
         "missing_field": field,
     }
 
+
+LEGAL_EVIDENCE = {
+    "municipal_roads": {
+        "verified": True,
+        "text": "Mahallî müşterek ihtiyaçların karşılanması belediyelerin görev alanındadır.",
+        "evidence": [{
+            "evidence": "Mahalli idareler, mahalli müşterek ihtiyaçları karşılamak üzere kurulan kamu tüzelkişileridir.",
+            "source": "K1",
+            "relationship": "Yol bakım talebi mahallî müşterek altyapı hizmeti olduğundan belediye görev alanıyla ilişkilidir.",
+        }],
+        "sources": [{
+            "title": "Türkiye Cumhuriyeti Anayasası", "law_number": "2709", "madde_no": "127",
+            "url": "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.2709.pdf",
+            "text": "Mahalli idareler; il, belediye veya köy halkının mahalli müşterek ihtiyaçlarını karşılamak üzere kurulan kamu tüzelkişileridir.",
+            "trusted_source": True, "rag_eligible": True,
+        }],
+    }
+}
 
 class DemoScenarioService:
     def __init__(self): self.engine = get_case_engine()
@@ -329,7 +372,7 @@ class DemoScenarioService:
             "recommended_unit": spec["unit"],
             "recommended_department_code": spec["target"],
             "reason": ai_op.get("reason") or "Belgedeki konu ve kurum profilindeki görev alanı eşleşmektedir.",
-            "evidence": [spec["summary"]],
+            "evidence": [spec["summary"]] + (["2709 sayılı Türkiye Cumhuriyeti Anayasası, Madde 127"] if spec.get("legal_key") == "municipal_roads" else []),
             "alternatives": [],
             "requires_human_review": True,
         }
@@ -360,6 +403,7 @@ class DemoScenarioService:
                 "fields": {
                     "person_name": {"value": spec["originator"], "validated": True},
                     "subject": {"value": spec["title"], "validated": True},
+                    **spec.get("extra_fields", {}),
                 }
             },
             "missing_fields": {
@@ -371,7 +415,7 @@ class DemoScenarioService:
                 "short_summary": spec["summary"],
                 "structured_summary": {"subject": spec["title"], "request": spec["summary"]},
             },
-            "legal_analysis": {"verified": False, "evidence": [], "sources": []},
+            "legal_analysis": LEGAL_EVIDENCE.get(spec.get("legal_key"), {"verified": False, "evidence": [], "sources": []}),
             "routing": routing,
             "clarification": clarification,
             "ai_operation": ai_op if ai_op else {},
@@ -390,6 +434,24 @@ class DemoScenarioService:
         completed = self.engine.mark_analysis_completed(created["id"], user, ready_to_route=not blocking)
         if blocking:
             self.engine.create_citizen_request(user, created["id"], clarification, completed["version"], True)
+
+        if spec.get("stage") in {"late", "completed"}:
+            current = self.engine.route_case(user, created["id"], department_code=spec["target"], expected_version=completed["version"], confirmed=True, reason="Örnek demo verisi", routing_snapshot={"demo": True})
+            worker = _user("mehmet_demir")
+            current = self.engine.start_case(worker, created["id"], current["version"], True)
+            action = self.engine.record_department_action(worker, created["id"], {
+                "action_type": "Saha İncelemesi", "result": "Yol yüzeyinde deformasyon tespit edildi.",
+                "decision": "Bölge bakım programına alındı.", "notes": "Örnek demo verisi",
+            }, current["version"], True)
+            from backend.app.cases.auto_draft import generate_official_response_after_action
+            generated = generate_official_response_after_action(engine=self.engine, user=worker, case_id=created["id"], action_result=action)
+            aggregate = self.engine.get_case_aggregate(worker, created["id"])
+            draft = aggregate["drafts"][-1]
+            edited_body = draft["content"]["body"]
+            edited = self.engine.save_draft(worker, created["id"], draft_type="OFFICIAL_RESPONSE", content={**draft["content"], "body": edited_body}, grounded_action_id=draft["grounded_action_id"], expected_version=aggregate["case"]["version"], confirmed=True)
+            approved = self.engine.approve_draft(worker, created["id"], edited["draft"]["id"], edited["case"]["version"], True)
+            if spec.get("stage") == "completed":
+                self.engine.complete_case(worker, created["id"], edited["draft"]["id"], approved["case"]["version"], True)
 
         return self._result(self._existing(key), key, created=True)
 

@@ -145,6 +145,14 @@ def get_case(case_id: str, current_user: CurrentUser = Depends(get_current_user)
         raise exc.to_http_exception() from exc
 
 
+@router.post("/{case_id}/citizen-access")
+def citizen_access(case_id: str, current_user: CurrentUser = Depends(get_current_user)) -> dict:
+    try:
+        return _engine().issue_citizen_access(current_user, case_id)
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
+
+
 @router.post("/{case_id}/analysis/start")
 def start_analysis(
     case_id: str,
@@ -369,6 +377,20 @@ def approve_draft(
     except CaseError as exc:
         raise exc.to_http_exception() from exc
 
+
+@router.post("/{case_id}/drafts/{draft_id}/revise")
+def revise_approved_draft(
+    case_id: str,
+    draft_id: str,
+    body: VersionedAction,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    try:
+        return _engine().revise_approved_draft(
+            current_user, case_id, draft_id, body.expected_version, body.confirmed
+        )
+    except CaseError as exc:
+        raise exc.to_http_exception() from exc
 
 @router.post("/{case_id}/drafts/regenerate")
 def regenerate_draft(case_id: str, body: VersionedAction, current_user: CurrentUser = Depends(get_current_user)) -> dict:

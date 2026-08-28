@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import io
+import zipfile
+
+import fitz
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -56,7 +61,7 @@ def test_approved_case_draft_renders_docx_pdf_and_qr():
     aggregate = {
         "case": {"tracking_code": "EVR-TEST-001", "institution_id": "belediye", "current_department_code": "fen_isleri", "originator_type": "VATANDAS", "originator_name": "Ali Yılmaz"},
         "analysis": {"routing": {"recommended_unit": "Fen İşleri Müdürlüğü"}, "extraction": {"fields": {"subject": {"value": "Yol bakım talebi", "validated": True}}}},
-        "drafts": [{"id": "draft-1", "status": "APPROVED", "draft_type": "OFFICIAL_RESPONSE", "content": {"subject": "Başvurunuz Hk.", "recipient": "Ali Yılmaz", "body": "Başvurunuz incelenmiş ve bakım programına alınmıştır."}}],
+        "drafts": [{"id": "draft-1", "status": "APPROVED", "draft_type": "OFFICIAL_RESPONSE", "content": {"subject": "Başvurunuz Hk.", "recipient": "Ali Yılmaz", "body": "Başvurunuz kapsamında ilgili bölgede yapılan incelemede yol yüzeyinde deformasyon tespit edilmiştir. çğıöşü ÇĞİÖŞÜ"}}],
     }
     context, _ = approved_export_context(aggregate, "draft-1")
     assert context["konu"] == "Başvurunuz Hk"
@@ -65,3 +70,36 @@ def test_approved_case_draft_renders_docx_pdf_and_qr():
     pdf = render_case_pdf(context, "EVR-TEST-001").getvalue()
     assert docx.startswith(b"PK")
     assert pdf.startswith(b"%PDF")
+    with zipfile.ZipFile(io.BytesIO(docx)) as archive:
+        document_xml = archive.read("word/document.xml").decode("utf-8")
+    assert "çğıöşü ÇĞİÖŞÜ" in document_xml
+    with fitz.open(stream=pdf, filetype="pdf") as document:
+        pdf_text = "\n".join(page.get_text() for page in document)
+    assert "deformasyon tespit edilmiştir" in " ".join(pdf_text.split())
+    assert "EVR-TEST-001" in pdf_text
+
+def test_citizen_example_is_explicit_allowlisted_post_with_real_demo_token():
+    response = client.post("/api/demo/citizen-examples/yol_onarim")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["scenario_key"] == "yol_onarim"
+    assert "demo-token" not in payload["citizen_url"]
+    tracking, token = payload["citizen_url"].split("/takip/", 1)[1].split("?token=", 1)
+    assert client.get(f"/api/public/cases/{tracking}", params={"token": token}).status_code == 200
+    assert client.post("/api/demo/citizen-examples/dis_kurum_afet").status_code == 404
+
+
+def test_yol_demo_persists_verified_indexed_legal_evidence_and_late_states():
+    ayse = login("ayse_kaya")
+    early = client.post("/api/demo/scenarios/yol_onarim/prepare", headers=ayse).json()
+    aggregate = client.get(f"/api/cases/{early['case']['id']}", headers=ayse).json()
+    legal = aggregate["analysis"]["legal_analysis"]
+    assert legal["verified"] is True
+    assert legal["sources"][0]["law_number"] == "2709"
+    assert legal["sources"][0]["madde_no"] == "127"
+    assert legal["sources"][0]["trusted_source"] is True
+    assert "2709 sayılı Türkiye Cumhuriyeti Anayasası, Madde 127" in aggregate["analysis"]["routing"]["evidence"]
+    late = client.post("/api/demo/scenarios/yol_onarim_yedek/prepare", headers=ayse).json()
+    completed = client.post("/api/demo/scenarios/tamamlanmis_dosya/prepare", headers=ayse).json()
+    assert late["case"]["workflow_status"] == "WAITING_FINAL_APPROVAL"
+    assert completed["case"]["workflow_status"] == "COMPLETED"

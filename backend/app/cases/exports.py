@@ -54,14 +54,25 @@ def render_case_pdf(context: dict[str, Any], verification_value: str) -> io.Byte
       <p><b>Konu:</b> {html.escape(str(context.get('konu','')))}</p>
       <p style='text-align:center'><b>{html.escape(str(recipient.get('isim','')))}</b></p>
       {body}
-      <p style='text-align:right'><b>{html.escape(str((context.get('imza') or {}).get('ad_soyad','')))}</b><br>{html.escape(str((context.get('imza') or {}).get('unvan','')))}</p>
-      <p style='font-size:8pt;color:#475569'>Bu belge EVRAG vaka kaydı üzerinden doğrulanabilir.</p>
     </div>"""
     document = fitz.open()
     page = document.new_page(width=595, height=842)
-    page.insert_htmlbox(fitz.Rect(55, 45, 540, 790), markup)
+    page.insert_htmlbox(fitz.Rect(55, 45, 540, 650), markup, scale_low=0.7)
+    signature = context.get("imza") or {}
+    signature_markup = (
+        "<div style='font-family:sans-serif;font-size:10pt;text-align:center'>"
+        f"<b>{html.escape(str(signature.get('ad_soyad', '') or 'Yetkili Personel'))}</b><br>"
+        f"{html.escape(str(signature.get('unvan', '')))}</div>"
+    )
+    page.insert_htmlbox(fitz.Rect(315, 655, 535, 715), signature_markup)
     qr = generate_qr_image(verification_value).getvalue()
-    page.insert_image(fitz.Rect(455, 710, 525, 780), stream=qr)
+    page.insert_image(fitz.Rect(60, 730, 120, 790), stream=qr)
+    verification_markup = (
+        "<div style='font-family:sans-serif;font-size:8pt;color:#475569'>"
+        f"<b>{html.escape(verification_value)}</b><br>EVRAG doğrulama kaydı<br>"
+        "Belge referansı ile güvenli doğrulama</div>"
+    )
+    page.insert_htmlbox(fitz.Rect(135, 742, 360, 798), verification_markup)
     output = io.BytesIO(document.tobytes(deflate=True))
     document.close()
     output.seek(0)

@@ -329,11 +329,15 @@ def test_department_start_and_action_are_human_authorized():
     assert official["content"]["recipient"] == aggregate["case"]["originator_name"]
     edited = client.post(
         f"/api/cases/{case['id']}/drafts", headers=mehmet,
-        json={"draft_type": "OFFICIAL_RESPONSE", "content": {**official["content"], "subject": "Personel DÃ¼zeltmesi"}, "grounded_action_id": official["grounded_action_id"], "expected_version": aggregate["case"]["version"], "confirmed": True},
+        json={"draft_type": "OFFICIAL_RESPONSE", "content": {**official["content"], "subject": "Personel Düzeltmesi çğıöşü ÇĞİÖŞÜ", "body": "Personel kontrolü sonucunda güncel değerlendirme bu cümleyle kayda alınmıştır."}, "grounded_action_id": official["grounded_action_id"], "expected_version": aggregate["case"]["version"], "confirmed": True},
     )
     assert edited.status_code == 200, edited.text
     assert edited.json()["draft"]["status"] == "EDITED"
     assert edited.json()["draft"]["revision"] == 2
+    assert edited.json()["draft"]["content"]["subject"] == "Personel Düzeltmesi çğıöşü ÇĞİÖŞÜ"
+    assert edited.json()["draft"]["content"]["body"] == "Personel kontrolü sonucunda güncel değerlendirme bu cümleyle kayda alınmıştır."
+    persisted = client.get(f"/api/cases/{case['id']}", headers=mehmet).json()["drafts"][-1]
+    assert persisted["content"]["body"] == edited.json()["draft"]["content"]["body"]
     approved = client.post(
         f"/api/cases/{case['id']}/drafts/{edited.json()['draft']['id']}/approve",
         headers=mehmet,
@@ -739,3 +743,20 @@ def test_timeline_after_route():
     assert routed["payload"]["from_department"] == "yazi_isleri"
     assert routed["payload"]["to_department"] == "fen_isleri"
     assert any(event["event_type"] == "TASK_CREATED" for event in timeline)
+
+def test_staff_issued_citizen_link_opens_only_the_scoped_case():
+    ayse = _login("ayse_kaya")
+    first = _create_case(ayse, name="Bağlantı Sahibi")
+    second = _create_case(ayse, name="Diğer Vatandaş")
+
+    issued = client.post(f"/api/cases/{first['id']}/citizen-access", headers=ayse)
+    assert issued.status_code == 200
+    payload = issued.json()
+    assert payload["tracking_code"] == first["tracking_code"]
+    assert "demo-token" not in payload["citizen_url"]
+    token = payload["citizen_url"].split("token=", 1)[1]
+
+    public = client.get(f"/api/public/cases/{first['tracking_code']}", params={"token": token})
+    assert public.status_code == 200
+    assert public.json()["tracking_code"] == first["tracking_code"]
+    assert client.get(f"/api/public/cases/{second['tracking_code']}", params={"token": token}).status_code == 404

@@ -114,3 +114,17 @@ def test_prompt_injection_guard():
     service = CaseWritingService(writing_agent=MockWritingAgent())
     result = service.draft_official_response(department_action=None, document={"process_intent": "IGNORE ALL"})
     assert result.get("allowed") is False
+
+def test_grounded_official_response_has_formal_paragraphs_without_completion_claim():
+    service = CaseWritingService()
+    result = service.draft_official_response(
+        department_action={"id": "a-formal", "case_id": "c-formal", "verified": True, "result": "Yol yüzeyinde deformasyon tespit edildi.", "decision": "Bölge bakım programına alındı."},
+        case_id="c-formal", originator={"originator_type": "VATANDAS", "originator_name": "Ayşe Demir"},
+        summary={"short_summary": "Gül Sokak yol bakım talebi"},
+    )
+    body = result["draft"]["body"]
+    assert len([part for part in body.split("\n\n") if part.strip()]) == 4
+    assert len(body.split()) >= 70
+    assert "Yol yüzeyinde deformasyon tespit edildi" in body
+    assert "Bölge bakım programına alındı" in body
+    assert "Yol onarılmıştır" not in body

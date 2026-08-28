@@ -29,7 +29,7 @@ interface CaseAggregateWire {
   clarification?: CaseRecord["clarification"] | Record<string, never>;
   priority_assessment?: CaseRecord["priority_assessment"];
   department_actions: DepartmentAction[];
-  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string }>;
+  drafts: Array<{ id: string; draft_type: CaseDraft["draft_type"]; status: CaseDraft["draft_status"]; revision?: number; content: { subject?: string; body?: string; recipient?: string; sender_unit?: string; recipient_kind?: string }; created_by_user_id?: string; grounded_action_id?: string | null; created_at?: string; updated_at?: string; personnel_edited?: boolean }>;
   analysis_preview_draft?: AnalysisPreviewDraft | null;
   analysis?: {
     summary?: { short_summary?: string; structured_summary?: { subject?: string; request?: string } };
@@ -289,6 +289,10 @@ export const caseApi = {
   approveDraft: (token: string, item: CaseRecord, draftId: string) => mutate(
     token, item, `/api/cases/${item.id}/drafts/${draftId}/approve`,
     { expected_version: item.version, confirmed: true }, "Resmî cevap taslağı onaylandı.",
+  ),
+  reviseDraft: (token: string, item: CaseRecord, draftId: string) => caseRequest<{ draft: { id: string } }>(
+    `/api/cases/${item.id}/drafts/${draftId}/revise`, token,
+    { method: "POST", body: JSON.stringify({ expected_version: item.version, confirmed: true }) },
   ),
   editDraft: (token: string, item: CaseRecord, draft: CaseDraft, content: { subject: string; recipient: string; body: string }) => mutate(
     token, item, `/api/cases/${item.id}/drafts`,

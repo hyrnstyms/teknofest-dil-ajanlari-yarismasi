@@ -325,7 +325,7 @@ class CaseEngine:
             if case.workflow_status == STATUS_RESPONSE_DRAFTED:
                 actions.extend(["SAVE_DRAFT", "APPROVE_DRAFT"])
             if case.workflow_status == STATUS_WAITING_FINAL_APPROVAL:
-                actions.extend(["APPROVE_DRAFT", "FINALIZE_CASE"])
+                actions.extend(["SAVE_DRAFT", "APPROVE_DRAFT", "FINALIZE_CASE"])
         return actions
 
     def serialize_case(self, case: CaseRecord) -> dict[str, Any]:
@@ -772,6 +772,7 @@ class CaseEngine:
             "status": row.status,
             "revision": row.revision,
             "content": row.content or {},
+            "personnel_edited": bool((row.content or {}).get("_personnel_edited", False)),
             "grounded_action_id": row.grounded_action_id,
             "created_by_user_id": row.created_by_user_id,
             "approved_by_user_id": row.approved_by_user_id,
@@ -1320,6 +1321,7 @@ class CaseEngine:
         grounded_action_id: str | None,
         expected_version: int,
         confirmed: bool,
+        personnel_edited: bool = True,
     ) -> dict[str, Any]:
         with self.session_factory.begin() as session:
             case = self._scoped_case(session, user, case_id, for_update=True)
@@ -1354,14 +1356,16 @@ class CaseEngine:
                 .order_by(CaseDraft.revision.desc())
             ).first()
             revision = (existing.revision + 1) if existing else 1
-            status = DRAFT_STATUS_EDITED if existing else DRAFT_STATUS_DRAFT
+            status = DRAFT_STATUS_EDITED if existing and personnel_edited else DRAFT_STATUS_DRAFT
+            stored_content = dict(content or {})
+            stored_content["_personnel_edited"] = personnel_edited
             draft = CaseDraft(
                 id=str(uuid.uuid4()),
                 case_id=case.id,
                 draft_type=draft_type,
                 status=status,
                 revision=revision,
-                content=content or {},
+                content=stored_content,
                 grounded_action_id=action_id,
                 created_by_user_id=user.id,
                 created_at=_now(),
@@ -1392,6 +1396,36 @@ class CaseEngine:
                     payload={"draft_id": draft.id},
                 )
             return {"draft": self._serialize_draft(draft), "case": self.serialize_case(case)}
+
+    def revise_approved_draft(
+        self,
+        user: CurrentUser,
+        case_id: str,
+        draft_id: str,
+        expected_version: int,
+        confirmed: bool,
+    ) -> dict[str, Any]:
+        with self.session_factory.begin() as session:
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            self._require_own_department(user, case)
+            draft = session.get(CaseDraft, draft_id)
+            if draft is None or draft.case_id != case.id:
+                raise validation_error("Taslak bulunamadı.", draft_id=draft_id)
+            if draft.status != DRAFT_STATUS_APPROVED:
+                raise invalid_case_transition(case.workflow_status)
+            draft_type = draft.draft_type
+            content = dict(draft.content or {})
+            grounded_action_id = draft.grounded_action_id
+        return self.save_draft(
+            user,
+            case_id,
+            draft_type=draft_type,
+            content=content,
+            grounded_action_id=grounded_action_id,
+            expected_version=expected_version,
+            confirmed=confirmed,
+            personnel_edited=False,
+        )
 
     def approve_draft(
         self,
@@ -1505,6 +1539,18 @@ class CaseEngine:
             self._transition(session, case, STATUS_CLOSED, EVENT_CASE_CLOSED, user)
             return self.serialize_case(case)
 
+    def issue_citizen_access(self, user: CurrentUser, case_id: str) -> dict[str, str]:
+        """Issue a fresh public link without exposing its token in the Case DTO."""
+        raw_token = secrets.token_urlsafe(32)
+        with self.session_factory.begin() as session:
+            case = self._scoped_case(session, user, case_id, for_update=True)
+            case.citizen_token_hash = hash_citizen_token(raw_token)
+            case.updated_at = _now()
+            return {
+                "tracking_code": case.tracking_code,
+                "citizen_url": f"/takip/{case.tracking_code}?token={raw_token}",
+            }
+
     def public_projection(self, tracking_code: str, token: str) -> dict[str, Any]:
         with self.session_factory() as session:
             case = session.scalar(
@@ -1551,7 +1597,7 @@ class CaseEngine:
                 clarification = {
                     "requested_fields": pending.requested_fields or [],
                     "question": pending.question,
-                    "question_type": pending.question_type,
+                    "question_type": "choice" if pending.question_type in {"choice", "single_choice"} else "free_text",
                     "options": options,
                 }
             return {

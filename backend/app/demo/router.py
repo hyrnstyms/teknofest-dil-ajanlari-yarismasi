@@ -16,6 +16,18 @@ def registry(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
 @router.get("/personas", dependencies=[Depends(enabled)])
 def personas(): return {"items": [{"user_key": p.user_key, "name": p.name, "role": p.role, "institution_id": p.institution_id, "department_code": p.department_code} for p in DEMO_USERS.values()]}
 
+@router.post("/citizen-examples/{scenario_key}", dependencies=[Depends(enabled)])
+def prepare_citizen_example(scenario_key: str):
+    labels = {
+        "yol_onarim": "Yol Onarım Başvurusunu Görüntüle",
+        "eksik_adres": "Bilgi Bekleyen Başvuruyu Görüntüle",
+        "tamamlanmis_dosya": "Sonuçlanmış Başvuruyu Görüntüle",
+    }
+    if scenario_key not in labels:
+        raise HTTPException(status_code=404, detail={"code": "demo_case_not_found", "message": "Örnek vatandaş başvurusu bulunamadı."})
+    result = DemoScenarioService().prepare(scenario_key, "belediye")
+    return {"label": labels[scenario_key], "scenario_key": scenario_key, "case": result["case"], "citizen_url": result["citizen_url"]}
+
 @router.get("/scenarios")
 def scenarios(user: CurrentUser = Depends(registry)): return {"items": DemoScenarioService().list(user.institution_id)}
 

@@ -10,6 +10,7 @@ import { WritingGroundingSummary } from "../components/case/WritingGroundingSumm
 import { useAuth } from "../contexts/AuthContext";
 import { caseApi } from "../services/caseApi";
 import type { CaseRecord, DepartmentAction } from "../types/case";
+import { formatChannel, formatLegalSource, formatSourceType } from "../utils/presentation";
 
 type Pending = "review" | "route" | "start" | "clarification" | null;
 const blankAction = { action_type: "", result: "", decision: "", planned_date: "", notes: "" };
@@ -95,6 +96,7 @@ export function CaseWorkspacePage() {
   if (error && !item) return <div className="case-page"><div className="case-error" role="alert">{error}</div></div>;
   if (!item) return null;
 
+  const legalSources = item.analysis_details?.legal_analysis?.verified ? (item.analysis_details.legal_analysis.sources || []).map(formatLegalSource) : [];
   const canRoute = item.permissions.includes("ROUTE_CASE") && user?.role === "EVRAK_KAYIT";
   const canAction = item.permissions.includes("RECORD_DEPARTMENT_ACTION") && user?.role === "BIRIM_PERSONELI";
 
@@ -103,7 +105,7 @@ export function CaseWorkspacePage() {
     <header className="case-workspace-header">
       <div><span className="eyebrow">{item.tracking_code}</span><h1>{item.title}</h1><StatusBadge status={item.workflow_status}/></div>
       <div className="ownership-strip">
-        <section><span><UserRound/> Kaynak / Başvuru Sahibi</span><strong>{item.originator_name}</strong><small>{item.source_type} · {item.source_channel}</small></section>
+        <section><span><UserRound/> Kaynak / Başvuru Sahibi</span><strong>{item.originator_name}</strong><small>{formatSourceType(item.source_type)} · {formatChannel(item.source_channel)}</small></section>
         <section><span><Building2/> Mevcut Sahip</span><strong>{item.current_department_name}</strong><small>Kurumsal sorumluluk</small></section>
         <section className="ai-owner"><span><Bot/> AI Önerisi</span><strong>{item.routing_recommendation?.recommended_unit || "Öneri bulunmuyor"}</strong><small>İnsan onayı olmadan sahiplik değişmez</small></section>
       </div>
@@ -119,7 +121,7 @@ export function CaseWorkspacePage() {
         {item.routing_recommendation && <section className="case-panel routing-decision">
           <header><div><span className="eyebrow">AI ÖNERİSİ · İNSAN KARARI GEREKİR</span><h2>{item.routing_recommendation.recommended_unit}</h2></div><Route/></header>
           <h3>Gerekçe</h3><p>{item.routing_recommendation.reason}</p>
-          {item.routing_recommendation.evidence.length > 0 && <ul>{item.routing_recommendation.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul>}
+          {item.routing_recommendation.evidence.length > 0 && <><h3>Kanıtlar</h3><ul>{item.routing_recommendation.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul></>}{legalSources.length > 0 && <div className="routing-legal-evidence"><span className="eyebrow">MEVZUAT DAYANAĞI</span>{legalSources.map((source) => <div key={`${source.citation}-${source.article || ""}`}><strong>{source.citation}</strong>{source.article && <span>Madde {source.article}</span>}{source.url && <a href={source.url} target="_blank" rel="noreferrer">Kaynağı Gör</a>}</div>)}</div>}
           {canRoute && <button className="btn btn-primary" onClick={() => setPending("route")}>{item.routing_recommendation.recommended_unit} birimine yönlendir</button>}
         </section>}
         {canAction && <section className="case-panel" id="department-action">
@@ -136,7 +138,7 @@ export function CaseWorkspacePage() {
         {token && <CaseProductPanels item={item} token={token} onRefresh={async () => setItem(await caseApi.get(token, id))} onNotice={setNotice}/>}
       </main>
       <aside>
-        <OperationalNextAction item={item} user={user} onAction={handleOperationalAction}/>
+<OperationalNextAction item={item} user={user} onAction={handleOperationalAction}/>
         {item.deadline?.applicable && item.deadline.legal_basis?.verified
           ? <section className="case-panel deadline-card"><span><CalendarClock/> Yasal Süre</span><strong>{item.deadline.deadline_days} gün</strong><p>{item.deadline.due_at ? new Date(item.deadline.due_at).toLocaleDateString("tr-TR") : "Son tarih hesaplanamadı"}</p><small>{item.deadline.legal_basis.citation}</small></section>
           : <section className="case-panel"><p>Bu dosya için doğrulanmış bir yasal süre bulunamadı.</p></section>}

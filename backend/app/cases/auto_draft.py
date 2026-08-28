@@ -21,13 +21,15 @@ def generate_official_response_after_action(*, engine: Any, user: CurrentUser, c
             originator={"originator_type": case.get("originator_type"), "originator_name": case.get("originator_name")},
             routing=analysis.get("routing") or {},
             summary=analysis.get("summary") or {},
+            extraction=analysis.get("extraction") or {},
+            legal_analysis=analysis.get("legal_analysis") or {},
             document={"document_type": analysis.get("document_type") or "dilekce", "process_intent": analysis.get("process_intent") or "basvuru"},
             case_id=case_id,
             institution_id=case.get("institution_id") or "belediye",
         )
         if not generated.get("allowed") or not generated.get("draft"):
             return {"status": "failed", "message": "Taslak oluşturulamadı."}
-        saved = engine.save_draft(user, case_id, draft_type="OFFICIAL_RESPONSE", content=generated["draft"], grounded_action_id=action_id, expected_version=action_result["case"]["version"], confirmed=True)
+        saved = engine.save_draft(user, case_id, draft_type="OFFICIAL_RESPONSE", content=generated["draft"], grounded_action_id=action_id, expected_version=action_result["case"]["version"], confirmed=True, personnel_edited=False)
         return {"status": "ready", "draft": saved["draft"], "case": saved["case"]}
     except Exception as exc:
         logger.exception("Automatic grounded Case draft failed for %s", case_id)
